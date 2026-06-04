@@ -93,35 +93,14 @@ export default function ImportTransactions({ companyId, onSuccess }) {
       const parsed = parseCSV(text);
       processRows(parsed);
     } else if (ext === 'xlsx' || ext === 'xls') {
-      // Use LLM to extract from Excel via UploadFile + ExtractDataFromUploadedFile
-      setStep('processing');
-      const { storagePath } = await firebase.integrations.Core.UploadFile({ file, companyId });
-      const result = await firebase.integrations.Core.ExtractDataFromUploadedFile({
-        storagePath,
-        json_schema: {
-          type: 'object',
-          properties: {
-            rows: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  tipo: { type: 'string' },
-                  monto: { type: 'string' },
-                  descripcion: { type: 'string' },
-                  fecha: { type: 'string' },
-                  categoria: { type: 'string' },
-                  metodo_pago: { type: 'string' },
-                }
-              }
-            }
-          }
-        }
+      toast({
+        title: 'Excel requiere backend seguro',
+        description: 'Por seguridad no se suben hojas de cálculo desde el navegador. Usa la plantilla CSV o habilita un backend seguro de extracción.',
+        variant: 'destructive',
       });
-      const extracted = result?.output?.rows || (Array.isArray(result?.output) ? result.output : []);
-      processRows(extracted);
+      setStep('upload');
     } else {
-      toast({ title: 'Formato no soportado', description: 'Usa CSV o Excel (.xlsx)', variant: 'destructive' });
+      toast({ title: 'Formato no soportado', description: 'Usa la plantilla CSV.', variant: 'destructive' });
     }
   };
 
@@ -164,7 +143,7 @@ export default function ImportTransactions({ companyId, onSuccess }) {
   return (
     <>
       <Button variant="outline" onClick={() => { setOpen(true); reset(); }} className="border-border gap-2">
-        <FileSpreadsheet className="w-4 h-4" /> Importar Excel/CSV
+        <FileSpreadsheet className="w-4 h-4" /> Importar CSV
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
@@ -193,10 +172,10 @@ export default function ImportTransactions({ companyId, onSuccess }) {
                   <>
                     <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-sm font-medium text-foreground mb-1">Arrastra tu archivo aquí o haz clic para seleccionar</p>
-                    <p className="text-xs text-muted-foreground">Soporta CSV y Excel (.xlsx)</p>
+                    <p className="text-xs text-muted-foreground">Soporta CSV con la plantilla segura</p>
                   </>
                 )}
-                <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
+                <input ref={fileRef} type="file" accept=".csv" className="hidden"
                   onChange={e => handleFile(e.target.files[0])} />
               </div>
 

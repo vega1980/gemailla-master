@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -40,25 +40,28 @@ export function SubscriptionProvider({ children }) {
   const [predictionCount, setPredictionCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const userUid = user?.uid || user?.id;
-    if (!userUid && !user?.email) { setLoading(false); return; }
-    loadSubscription();
-  }, [user?.uid, user?.id, user?.email]);
+  const userUid = user?.uid || user?.id;
+  const userEmail = user?.email || '';
 
-  const loadSubscription = async () => {
+  const loadSubscription = useCallback(async () => {
+    if (!userUid && !userEmail) {
+      setSubscription(null);
+      setPredictionCount(0);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const userUid = user?.uid || user?.id;
       const [subsByUid, subsByEmail, logs] = await Promise.all([
         userUid
           ? firebase.entities.Subscription.filter({ userUid, status: 'active' }).catch(() => [])
           : [],
-        user?.email
-          ? firebase.entities.Subscription.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
+        userEmail
+          ? firebase.entities.Subscription.filter({ userEmail, status: 'active' }).catch(() => [])
           : [],
-        user?.email
-          ? firebase.entities.PredictionLog.filter({ userEmail: user.email }).catch(() => [])
+        userEmail
+          ? firebase.entities.PredictionLog.filter({ userEmail }).catch(() => [])
           : [],
       ]);
       const subsById = new Map();
@@ -68,14 +71,21 @@ export function SubscriptionProvider({ children }) {
       const subs = Array.from(subsById.values());
       setSubscription(subs[0] || null);
       const thisMonth = new Date().toISOString().slice(0, 7);
-      const monthLogs = logs.filter(l => l.fecha_generacion?.startsWith(thisMonth));
+      const monthLogs = logs.filter((log) => {
+        const generatedAt = log.generatedAt || log.fecha_generacion || log.createdAt || '';
+        return generatedAt.startsWith(thisMonth);
+      });
       setPredictionCount(monthLogs.length);
     } catch (error) {
       console.error('Error loading subscription:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userEmail, userUid]);
+
+  useEffect(() => {
+    loadSubscription();
+  }, [loadSubscription]);
 
   const plan = subscription?.plan || 'basic';
   const planCfg = PLAN_CONFIG[plan] || PLAN_CONFIG.basic;
@@ -85,32 +95,53 @@ export function SubscriptionProvider({ children }) {
   const predictionsRemaining = planCfg.predictionLimit === Infinity ? '∞' : Math.max(0, planCfg.predictionLimit - predictionCount);
   const isAtLimit = planCfg.predictionLimit !== Infinity && predictionCount >= planCfg.predictionLimit;
 
-  const logPrediction = async (companyId, tipo = 'general', resultado = '') => {
+  const logPrediction = useCallback(async (companyId, tipo = 'general', resultado = '') => {
     if (!canUsePredictions) return false;
     try {
       await firebase.entities.PredictionLog.create({
-        companyId: companyId,
-        userEmail: user?.email || '',
-        fecha_generacion: new Date().toISOString(),
-        tipo_prediccion: tipo,
-        resultado_ia: resultado.slice(0, 500),
-        plan_al_momento: plan,
+        companyId,
+        userEmail,
+        generatedAt: new Date().toISOString(),
+        predictionType: tipo,
+        aiResult: resultado.slice(0, 500),
+        planAtCreation: plan,
       });
-      setPredictionCount(c => c + 1);
+      setPredictionCount((count) => count + 1);
       return true;
     } catch (error) {
       console.error('Error logging prediction:', error);
       return false;
     }
-  };
+  }, [canUsePredictions, plan, userEmail]);
+
+  const value = useMemo(() => ({
+    subscription,
+    plan,
+    planCfg,
+    loading,
+    canUsePredictions,
+    canAccessAI,
+    predictionsRemaining,
+    predictionCount,
+    isAtLimit,
+    logPrediction,
+    reload: loadSubscription,
+  }), [
+    canAccessAI,
+    canUsePredictions,
+    isAtLimit,
+    loadSubscription,
+    loading,
+    logPrediction,
+    plan,
+    planCfg,
+    predictionCount,
+    predictionsRemaining,
+    subscription,
+  ]);
 
   return (
-    <SubscriptionContext.Provider value={{
-      subscription, plan, planCfg, loading,
-      canUsePredictions, canAccessAI,
-      predictionsRemaining, predictionCount, isAtLimit,
-      logPrediction, reload: loadSubscription,
-    }}>
+    <SubscriptionContext.Provider value={value}>
       {children}
     </SubscriptionContext.Provider>
   );

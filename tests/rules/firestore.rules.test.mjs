@@ -127,6 +127,29 @@ describe('Firestore security rules', () => {
     }, outsider), 'outsider document create');
   });
 
+
+  it('denies persisted public document URLs on create and update', async () => {
+    await assertDenied(firestoreSet('documents/doc-with-download-url', {
+      companyId,
+      ownerUid: director.uid,
+      title: 'Documento con URL pública',
+      status: 'active',
+      fileSize: 100,
+      storagePath: `companies/${companyId}/documents/doc-with-download-url/file.pdf`,
+      downloadURL: 'https://storage.googleapis.com/bucket/file.pdf',
+    }, director), 'document create with downloadURL');
+
+    await assertDenied(firestorePatch('documents/protected-doc', {
+      companyId,
+      ownerUid: owner.uid,
+      title: 'Documento actualizado con publicUrl',
+      status: 'active',
+      fileSize: 100,
+      storagePath: `companies/${companyId}/documents/protected-doc/file.pdf`,
+      publicUrl: 'https://storage.googleapis.com/bucket/file.pdf',
+    }, director), 'document update with publicUrl');
+  });
+
   it('does not allow legacy email-only users to access protected data without a consolidated UID membership', async () => {
     await assertAllowed(
       firestoreGet(`companyMembers/${companyId}_legacy_email_only`, legacyEmailUser),
