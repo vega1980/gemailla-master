@@ -28,7 +28,7 @@ export function CompanyProvider({ children }) {
     try {
       const userUid = user?.uid || user?.id;
       const byUid = userUid
-        ? await firebase.entities.CompanyMember.filter({ userUid, status: 'active' })
+        ? await firebase.entities.CompanyMember.filter({ userUid, status: 'active' }).catch(() => [])
         : [];
       const byEmail = user.email
         ? await firebase.entities.CompanyMember.filter({ userEmail: user.email, status: 'active' }).catch(() => [])

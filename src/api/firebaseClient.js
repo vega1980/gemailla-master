@@ -128,6 +128,11 @@ function getCurrentUser() {
   return auth.currentUser || null;
 }
 
+function getCurrentUserUid() {
+  const user = getCurrentUser();
+  return user?.uid || user?.id || null;
+}
+
 function sanitizeFileName(name = 'archivo') {
   return String(name)
     .normalize('NFD')
@@ -169,7 +174,7 @@ function normalizeFilters(filters = {}) {
 
 function withAuditFields(data = {}, mode = 'create') {
   const user = getCurrentUser();
-  const userUid = user?.uid || user?.id;
+  const userUid = getCurrentUserUid();
   const timestamp = nowIso();
   const payload = normalizeData(data);
 
@@ -339,11 +344,10 @@ const connectors = {
 
 const agents = {
   createConversation: async ({ metadata = {}, agent_name: agentName = 'assistant' } = {}) => {
-    const user = getCurrentUser();
     const payload = withAuditFields({
       agentName,
       metadata,
-      ownerUid: user?.uid || null,
+      ownerUid: getCurrentUserUid(),
       messages: [],
       status: 'active',
     });
@@ -424,7 +428,7 @@ function createRepository(entityName, collectionName) {
 
   async function create(data = {}) {
     const user = getCurrentUser();
-    const userUid = user?.uid || user?.id;
+    const userUid = getCurrentUserUid();
     const normalized = normalizeData(data);
     const payload = {
       ...normalized,
@@ -471,13 +475,13 @@ function createRepository(entityName, collectionName) {
     if (!Array.isArray(items) || items.length === 0) return [];
     const batch = writeBatch(db);
     const created = [];
-    const user = getCurrentUser();
+    const userUid = getCurrentUserUid();
 
     items.forEach((item) => {
       const refDoc = doc(col());
       const payload = {
         ...normalizeData(item),
-        ownerUid: item.ownerUid || user?.uid || null,
+        ownerUid: item.ownerUid || userUid,
         createdAt: item.createdAt || nowIso(),
         updatedAt: nowIso(),
         status: item.status || 'active',
@@ -500,11 +504,11 @@ function createRepository(entityName, collectionName) {
   }
 
   async function softDelete(id) {
-    const user = getCurrentUser();
+    const userUid = getCurrentUserUid();
     const payload = {
       status: 'archived',
       deletedAt: nowIso(),
-      deletedBy: user?.uid || null,
+      deletedBy: userUid,
       updatedAt: nowIso(),
     };
     await updateDoc(doc(db, collectionName, id), payload);
@@ -547,7 +551,7 @@ export const firebase = {
     me: async () => {
       const user = getCurrentUser();
       if (!user) return null;
-      const userUid = user?.uid || user?.id;
+      const userUid = getCurrentUserUid();
       return {
         id: userUid,
         uid: userUid,

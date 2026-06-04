@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { firebase } from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
-import { useSubscription } from '@/lib/subscriptionContext';
+import { PLAN_CONFIG, useSubscription } from '@/lib/subscriptionContext';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +16,7 @@ const plans = [
   {
     id: 'basic',
     name: 'Basic',
-    price: { monthly: 0, annual: 0 },
+    price: { monthly: PLAN_CONFIG.basic.monthlyPrice, annual: PLAN_CONFIG.basic.annualPrice },
     icon: Zap,
     color: 'border-border',
     badge: null,
@@ -34,7 +34,7 @@ const plans = [
   {
     id: 'pro',
     name: 'Pro',
-    price: { monthly: 499, annual: 4990 },
+    price: { monthly: PLAN_CONFIG.pro.monthlyPrice, annual: PLAN_CONFIG.pro.annualPrice },
     icon: Sparkles,
     color: 'border-violet-500',
     badge: 'Más popular',
@@ -52,7 +52,7 @@ const plans = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: { monthly: 1299, annual: 12990 },
+    price: { monthly: PLAN_CONFIG.enterprise.monthlyPrice, annual: PLAN_CONFIG.enterprise.annualPrice },
     icon: Crown,
     color: 'border-amber-500',
     badge: 'Todo incluido',
@@ -74,16 +74,37 @@ export default function Subscriptions() {
   const { subscription, plan: currentPlan, reload } = useSubscription();
   const [billing, setBilling] = useState('monthly');
   const [loading, setLoading] = useState(null);
+  const userUid = user?.uid || user?.id;
 
   const handleDeleteAccount = async () => {
-    if (subscription?.id) {
-      await firebase.entities.Subscription.update(subscription.id, { status: 'cancelled' });
-    }
+    const [subsByUid, subsByEmail] = await Promise.all([
+      userUid
+        ? firebase.entities.Subscription.filter({ userUid, status: 'active' }).catch(() => [])
+        : [],
+      user?.email
+        ? firebase.entities.Subscription.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
+        : [],
+    ]);
+    const subsById = new Map();
+    [...subsByUid, ...subsByEmail, subscription].forEach((sub) => {
+      if (sub?.id) subsById.set(sub.id, sub);
+    });
+
+    await Promise.all(
+      Array.from(subsById.values()).map((sub) =>
+        firebase.entities.Subscription.update(sub.id, {
+          userUid: sub.userUid || userUid || null,
+          userEmail: sub.userEmail || user?.email || '',
+          status: 'cancelled',
+        }),
+      ),
+    );
     await firebase.auth.logout();
   };
 
   const handleSelect = async (planId) => {
     if (planId === currentPlan) return;
+    if (!userUid) throw new Error('Usuario sin UID válido.');
     setLoading(planId);
     const today = new Date();
     const endDate = new Date(today);
@@ -91,6 +112,8 @@ export default function Subscriptions() {
 
     if (subscription?.id) {
       await firebase.entities.Subscription.update(subscription.id, {
+        userUid,
+        userEmail: user.email,
         plan: planId,
         billingCycle: billing,
         startDate: format(today, 'yyyy-MM-dd'),
@@ -99,6 +122,7 @@ export default function Subscriptions() {
       });
     } else {
       await firebase.entities.Subscription.create({
+        userUid,
         userEmail: user.email,
         plan: planId,
         billingCycle: billing,
