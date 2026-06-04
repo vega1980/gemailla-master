@@ -16,7 +16,7 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { ref, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 const ENTITY_COLLECTIONS = Object.freeze({
   User: 'users',
@@ -157,6 +157,7 @@ function normalizeData(input = {}) {
   delete output.fileUrl;
   delete output.downloadUrl;
   delete output.downloadURL;
+  delete output.file_url;
   delete output.publicUrl;
 
   return output;
@@ -289,6 +290,16 @@ async function uploadFile({ file, companyId, documentId, folder = 'documents' } 
     contentType,
     fileSize: file.size,
   };
+}
+
+async function getDocumentAccessUrl(storagePath) {
+  const safeStoragePath = String(storagePath || '').trim();
+  if (!safeStoragePath) {
+    throw new Error('No se puede abrir el documento sin storagePath.');
+  }
+
+  const fileRef = ref(storage, safeStoragePath);
+  return getDownloadURL(fileRef);
 }
 
 async function invokeFunction(name, payload = {}) {
@@ -521,6 +532,7 @@ export const firebase = {
     Core: {
       InvokeLLM: invokeLLM,
       UploadFile: uploadFile,
+      GetDocumentAccessUrl: getDocumentAccessUrl,
       ExtractDataFromUploadedFile: extractDataFromUploadedFile,
     },
   },

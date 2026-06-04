@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { DOCUMENT_STATUSES, firebase, isAiDisabledResponse, storage } from '@/api/firebaseClient';
+import { DOCUMENT_STATUSES, firebase, isAiDisabledResponse } from '@/api/firebaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -150,8 +149,7 @@ export default function Documents() {
     }
 
     try {
-      const fileRef = storageRef(storage, doc.storagePath);
-      const accessUrl = await getDownloadURL(fileRef);
+      const accessUrl = await firebase.integrations.Core.GetDocumentAccessUrl(doc.storagePath);
       window.open(accessUrl, '_blank', 'noopener,noreferrer');
     } catch (error) {
       toast({

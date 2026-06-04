@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { firebase } from '@/api/firebaseClient';
+import { firebase, isAiDisabledResponse } from '@/api/firebaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -22,6 +22,35 @@ const suggestedQueries = [
   '¿Cuáles son mis principales proveedores?',
 ];
 
+const getErrorMessage = (error, fallback) => {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+};
+
+const normalizeAIResponse = (response) => {
+  if (typeof response === 'string') return response;
+  if (isAiDisabledResponse(response)) {
+    return response?.message || response?.summary || response?.response || 'IA no configurada: configura un backend seguro para usar el asistente.';
+  }
+  return response?.response || response?.message || response?.summary || 'No se recibió una respuesta válida de la IA.';
+};
+
+let pendingConversationSequence = 0;
+
+const createPendingConversationId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const values = crypto.getRandomValues(new Uint32Array(4));
+    return `pending-${Array.from(values, value => value.toString(16).padStart(8, '0')).join('')}`;
+  }
+
+  pendingConversationSequence += 1;
+  return `pending-seq-${pendingConversationSequence}`;
+};
+
 export default function AIAssistant() {
   const { activeCompany } = useCompany();
   const { user } = useAuth();
@@ -30,6 +59,9 @@ export default function AIAssistant() {
   const [loading, setLoading] = useState(false);
   const [conversations, setConversations] = useState([]);
   const chatEndRef = useRef(null);
+  const loadingRef = useRef(false);
+  const isMountedRef = useRef(false);
+  const hasHydratedSavedConversationsRef = useRef(false);
 
   const { data: documents = [] } = useQuery({
     queryKey: ['documents', activeCompany?.id],
@@ -50,10 +82,35 @@ export default function AIAssistant() {
   });
 
   useEffect(() => {
-    if (savedConvos.length > 0 && conversations.length === 0) {
-      setConversations(savedConvos.map(c => ({ query: c.query, response: c.response, docs: c.context_documents })));
-    }
-  }, [savedConvos]);
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      loadingRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    hasHydratedSavedConversationsRef.current = false;
+    setConversations([]);
+  }, [activeCompany?.id]);
+
+  useEffect(() => {
+    if (!activeCompany?.id || hasHydratedSavedConversationsRef.current) return;
+
+    const companySavedConvos = savedConvos.filter(c => c.companyId === activeCompany.id);
+    if (companySavedConvos.length === 0) return;
+
+    hasHydratedSavedConversationsRef.current = true;
+    if (!isMountedRef.current) return;
+
+    setConversations(companySavedConvos.map(c => ({
+      id: c.id,
+      query: c.query,
+      response: c.response,
+      docs: c.context_documents,
+    })));
+  }, [activeCompany?.id, savedConvos]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,31 +118,60 @@ export default function AIAssistant() {
 
   const handleSubmit = async (q) => {
     const userQuery = q || query;
-    if (!userQuery.trim()) return;
+    if (!userQuery.trim() || loadingRef.current) return;
+
+    loadingRef.current = true;
     setQuery('');
     setLoading(true);
-
-    const newConvo = { query: userQuery, response: null, docs: [] };
-    setConversations(prev => [...prev, newConvo]);
 
     // Build context from documents and transactions
     const relevantDocs = documents
       .filter(d => d.status === 'analyzed')
       .filter(d => filterDocType === 'all' || d.docType === filterDocType)
       .slice(0, 15);
+    const docIds = relevantDocs.map(d => d.id);
+    const pendingId = createPendingConversationId();
+    const pendingConvo = { id: pendingId, query: userQuery, response: null, docs: docIds };
+    if (isMountedRef.current) {
+      setConversations(prev => [...prev, pendingConvo]);
+    }
 
-    const docContext = relevantDocs.map(d =>
-      `[${d.docType || 'doc'}] ${d.title} | Total: $${d.total || 0} | Fecha: ${d.docDate || 'N/A'} | RFC: ${d.rfc_emisor || 'N/A'} | Resumen: ${d.ai_summary || 'Sin resumen'}`
-    ).join('\n');
+    const updateConversation = (response) => {
+      if (!isMountedRef.current) return;
 
-    const txSummary = {
-      total_ingresos: transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0),
-      total_gastos: transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0),
-      num_transactions: transactions.length,
+      setConversations(prev => prev.map(convo => (
+        convo.id === pendingId
+          ? { ...convo, response }
+          : convo
+      )));
     };
 
-    const response = await firebase.integrations.Core.InvokeLLM({
-      prompt: `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
+    const saveConversation = async ({ response, status = 'completed', errorMessage = null }) => {
+      await firebase.entities.AIConversation.create({
+        companyId: activeCompany.id,
+        userEmail: user?.email || '',
+        query: userQuery,
+        response,
+        context_documents: docIds,
+        filters_used: { docType: filterDocType },
+        status,
+        errorMessage,
+      });
+    };
+
+    try {
+      const docContext = relevantDocs.map(d =>
+        `[${d.docType || 'doc'}] ${d.title} | Total: $${d.total || 0} | Fecha: ${d.docDate || 'N/A'} | RFC: ${d.rfc_emisor || 'N/A'} | Resumen: ${d.ai_summary || 'Sin resumen'}`
+      ).join('\n');
+
+      const txSummary = {
+        total_ingresos: transactions.filter(t => t.type === 'ingreso').reduce((sum, t) => sum + (t.amount || 0), 0),
+        total_gastos: transactions.filter(t => t.type === 'gasto').reduce((sum, t) => sum + (t.amount || 0), 0),
+        num_transactions: transactions.length,
+      };
+
+      const aiResponse = await firebase.integrations.Core.InvokeLLM({
+        prompt: `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
 
 Empresa: ${activeCompany.name}
 RFC: ${activeCompany.rfc || 'N/A'}
@@ -103,32 +189,47 @@ PREGUNTA DEL USUARIO:
 ${userQuery}
 
 Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`
-    });
+      });
+      const response = normalizeAIResponse(aiResponse);
+      updateConversation(response);
 
-    const updated = { query: userQuery, response, docs: relevantDocs.map(d => d.id) };
-    setConversations(prev => [...prev.slice(0, -1), updated]);
-    setLoading(false);
+      await saveConversation({ response });
 
-    await firebase.entities.AIConversation.create({
-      companyId: activeCompany.id,
-      userEmail: user.email,
-      query: userQuery,
-      response,
-      context_documents: updated.docs,
-      filters_used: { docType: filterDocType }
-    });
+      await logAction({
+        companyId: activeCompany.id, userEmail: user?.email, userName: user?.fullName,
+        action: 'ai_query', entityType: 'AIConversation', details: userQuery
+      });
+    } catch (error) {
+      const errorMessage = getErrorMessage(error, 'Verifica la configuración del backend seguro y vuelve a intentar.');
+      const response = `No se pudo completar la consulta de IA. ${errorMessage}`;
+      updateConversation(response);
 
-    await logAction({
-      companyId: activeCompany.id, userEmail: user.email, userName: user.fullName,
-      action: 'ai_query', entityType: 'AIConversation', details: userQuery
-    });
+      try {
+        await saveConversation({ response, status: 'error', errorMessage });
+        await logAction({
+          companyId: activeCompany.id,
+          userEmail: user?.email,
+          userName: user?.fullName,
+          action: 'ai_query_error',
+          entityType: 'AIConversation',
+          details: `${userQuery} — ${errorMessage}`,
+        });
+      } catch (persistenceError) {
+        console.error('Error persisting failed AI conversation:', persistenceError);
+      }
+    } finally {
+      loadingRef.current = false;
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    }
   };
 
-  const { canAccessAIAssistant, loading: subLoading } = useSubscription();
+  const { canAccessAI, loading: subLoading } = useSubscription();
 
   if (!activeCompany) return <EmptyState icon={Brain} title="Selecciona una empresa" description="Necesitas una empresa activa." />;
 
-  if (!subLoading && !canAccessAIAssistant) {
+  if (!subLoading && !canAccessAI) {
     return (
       <div className="animate-fade-in">
         <PageHeader title="IA Asistente" description="Consulta inteligente sobre tus documentos y finanzas." />
@@ -183,7 +284,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
 
         <AnimatePresence>
           {conversations.map((c, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <motion.div key={c.id || i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
               {/* User message */}
               <div className="flex justify-end mb-3">
                 <div className="max-w-[80%] p-3 rounded-xl bg-primary text-primary-foreground text-sm">
