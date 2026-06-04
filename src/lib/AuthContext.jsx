@@ -37,10 +37,6 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  const navigateToLogin = useCallback(() => {
-    window.location.href = '/';
-  }, []);
-
   const logout = useCallback(async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
@@ -48,17 +44,15 @@ export const AuthProvider = ({ children }) => {
     if (shouldRedirect) {
       navigateToLogin();
     }
-  }, [navigateToLogin]);
+  }, []);
 
   const value = useMemo(() => ({
     user,
     isAuthenticated,
     isLoadingAuth,
-    isLoadingPublicSettings: false,
     authError,
-    navigateToLogin,
     logout,
-  }), [authError, isAuthenticated, isLoadingAuth, logout, navigateToLogin, user]);
+  }), [authError, isAuthenticated, isLoadingAuth, logout, user]);
 
   return (
     <AuthContext.Provider value={value}>
