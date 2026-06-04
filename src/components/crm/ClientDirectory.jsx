@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Users, Search, Pencil, Trash2, Loader2, Sparkles, Phone, Mail, Building2, TrendingUp } from 'lucide-react';
+import { Plus, Users, Search, Pencil, Trash2, Loader2, Sparkles, Phone, Mail, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 

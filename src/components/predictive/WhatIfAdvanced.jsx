@@ -5,7 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { Sparkles, Loader2, FlaskConical, RefreshCw, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, ReferenceLine
+  Legend, ResponsiveContainer
 } from 'recharts';
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';

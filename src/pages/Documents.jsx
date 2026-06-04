@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { DOCUMENT_STATUSES, firebase, isAiDisabledResponse } from '@/api/firebaseClient';
+import { DOCUMENT_STATUSES, firebase, isAiDisabledResponse, storage } from '@/api/firebaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getDownloadURL, ref as storageRef } from 'firebase/storage';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -138,11 +139,38 @@ export default function Documents() {
     }
   };
 
+  const handleOpenDocument = async (doc) => {
+    if (!doc?.storagePath) {
+      toast({
+        title: 'Documento sin archivo',
+        description: 'No se encontró la ruta segura del archivo en Storage.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const fileRef = storageRef(storage, doc.storagePath);
+      const accessUrl = await getDownloadURL(fileRef);
+      window.open(accessUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      toast({
+        title: 'No se pudo abrir el documento',
+        description: getErrorMessage(error, 'Verifica tus permisos de Firebase Storage y vuelve a intentar.'),
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleAnalyze = async (doc) => {
     setAnalyzing(doc.id);
 
     try {
-      await firebase.entities.Document.update(doc.id, { status: DOCUMENT_STATUSES.PROCESSING });
+      await firebase.entities.Document.update(doc.id, {
+        status: DOCUMENT_STATUSES.PROCESSING,
+        aiDisabled: false,
+        errorMessage: null,
+      });
       queryClient.invalidateQueries({ queryKey: ['documents'] });
 
       const result = await firebase.integrations.Core.InvokeLLM({
@@ -196,6 +224,8 @@ export default function Documents() {
       await firebase.entities.Document.update(doc.id, {
         ...result,
         status: DOCUMENT_STATUSES.ANALYZED,
+        aiDisabled: false,
+        errorMessage: null,
       });
 
       await logAction({
@@ -386,9 +416,15 @@ export default function Documents() {
                 </div>
               )}
               {selectedDoc.storagePath && (
-                <a href={selectedDoc.storagePath} target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-primary hover:underline">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleOpenDocument(selectedDoc)}
+                  className="border-primary/30 text-primary hover:bg-primary/10"
+                >
                   Ver archivo original →
-                </a>
+                </Button>
               )}
             </div>
           )}

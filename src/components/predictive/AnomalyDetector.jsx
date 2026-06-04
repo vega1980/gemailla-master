@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Sparkles, Loader2, CheckCircle, Info } from 'lucide-react';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 const severityConfig = {
   alta: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', icon: AlertTriangle, dot: '#ef4444' },

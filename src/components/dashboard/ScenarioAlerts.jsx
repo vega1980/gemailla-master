@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { AlertTriangle, AlertCircle, TrendingDown, XCircle } from 'lucide-react';
+import { AlertTriangle, AlertCircle, XCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const EXPENSE_RATIO_THRESHOLD = 85; // % of income that triggers a warning

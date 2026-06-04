@@ -10,8 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Users, Search, Pencil, Trash2, Loader2, Phone, Mail, Calendar, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, differenceInMonths } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { differenceInMonths } from 'date-fns';
 
 const statusConfig = {
   activo:     { label: 'Activo',     color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },

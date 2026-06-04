@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Sparkles, Loader2, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import {
-  ComposedChart, Bar, Line, AreaChart, Area, XAxis, YAxis,
+import { Sparkles, Loader2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import ReactMarkdown from 'react-markdown';

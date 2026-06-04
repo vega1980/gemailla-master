@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Users, Loader2, Sparkles, TrendingDown, UserCheck, UserX } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 

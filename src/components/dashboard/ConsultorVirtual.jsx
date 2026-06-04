@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, X, Send, Bot, Minimize2, Maximize2, Loader2, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, Minimize2, Maximize2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 

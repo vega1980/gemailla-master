@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, ReferenceLine, Cell
+  ResponsiveContainer, ReferenceLine, Cell
 } from 'recharts';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';

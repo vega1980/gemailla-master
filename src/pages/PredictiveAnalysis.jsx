@@ -1,16 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useCompany } from '@/lib/companyContext';
 import { useQuery } from '@tanstack/react-query';
 import { firebase } from '@/api/firebaseClient';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
-import PlanGate from '@/components/subscription/PlanGate';
 import PredictionGate from '@/components/subscription/PredictionGate';
 import DemandForecast from '@/components/predictive/DemandForecast';
 import AnomalyDetector from '@/components/predictive/AnomalyDetector';
 import ChurnPredictor from '@/components/predictive/ChurnPredictor';
 import WhatIfAdvanced from '@/components/predictive/WhatIfAdvanced';
-import { Brain, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format, subMonths, startOfMonth } from 'date-fns';
 

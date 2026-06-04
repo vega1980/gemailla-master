@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
   Menu, Brain, LayoutDashboard, FileText, ArrowUpDown, Shield,
-  Building2, Activity, X, Crown, FlaskConical, BarChart3, Users, Rocket, Handshake, UserCog, ChevronLeft
+  Building2, Activity, Crown, FlaskConical, BarChart3, Users, Rocket, Handshake, UserCog, ChevronLeft
 } from 'lucide-react';
 
 const navItems = [

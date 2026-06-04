@@ -3,8 +3,7 @@ import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, TrendingDown, Loader2, Sparkles, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import { format, subMonths, startOfMonth } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 

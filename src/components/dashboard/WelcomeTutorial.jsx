@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, ChevronLeft, LayoutDashboard, FileText, ArrowUpDown, Shield, Brain, Building2, FlaskConical, BarChart3, Users, Rocket, Handshake, UserCog, Activity, Crown, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 
 const tutorialSteps = [
   {

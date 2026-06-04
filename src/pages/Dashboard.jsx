@@ -3,7 +3,7 @@ import { firebase } from '@/api/firebaseClient';
 import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/lib/companyContext';
 import { Link } from 'react-router-dom';
-import { Building2, Search, Bell, HelpCircle, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, Zap, FileText, Calculator, Shield, TrendingUp, Users, Briefcase, FolderOpen, PieChart as PieChartIcon } from 'lucide-react';
+import { Building2, Search, Bell, HelpCircle, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, Zap, FileText, Calculator, Shield, TrendingUp, Users, Briefcase, PieChart as PieChartIcon } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 export default function Dashboard() {

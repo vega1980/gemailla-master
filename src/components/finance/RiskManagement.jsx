@@ -3,7 +3,6 @@ import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShieldAlert, Loader2, Brain, AlertTriangle, CheckCircle2, TrendingDown, Scale, RefreshCw } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 
 const RISK_COLORS = {
   alto: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', badge: 'bg-red-500/20 text-red-400 border-red-500/30' },

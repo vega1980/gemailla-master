@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Bell, Mail, MessageCircle, Send, Loader2, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Bell, Mail, MessageCircle, Send, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function AlertNotifications({ alerts = [], company }) {

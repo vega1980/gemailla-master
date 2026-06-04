@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, ChevronDown, ChevronUp, RefreshCw, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { format, subWeeks, startOfWeek } from 'date-fns';
+import { format, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const CACHE_KEY = 'gemailla_weekly_insight';

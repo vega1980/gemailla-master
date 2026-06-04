@@ -1,9 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Download, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Download, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 

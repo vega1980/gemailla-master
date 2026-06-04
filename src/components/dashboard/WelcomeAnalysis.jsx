@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Sparkles, X, TrendingUp, AlertTriangle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
-import { format, startOfMonth, subMonths } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const LOCAL_KEY = 'gemailla_welcome_dismissed';

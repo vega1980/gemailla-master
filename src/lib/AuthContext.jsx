@@ -1,5 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import firebase, { auth } from '@/api/firebaseClient';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { auth } from '@/api/firebaseClient';
 import { onAuthStateChanged } from 'firebase/auth';
 
 const AuthContext = createContext();
@@ -12,6 +12,8 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setAuthError(null);
+
       if (currentUser) {
         setUser({
           id: currentUser.uid,
@@ -25,28 +27,41 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(false);
       }
       setIsLoadingAuth(false);
+    }, (error) => {
+      setUser(null);
+      setIsAuthenticated(false);
+      setAuthError({ type: 'auth_error', message: error?.message || 'No se pudo validar la sesión.' });
+      setIsLoadingAuth(false);
     });
 
     return unsubscribe;
   }, []);
 
-  const logout = async (shouldRedirect = true) => {
+  const navigateToLogin = useCallback(() => {
+    window.location.href = '/';
+  }, []);
+
+  const logout = useCallback(async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
     await auth.signOut();
     if (shouldRedirect) {
-      window.location.href = '/';
+      navigateToLogin();
     }
-  };
+  }, [navigateToLogin]);
+
+  const value = useMemo(() => ({
+    user,
+    isAuthenticated,
+    isLoadingAuth,
+    isLoadingPublicSettings: false,
+    authError,
+    navigateToLogin,
+    logout,
+  }), [authError, isAuthenticated, isLoadingAuth, logout, navigateToLogin, user]);
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoadingAuth,
-      authError,
-      logout,
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

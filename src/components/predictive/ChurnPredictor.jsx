@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
-import { UserX, Sparkles, Loader2, AlertTriangle, Shield, User } from 'lucide-react';
+import { UserX, Sparkles, Loader2, Shield, User } from 'lucide-react';
 
 const riskConfig = {
   alto: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', bar: 'bg-red-500', label: 'RIESGO ALTO' },

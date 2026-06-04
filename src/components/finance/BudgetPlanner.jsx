@@ -22,7 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import CashFlowVsBudgetChart from './CashFlowVsBudgetChart';
 import { Wallet, Plus, Trash2, Loader2, Brain, AlertTriangle, TrendingUp, Target, RefreshCw } from 'lucide-react';
-import { format, subMonths, startOfMonth, addMonths } from 'date-fns';
+import { format, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 const CATEGORY_LABELS = {
