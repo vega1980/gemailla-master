@@ -144,6 +144,14 @@ service cloud.firestore {
         );
     }
 
+    function hasNoDocumentPublicUrls(data) {
+      return !hasField(data, 'fileUrl')
+        && !hasField(data, 'file_url')
+        && !hasField(data, 'downloadUrl')
+        && !hasField(data, 'downloadURL')
+        && !hasField(data, 'publicUrl');
+    }
+
     match /users/{userId} {
       allow read, create, update: if signedIn() && userId == currentUid();
       allow delete: if false;
@@ -194,14 +202,10 @@ service cloud.firestore {
         && request.resource.data.fileSize is number
         && request.resource.data.fileSize <= 15 * 1024 * 1024
         && request.resource.data.storagePath is string
-        && !hasField(request.resource.data, 'fileUrl')
-        && !hasField(request.resource.data, 'file_url')
-        && !hasField(request.resource.data, 'downloadUrl');
+        && hasNoDocumentPublicUrls(request.resource.data);
       allow read: if canReadCompanyRecord();
       allow update: if canUpdateCompanyRecord()
-        && !hasField(request.resource.data, 'fileUrl')
-        && !hasField(request.resource.data, 'file_url')
-        && !hasField(request.resource.data, 'downloadUrl');
+        && hasNoDocumentPublicUrls(request.resource.data);
       allow delete: if false;
     }
 

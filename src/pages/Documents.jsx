@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { logAction } from '@/lib/auditLogger';
+import { queryKeys } from '@/lib/queryKeys';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -63,13 +64,13 @@ export default function Documents() {
   const [analyzing, setAnalyzing] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
 
+  const documentsQueryKey = queryKeys.documents(activeCompany?.id);
+
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', activeCompany?.id],
+    queryKey: documentsQueryKey,
     queryFn: () => firebase.entities.Document.filter({ companyId: activeCompany.id }, '-createdAt'),
     enabled: !!activeCompany,
   });
-
-  const documentsQueryKey = ['documents', activeCompany?.id];
 
   const invalidateDocuments = () => queryClient.invalidateQueries({ queryKey: documentsQueryKey });
 
