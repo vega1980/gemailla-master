@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     await auth.signOut();
     if (shouldRedirect) {
-      window.location.href = '/';
+      navigateToLogin();
     }
   }, []);
 
