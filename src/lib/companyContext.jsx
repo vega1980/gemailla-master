@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -11,7 +11,7 @@ export function CompanyProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [memberships, setMemberships] = useState([]);
 
-  useEffect(() => {
+  const loadCompanies = useCallback(async () => {
     if (!user) {
       setCompanies([]);
       setActiveCompany(null);
@@ -20,19 +20,17 @@ export function CompanyProvider({ children }) {
       return;
     }
 
-    loadCompanies();
-  }, [user]);
-
-  const loadCompanies = async () => {
     setLoading(true);
     try {
       const userUid = user?.uid || user?.id;
-      const byUid = userUid
-        ? await firebase.entities.CompanyMember.filter({ userUid, status: 'active' }).catch(() => [])
-        : [];
-      const byEmail = user.email
-        ? await firebase.entities.CompanyMember.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
-        : [];
+      const [byUid, byEmail] = await Promise.all([
+        userUid
+          ? firebase.entities.CompanyMember.filter({ userUid, status: 'active' }).catch(() => [])
+          : [],
+        user.email
+          ? firebase.entities.CompanyMember.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
+          : [],
+      ]);
 
       const membersById = new Map();
       [...byUid, ...byEmail].forEach((member) => {
@@ -60,25 +58,36 @@ export function CompanyProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const switchCompany = (company) => {
+  useEffect(() => {
+    loadCompanies();
+  }, [loadCompanies]);
+
+  const switchCompany = useCallback((company) => {
     setActiveCompany(company);
     localStorage.setItem('gemailla_active_company', company.id);
-  };
+  }, []);
 
-  const getUserRole = () => {
+  const getUserRole = useCallback(() => {
     if (!activeCompany || !user) return null;
     const userUid = user?.uid || user?.id;
     const membership = memberships.find((member) => member.companyId === activeCompany.id);
     return membership?.role || (activeCompany.ownerUid === userUid ? 'director' : null);
-  };
+  }, [activeCompany, memberships, user]);
+
+  const value = useMemo(() => ({
+    companies,
+    activeCompany,
+    switchCompany,
+    loading,
+    memberships,
+    getUserRole,
+    reloadCompanies: loadCompanies,
+  }), [activeCompany, companies, getUserRole, loadCompanies, loading, memberships, switchCompany]);
 
   return (
-    <CompanyContext.Provider value={{
-      companies, activeCompany, switchCompany, loading,
-      memberships, getUserRole, reloadCompanies: loadCompanies
-    }}>
+    <CompanyContext.Provider value={value}>
       {children}
     </CompanyContext.Provider>
   );

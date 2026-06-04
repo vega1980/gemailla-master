@@ -143,6 +143,18 @@ function sanitizeFileName(name = 'archivo') {
     .slice(0, 160) || 'archivo';
 }
 
+function sanitizePathSegment(value, fallback) {
+  return sanitizeFileName(value).replace(/\.+/g, '.').replace(/^\.+|\.+$/g, '') || fallback;
+}
+
+function isArchivedRecord(record) {
+  return record?.status === DOCUMENT_STATUSES.ARCHIVED || record?.status === 'archived';
+}
+
+function keepVisibleRecords(records, includeArchived = false) {
+  return includeArchived ? records : records.filter((item) => !isArchivedRecord(item));
+}
+
 function normalizeKey(key) {
   return LEGACY_FIELD_MAP[key] || key;
 }
@@ -278,13 +290,16 @@ async function uploadFile({ file, companyId, documentId, folder = 'documents' } 
   }
 
   const safeName = sanitizeFileName(file.name);
-  const safeCompanyId = String(companyId || '').trim();
+  const safeCompanyId = sanitizePathSegment(String(companyId || '').trim(), '');
   if (!safeCompanyId) {
     throw new Error('No se puede subir el archivo sin una empresa activa. Falta companyId.');
   }
 
   const safeFolder = folder === 'documents' ? 'documents' : 'documents';
-  const safeDocumentId = documentId || `pending-${Date.now()}`;
+  const safeDocumentId = sanitizePathSegment(documentId || '', '');
+  if (!safeDocumentId) {
+    throw new Error('No se puede subir el archivo sin un ID de documento preasignado.');
+  }
   const storagePath = `companies/${safeCompanyId}/${safeFolder}/${safeDocumentId}/${safeName}`;
   const storageRef = ref(storage, storagePath);
 
@@ -302,6 +317,11 @@ async function getDocumentAccessUrl(storagePath) {
   const safeStoragePath = String(storagePath || '').trim();
   if (!safeStoragePath) {
     throw new Error('No se puede abrir el documento sin storagePath.');
+  }
+
+  const allowedDocumentPath = /^companies\/[^/]+\/documents\/[^/]+\/.+$/;
+  if (!allowedDocumentPath.test(safeStoragePath) || /^https?:\/\//i.test(safeStoragePath)) {
+    throw new Error('Ruta de documento inválida. Usa storagePath interno, no URLs públicas.');
   }
 
   const fileRef = ref(storage, safeStoragePath);
@@ -389,13 +409,17 @@ const agents = {
 function createRepository(entityName, collectionName) {
   const col = () => collection(db, collectionName);
 
-  async function list() {
-    const snapshot = await getDocs(col());
-    const records = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-    return entityName === 'User' ? records : records.filter((item) => item.status !== 'archived');
+  function newId() {
+    return doc(col()).id;
   }
 
-  async function filter(filters = {}, orderByField = null, limitCount = null) {
+  async function list(options = {}) {
+    const snapshot = await getDocs(col());
+    const records = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+    return entityName === 'User' ? records : keepVisibleRecords(records, options.includeArchived);
+  }
+
+  async function filter(filters = {}, orderByField = null, limitCount = null, options = {}) {
     const normalizedFilters = normalizeFilters(filters);
     const constraints = [];
 
@@ -418,12 +442,17 @@ function createRepository(entityName, collectionName) {
     const records = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
     return ('status' in normalizedFilters) || entityName === 'User'
       ? records
-      : records.filter((item) => item.status !== 'archived');
+      : keepVisibleRecords(records, options.includeArchived);
   }
 
-  async function get(id) {
+  async function getRaw(id) {
     const snap = await getDoc(doc(db, collectionName, id));
     return serializeDocument(snap);
+  }
+
+  async function get(id, options = {}) {
+    const record = await getRaw(id);
+    return options.includeArchived || !isArchivedRecord(record) ? record : null;
   }
 
   async function create(data = {}) {
@@ -469,6 +498,24 @@ function createRepository(entityName, collectionName) {
 
     const refDoc = await addDoc(col(), payload);
     return { id: refDoc.id, ...payload };
+  }
+
+  async function createWithId(id, data = {}) {
+    const safeId = String(id || '').trim();
+    if (!safeId) throw new Error('No se puede crear el registro sin ID.');
+
+    const userUid = getCurrentUserUid();
+    const normalized = normalizeData(data);
+    const payload = {
+      ...normalized,
+      ownerUid: normalized.ownerUid || userUid || null,
+      createdAt: normalized.createdAt || nowIso(),
+      updatedAt: nowIso(),
+      status: normalized.status || 'active',
+    };
+
+    await setDoc(doc(db, collectionName, safeId), payload);
+    return { id: safeId, ...payload };
   }
 
   async function bulkCreate(items = []) {
@@ -519,7 +566,10 @@ function createRepository(entityName, collectionName) {
     list,
     filter,
     get,
+    getRaw,
+    newId,
     create,
+    createWithId,
     bulkCreate,
     update,
     softDelete,

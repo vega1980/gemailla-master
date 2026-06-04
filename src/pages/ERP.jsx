@@ -49,6 +49,9 @@ export default function ERP() {
     enabled: !!activeCompany,
   });
 
+  const transactionsQueryKey = ['transactions', activeCompany?.id];
+  const invalidateTransactions = () => queryClient.invalidateQueries({ queryKey: transactionsQueryKey });
+
   const createMutation = useMutation({
     mutationFn: (data) => firebase.entities.Transaction.create(data),
     onSuccess: async (tx) => {
@@ -57,7 +60,7 @@ export default function ERP() {
         action: 'transaction_create', entityType: 'Transaction', entityId: tx.id,
         details: `${formData.type}: $${formData.amount}`
       });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      invalidateTransactions();
       setShowForm(false);
       setFormData({ type: 'ingreso', category: 'ventas', amount: '', description: '', date: format(new Date(), 'yyyy-MM-dd'), paymentMethod: 'transferencia', reference: '', notes: '', expense_type: 'variable', isRecurring: false, dueDate: '', supplier_id: '' });
       toast({ title: 'Transacción registrada' });
@@ -66,7 +69,7 @@ export default function ERP() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => firebase.entities.Transaction.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: invalidateTransactions,
   });
 
   const handleSubmit = (e) => {
@@ -87,7 +90,7 @@ export default function ERP() {
         description="Registro de ingresos y gastos de tu empresa."
         actions={
           <div className="flex gap-2">
-            <ImportTransactions companyId={activeCompany?.id} onSuccess={() => queryClient.invalidateQueries({ queryKey: ['transactions'] })} />
+            <ImportTransactions companyId={activeCompany?.id} onSuccess={invalidateTransactions} />
             <Button onClick={() => setShowForm(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
               <Plus className="w-4 h-4 mr-2" /> Nueva Transacción
             </Button>

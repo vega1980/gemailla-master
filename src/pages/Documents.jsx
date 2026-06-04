@@ -69,9 +69,13 @@ export default function Documents() {
     enabled: !!activeCompany,
   });
 
+  const documentsQueryKey = ['documents', activeCompany?.id];
+
+  const invalidateDocuments = () => queryClient.invalidateQueries({ queryKey: documentsQueryKey });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => firebase.entities.Document.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
+    onSuccess: invalidateDocuments,
     onError: (error) => {
       toast({
         title: 'No se pudo eliminar',
@@ -101,10 +105,15 @@ export default function Documents() {
     setUploading(true);
 
     try {
-      const { storagePath, contentType, fileSize } = await firebase.integrations.Core.UploadFile({ file, companyId: activeCompany.id });
+      const documentId = firebase.entities.Document.newId();
+      const { storagePath, contentType, fileSize } = await firebase.integrations.Core.UploadFile({
+        file,
+        companyId: activeCompany.id,
+        documentId,
+      });
       const fileType = ext === 'xml' ? 'xml' : ext === 'pdf' ? 'pdf' : 'image';
 
-      const doc = await firebase.entities.Document.create({
+      const doc = await firebase.entities.Document.createWithId(documentId, {
         companyId: activeCompany.id,
         title: file.name,
         storagePath,
@@ -124,7 +133,7 @@ export default function Documents() {
         details: file.name,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      invalidateDocuments();
       toast({ title: 'Documento subido', description: 'Ahora puedes analizarlo con IA.' });
     } catch (error) {
       toast({
@@ -169,7 +178,7 @@ export default function Documents() {
         aiDisabled: false,
         errorMessage: null,
       });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      invalidateDocuments();
 
       const result = await firebase.integrations.Core.InvokeLLM({
         prompt: `Analiza este documento fiscal/financiero mexicano. Extrae toda la información posible:
@@ -214,7 +223,7 @@ export default function Documents() {
           errorMessage: message,
         });
 
-        queryClient.invalidateQueries({ queryKey: ['documents'] });
+        invalidateDocuments();
         toast({ title: 'IA no configurada', description: message });
         return;
       }
@@ -236,14 +245,14 @@ export default function Documents() {
         details: `Analizado: ${doc.title}`,
       });
 
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      invalidateDocuments();
       toast({ title: 'Análisis completado', description: 'El documento ha sido procesado con IA.' });
     } catch (error) {
       await firebase.entities.Document.update(doc.id, {
         status: DOCUMENT_STATUSES.ERROR,
         errorMessage: getErrorMessage(error, 'No se pudo analizar el documento.'),
       });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      invalidateDocuments();
       toast({
         title: 'No se pudo analizar',
         description: getErrorMessage(error, 'Verifica VITE_LLM_ENDPOINT y vuelve a intentar.'),
