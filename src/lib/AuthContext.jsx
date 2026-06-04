@@ -15,8 +15,10 @@ export const AuthProvider = ({ children }) => {
       setAuthError(null);
 
       if (currentUser) {
+        const authUid = currentUser?.uid || currentUser?.id;
         setUser({
-          id: currentUser.uid,
+          id: authUid,
+          uid: authUid,
           email: currentUser.email,
           fullName: currentUser.displayName,
           role: 'user',

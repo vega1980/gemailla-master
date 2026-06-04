@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
-import { useSubscription } from '@/lib/subscriptionContext';
+import { PLAN_CONFIG, useSubscription } from '@/lib/subscriptionContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Sparkles, Zap, Loader2, Star, AlertTriangle, XCircle } from 'lucide-react';
@@ -14,7 +14,7 @@ const plans = [
   {
     id: 'basic',
     name: 'Basic',
-    price: { monthly: 0, annual: 0 },
+    price: { monthly: PLAN_CONFIG.basic.monthlyPrice, annual: PLAN_CONFIG.basic.annualPrice },
     icon: Zap,
     color: 'border-border',
     description: 'Todo lo esencial para comenzar.',
@@ -23,7 +23,7 @@ const plans = [
   {
     id: 'pro',
     name: 'Pro',
-    price: { monthly: 499, annual: 4990 },
+    price: { monthly: PLAN_CONFIG.pro.monthlyPrice, annual: PLAN_CONFIG.pro.annualPrice },
     icon: Sparkles,
     color: 'border-violet-500',
     badge: 'Más popular',
@@ -33,7 +33,7 @@ const plans = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: { monthly: 1299, annual: 12990 },
+    price: { monthly: PLAN_CONFIG.enterprise.monthlyPrice, annual: PLAN_CONFIG.enterprise.annualPrice },
     icon: Crown,
     color: 'border-amber-500',
     badge: 'Todo incluido',
@@ -48,9 +48,11 @@ export default function MyPlan() {
   const [billing, setBilling] = useState(subscription?.billingCycle || 'monthly');
   const [loading, setLoading] = useState(null);
   const [showCancel, setShowCancel] = useState(false);
+  const userUid = user?.uid || user?.id;
 
   const handleSelect = async (planId) => {
     if (planId === currentPlan) return;
+    if (!userUid) throw new Error('Usuario sin UID válido.');
     setLoading(planId);
     const today = new Date();
     const endDate = new Date(today);
@@ -58,14 +60,20 @@ export default function MyPlan() {
 
     if (subscription?.id) {
       await firebase.entities.Subscription.update(subscription.id, {
-        plan: planId, billingCycle: billing,
+        userUid,
+        userEmail: user.email,
+        plan: planId,
+        billingCycle: billing,
         startDate: format(today, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
         status: 'active',
       });
     } else {
       await firebase.entities.Subscription.create({
-        userEmail: user.email, plan: planId, billingCycle: billing,
+        userUid,
+        userEmail: user.email,
+        plan: planId,
+        billingCycle: billing,
         startDate: format(today, 'yyyy-MM-dd'),
         endDate: format(endDate, 'yyyy-MM-dd'),
         status: 'active',
@@ -79,7 +87,11 @@ export default function MyPlan() {
   const handleCancel = async () => {
     if (!subscription?.id) return;
     setLoading('cancel');
-    await firebase.entities.Subscription.update(subscription.id, { status: 'cancelled' });
+    await firebase.entities.Subscription.update(subscription.id, {
+      userUid,
+      userEmail: user.email,
+      status: 'cancelled',
+    });
     await reload();
     setLoading(null);
     setShowCancel(false);

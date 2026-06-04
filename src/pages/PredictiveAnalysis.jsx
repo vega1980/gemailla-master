@@ -23,8 +23,8 @@ export default function PredictiveAnalysis() {
   });
 
   const { data: subscriptions = [] } = useQuery({
-    queryKey: ['subscriptions-all'],
-    queryFn: () => firebase.entities.Subscription.filter({}),
+    queryKey: ['subscriptions', activeCompany?.id],
+    queryFn: () => firebase.entities.Subscription.filter({ companyId: activeCompany.id }),
     enabled: !!activeCompany,
   });
 

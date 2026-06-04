@@ -5,9 +5,33 @@ import { useAuth } from '@/lib/AuthContext';
 const SubscriptionContext = createContext(null);
 
 export const PLAN_CONFIG = {
-  basic:      { label: 'Básico',     price: 0,    predictionLimit: 5,  aiAccess: false, color: 'text-muted-foreground', order: 0 },
-  pro:        { label: 'Pro',        price: 799,  predictionLimit: 50, aiAccess: true,  color: 'text-blue-400',         order: 1 },
-  enterprise: { label: 'Enterprise', price: 1999, predictionLimit: Infinity, aiAccess: true, color: 'text-amber-400',  order: 2 },
+  basic: {
+    label: 'Básico',
+    monthlyPrice: 0,
+    annualPrice: 0,
+    predictionLimit: 5,
+    aiAccess: false,
+    color: 'text-muted-foreground',
+    order: 0,
+  },
+  pro: {
+    label: 'Pro',
+    monthlyPrice: 499,
+    annualPrice: 4990,
+    predictionLimit: 50,
+    aiAccess: true,
+    color: 'text-blue-400',
+    order: 1,
+  },
+  enterprise: {
+    label: 'Enterprise',
+    monthlyPrice: 1299,
+    annualPrice: 12990,
+    predictionLimit: Infinity,
+    aiAccess: true,
+    color: 'text-amber-400',
+    order: 2,
+  },
 };
 
 export function SubscriptionProvider({ children }) {
@@ -17,17 +41,31 @@ export function SubscriptionProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.email) { setLoading(false); return; }
+    const userUid = user?.uid || user?.id;
+    if (!userUid && !user?.email) { setLoading(false); return; }
     loadSubscription();
-  }, [user?.email]);
+  }, [user?.uid, user?.id, user?.email]);
 
   const loadSubscription = async () => {
     setLoading(true);
     try {
-      const [subs, logs] = await Promise.all([
-        firebase.entities.Subscription.filter({ userEmail: user.email, status: 'active' }),
-        firebase.entities.PredictionLog.filter({ userEmail: user.email }).catch(() => []),
+      const userUid = user?.uid || user?.id;
+      const [subsByUid, subsByEmail, logs] = await Promise.all([
+        userUid
+          ? firebase.entities.Subscription.filter({ userUid, status: 'active' }).catch(() => [])
+          : [],
+        user?.email
+          ? firebase.entities.Subscription.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
+          : [],
+        user?.email
+          ? firebase.entities.PredictionLog.filter({ userEmail: user.email }).catch(() => [])
+          : [],
       ]);
+      const subsById = new Map();
+      [...subsByUid, ...subsByEmail].forEach((sub) => {
+        if (sub?.id) subsById.set(sub.id, sub);
+      });
+      const subs = Array.from(subsById.values());
       setSubscription(subs[0] || null);
       const thisMonth = new Date().toISOString().slice(0, 7);
       const monthLogs = logs.filter(l => l.fecha_generacion?.startsWith(thisMonth));

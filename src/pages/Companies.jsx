@@ -42,10 +42,13 @@ export default function Companies() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
+      const userUid = user?.uid || user?.id;
+      if (!userUid) throw new Error('Usuario sin UID válido.');
+
       const company = await firebase.entities.Company.create(data);
       await firebase.entities.CompanyMember.create({
         companyId: company.id,
-        userUid: user.uid,
+        userUid,
         userEmail: user.email,
         userName: user.fullName || '',
         role: 'director',
