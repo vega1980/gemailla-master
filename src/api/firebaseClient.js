@@ -92,6 +92,34 @@ const ALLOWED_UPLOAD_TYPES = new Set([
 
 const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
 
+export const DOCUMENT_STATUSES = Object.freeze({
+  UPLOADED: 'uploaded',
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  ANALYZED: 'analyzed',
+  ERROR: 'error',
+  ARCHIVED: 'archived',
+  AI_DISABLED: 'ai_disabled',
+});
+
+const AI_DISABLED_RESPONSE_STATUSES = new Set([
+  'disabled',
+  DOCUMENT_STATUSES.AI_DISABLED,
+]);
+
+export function isAiDisabledResponse(response = {}) {
+  if (!response || typeof response !== 'object') return false;
+
+  if (response.disabled === true) return true;
+  if (typeof response.status === 'string' && AI_DISABLED_RESPONSE_STATUSES.has(response.status)) return true;
+  if (response.documentStatus === DOCUMENT_STATUSES.AI_DISABLED) return true;
+
+  const nestedResponse = response.data || response.result;
+  return nestedResponse && nestedResponse !== response
+    ? isAiDisabledResponse(nestedResponse)
+    : false;
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -169,6 +197,7 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
   return {
     disabled: true,
     status: 'disabled',
+    documentStatus: DOCUMENT_STATUSES.AI_DISABLED,
     message: reason,
     summary: reason,
     response: reason,
@@ -179,12 +208,12 @@ async function invokeLLM(params = {}) {
   const endpoint = import.meta.env.VITE_LLM_ENDPOINT;
   const frontendOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
-  if (!endpoint) {
-    return aiDisabledPayload('IA desactivada: configura VITE_LLM_ENDPOINT apuntando a un backend seguro.');
+  if (frontendOpenAiKey) {
+    return aiDisabledPayload('IA no configurada: no se permite exponer claves privadas directamente en el navegador. Usa un backend seguro.');
   }
 
-  if (frontendOpenAiKey && !endpoint) {
-    return aiDisabledPayload('IA desactivada: no se permite usar claves privadas directamente en el navegador.');
+  if (!endpoint) {
+    return aiDisabledPayload('IA no configurada: configura VITE_LLM_ENDPOINT apuntando a un backend seguro.');
   }
 
   const response = await fetch(endpoint, {
