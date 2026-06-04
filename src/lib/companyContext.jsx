@@ -26,7 +26,10 @@ export function CompanyProvider({ children }) {
   const loadCompanies = async () => {
     setLoading(true);
     try {
-      const byUid = await firebase.entities.CompanyMember.filter({ userUid: user.uid, status: 'active' });
+      const userUid = user?.uid || user?.id;
+      const byUid = userUid
+        ? await firebase.entities.CompanyMember.filter({ userUid, status: 'active' })
+        : [];
       const byEmail = user.email
         ? await firebase.entities.CompanyMember.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
         : [];
@@ -66,8 +69,9 @@ export function CompanyProvider({ children }) {
 
   const getUserRole = () => {
     if (!activeCompany || !user) return null;
+    const userUid = user?.uid || user?.id;
     const membership = memberships.find((member) => member.companyId === activeCompany.id);
-    return membership?.role || (activeCompany.ownerUid === user.uid ? 'director' : null);
+    return membership?.role || (activeCompany.ownerUid === userUid ? 'director' : null);
   };
 
   return (
