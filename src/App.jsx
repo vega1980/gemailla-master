@@ -1,27 +1,11 @@
-import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import AppLayout from '@/components/layout/AppLayout';
-import Dashboard from './pages/GemaillaDashboard';
-import Documents from '@/pages/Documents';
-import ERP from '@/pages/ERP';
-import Audit from '@/pages/Audit';
-import AIAssistant from '@/pages/AIAssistant';
-import Companies from '@/pages/Companies';
-import ActivityLog from '@/pages/ActivityLog';
-import Subscriptions from '@/pages/Subscriptions';
-import PredictiveAnalysis from '@/pages/PredictiveAnalysis';
-import FinancialHub from '@/pages/FinancialHub';
-import ClientPanel from '@/pages/ClientPanel';
-import Operations from '@/pages/Operations';
-import CRM from '@/pages/CRM';
-import HumanResources from '@/pages/HumanResources';
-import { SubscriptionProvider } from '@/lib/subscriptionContext';
+import { AppProviders } from '@/app/providers';
+import { appRoutes } from '@/app/routes';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, authError } = useAuth();
@@ -47,41 +31,22 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <SubscriptionProvider>
-      <Routes>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/documents" element={<Documents />} />
-          <Route path="/erp" element={<ERP />} />
-          <Route path="/audit" element={<Audit />} />
-          <Route path="/ai" element={<AIAssistant />} />
-          <Route path="/companies" element={<Companies />} />
-          <Route path="/activity" element={<ActivityLog />} />
-          <Route path="/subscriptions" element={<Subscriptions />} />
-          <Route path="/predictive" element={<PredictiveAnalysis />} />
-          <Route path="/finance" element={<FinancialHub />} />
-          <Route path="/client" element={<ClientPanel />} />
-          <Route path="/operations" element={<Operations />} />
-          <Route path="/crm" element={<CRM />} />
-          <Route path="/hr" element={<HumanResources />} />
-        </Route>
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
-    </SubscriptionProvider>
+    <Routes>
+      <Route element={<AppLayout />}>
+        {appRoutes.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
+      </Route>
+      <Route path="*" element={<PageNotFound />} />
+    </Routes>
   );
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <AppProviders>
+      <AuthenticatedApp />
+    </AppProviders>
   )
 }
 

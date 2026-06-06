@@ -43,8 +43,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
     await auth.signOut();
-    if (shouldRedirect) {
-      navigateToLogin();
+    if (shouldRedirect && typeof window !== 'undefined') {
+      window.location.assign('/');
     }
   }, []);
 
