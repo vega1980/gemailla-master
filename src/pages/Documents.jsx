@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { DOCUMENT_STATUSES, firebase, isAiDisabledResponse } from '@/api/firebaseClient';
+import { DOCUMENT_STATUSES, firebase } from '@/api/firebaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
-import { logAction } from '@/lib/auditLogger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,9 +14,12 @@ import { useToast } from '@/components/ui/use-toast';
 import { FileText, Upload, Search, Eye, Brain, Loader2, Trash2, Filter } from 'lucide-react';
 import ReportGenerator from '@/components/reports/ReportGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
+import { uploadDocumentFlow } from '@/features/documents/services/uploadDocumentFlow';
+import { analyzeDocumentFlow } from '@/features/documents/services/analyzeDocumentFlow';
 
 const statusColors = {
   [DOCUMENT_STATUSES.UPLOADED]: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
+  [DOCUMENT_STATUSES.UPLOADING]: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
   [DOCUMENT_STATUSES.PENDING]: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   [DOCUMENT_STATUSES.PROCESSING]: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   [DOCUMENT_STATUSES.ANALYZED]: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -28,6 +30,7 @@ const statusColors = {
 
 const statusLabels = {
   [DOCUMENT_STATUSES.UPLOADED]: 'Subido',
+  [DOCUMENT_STATUSES.UPLOADING]: 'Subiendo',
   [DOCUMENT_STATUSES.PENDING]: 'Pendiente',
   [DOCUMENT_STATUSES.PROCESSING]: 'Procesando',
   [DOCUMENT_STATUSES.ANALYZED]: 'Analizado',
@@ -89,48 +92,13 @@ export default function Documents() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const ext = file.name.split('.').pop().toLowerCase();
-    const validTypes = ['pdf', 'xml'];
-    if (!validTypes.includes(ext)) {
-      toast({ title: 'Formato no soportado', description: 'Sube archivos PDF o XML.', variant: 'destructive' });
-      e.target.value = '';
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      toast({ title: 'Archivo muy grande', description: 'El límite es 15MB.', variant: 'destructive' });
-      e.target.value = '';
-      return;
-    }
-
     setUploading(true);
 
     try {
-      const documentId = firebase.entities.Document.newId();
-      const { storagePath, contentType, fileSize } = await firebase.integrations.Core.UploadFile({
+      await uploadDocumentFlow({
         file,
-        companyId: activeCompany.id,
-        documentId,
-      });
-      const fileType = ext === 'xml' ? 'xml' : ext === 'pdf' ? 'pdf' : 'image';
-
-      const doc = await firebase.entities.Document.createWithId(documentId, {
-        companyId: activeCompany.id,
-        title: file.name,
-        storagePath,
-        contentType,
-        fileSize,
-        fileType,
-        status: DOCUMENT_STATUSES.PENDING,
-      });
-
-      await logAction({
-        companyId: activeCompany.id,
-        userEmail: user?.email,
-        userName: user?.fullName,
-        action: 'document_upload',
-        entityType: 'Document',
-        entityId: doc.id,
-        details: file.name,
+        company: activeCompany,
+        user,
       });
 
       invalidateDocuments();
@@ -173,85 +141,19 @@ export default function Documents() {
     setAnalyzing(doc.id);
 
     try {
-      await firebase.entities.Document.update(doc.id, {
-        status: DOCUMENT_STATUSES.PROCESSING,
-        aiDisabled: false,
-        errorMessage: null,
+      const analysis = await analyzeDocumentFlow({
+        doc,
+        company: activeCompany,
+        user,
       });
+
       invalidateDocuments();
-
-      const result = await firebase.integrations.Core.InvokeLLM({
-        prompt: `Analiza este documento fiscal/financiero mexicano. Extrae toda la información posible:
-        - Tipo de documento (factura, nota de crédito, recibo, contrato, estado de cuenta, declaración, nómina, otro)
-        - RFC emisor y receptor
-        - Subtotal, IVA, Total
-        - Moneda
-        - Fecha del documento
-        - Conceptos/líneas de detalle
-        - Resumen general
-        - Clasificación y etiquetas relevantes
-
-        El archivo está en: ${doc.storagePath}
-        Nombre: ${doc.title}`,
-        storagePaths: [doc.storagePath],
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            docType: { type: 'string', enum: ['factura', 'nota_credito', 'recibo', 'contrato', 'estado_cuenta', 'declaración', 'nómina', 'otro'] },
-            rfc_emisor: { type: 'string' },
-            rfc_receptor: { type: 'string' },
-            subtotal: { type: 'number' },
-            iva: { type: 'number' },
-            total: { type: 'number' },
-            currency: { type: 'string' },
-            docDate: { type: 'string' },
-            concepts: { type: 'array', items: { type: 'object', properties: { description: { type: 'string' }, quantity: { type: 'number' }, unit_price: { type: 'number' }, amount: { type: 'number' } } } },
-            ai_summary: { type: 'string' },
-            ai_classification: { type: 'string' },
-            tags: { type: 'array', items: { type: 'string' } }
-          }
-        }
-      });
-
-      if (isAiDisabledResponse(result)) {
-        const message = result?.message || result?.summary || 'IA no configurada. Configura un backend seguro para analizar documentos.';
-
-        await firebase.entities.Document.update(doc.id, {
-          status: result?.documentStatus || DOCUMENT_STATUSES.AI_DISABLED,
-          aiDisabled: true,
-          ai_summary: message,
-          errorMessage: message,
-        });
-
-        invalidateDocuments();
-        toast({ title: 'IA no configurada', description: message });
-        return;
+      if (analysis.status === 'ai_disabled') {
+        toast({ title: 'IA no configurada', description: analysis.message });
+      } else {
+        toast({ title: 'Análisis completado', description: 'El documento ha sido procesado con IA.' });
       }
-
-      await firebase.entities.Document.update(doc.id, {
-        ...result,
-        status: DOCUMENT_STATUSES.ANALYZED,
-        aiDisabled: false,
-        errorMessage: null,
-      });
-
-      await logAction({
-        companyId: activeCompany.id,
-        userEmail: user?.email,
-        userName: user?.fullName,
-        action: 'document_analyze',
-        entityType: 'Document',
-        entityId: doc.id,
-        details: `Analizado: ${doc.title}`,
-      });
-
-      invalidateDocuments();
-      toast({ title: 'Análisis completado', description: 'El documento ha sido procesado con IA.' });
     } catch (error) {
-      await firebase.entities.Document.update(doc.id, {
-        status: DOCUMENT_STATUSES.ERROR,
-        errorMessage: getErrorMessage(error, 'No se pudo analizar el documento.'),
-      });
       invalidateDocuments();
       toast({
         title: 'No se pudo analizar',
@@ -280,7 +182,7 @@ export default function Documents() {
           <div className="flex items-center gap-3">
             <ReportGenerator company={activeCompany} transactions={[]} documents={documents} />
             <div className="relative">
-              <input type="file" id="file-upload" className="hidden" accept=".pdf,.xml,.png,.jpg,.jpeg" onChange={handleUpload} />
+              <input type="file" id="file-upload" className="hidden" accept=".pdf,.xml" onChange={handleUpload} />
               <Button
                 onClick={() => document.getElementById('file-upload').click()}
                 disabled={uploading}

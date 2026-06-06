@@ -53,10 +53,25 @@ service firebase.storage {
         );
     }
 
+    function documentRecordPath(documentId) {
+      return /databases/(default)/documents/documents/$(documentId);
+    }
+
+    function documentRecordExists(companyId, documentId) {
+      return firestore.exists(documentRecordPath(documentId))
+        && firestore.get(documentRecordPath(documentId)).data.companyId == companyId
+        && firestore.get(documentRecordPath(documentId)).data.status in ['uploading', 'pending', 'uploaded', 'processing', 'analyzed', 'error', 'ai_disabled'];
+    }
+
+    function documentAcceptsUpload(companyId, documentId) {
+      return documentRecordExists(companyId, documentId)
+        && firestore.get(documentRecordPath(documentId)).data.status == 'uploading';
+    }
+
     match /companies/{companyId}/documents/{documentId}/{fileName} {
-      allow read: if canReadCompany(companyId);
-      allow create, update: if canWriteCompany(companyId) && validDocumentFile();
-      allow delete: if false;
+      allow read: if canReadCompany(companyId) && documentRecordExists(companyId, documentId);
+      allow create: if canWriteCompany(companyId) && documentAcceptsUpload(companyId, documentId) && validDocumentFile();
+      allow update, delete: if false;
     }
   }
 }

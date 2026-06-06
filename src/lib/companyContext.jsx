@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { getSavedActiveCompanyId, saveActiveCompanyId } from '@/features/companies/services/activeCompanyStorage';
+import { getCompanyRole } from '@/features/companies/services/companyRole';
+import { loadCompanyContextData } from '@/features/companies/services/companyMembershipService';
 
 const CompanyContext = createContext(null);
 
@@ -22,32 +24,12 @@ export function CompanyProvider({ children }) {
 
     setLoading(true);
     try {
-      const userUid = user?.uid || user?.id;
-      const [byUid, byEmail] = await Promise.all([
-        userUid
-          ? firebase.entities.CompanyMember.filter({ userUid, status: 'active' }).catch(() => [])
-          : [],
-        user.email
-          ? firebase.entities.CompanyMember.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
-          : [],
-      ]);
+      const { memberships: members, companies: validCompanies } = await loadCompanyContextData(user);
 
-      const membersById = new Map();
-      [...byUid, ...byEmail].forEach((member) => {
-        if (member?.id) membersById.set(member.id, member);
-      });
-
-      const members = Array.from(membersById.values());
       setMemberships(members);
-
-      const companyIds = [...new Set(members.map((member) => member.companyId).filter(Boolean))];
-      const validCompanies = (
-        await Promise.all(companyIds.map((companyId) => firebase.entities.Company.get(companyId).catch(() => null)))
-      ).filter(Boolean);
-
       setCompanies(validCompanies);
 
-      const savedId = localStorage.getItem('gemailla_active_company');
+      const savedId = getSavedActiveCompanyId();
       const saved = validCompanies.find((company) => company.id === savedId);
       setActiveCompany(saved || validCompanies[0] || null);
     } catch (error) {
@@ -66,14 +48,12 @@ export function CompanyProvider({ children }) {
 
   const switchCompany = useCallback((company) => {
     setActiveCompany(company);
-    localStorage.setItem('gemailla_active_company', company.id);
+    saveActiveCompanyId(company.id);
   }, []);
 
   const getUserRole = useCallback(() => {
     if (!activeCompany || !user) return null;
-    const userUid = user?.uid || user?.id;
-    const membership = memberships.find((member) => member.companyId === activeCompany.id);
-    return membership?.role || (activeCompany.ownerUid === userUid ? 'director' : null);
+    return getCompanyRole({ activeCompany, memberships, user });
   }, [activeCompany, memberships, user]);
 
   const value = useMemo(() => ({

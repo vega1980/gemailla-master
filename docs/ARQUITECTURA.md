@@ -1,48 +1,102 @@
-# Arquitectura final
+# Arquitectura final corregida
 
 ```mermaid
 flowchart LR
   Usuario[Usuario] --> Hosting[Firebase Hosting]
-  Hosting --> App[App Web Estática]
+  Hosting --> App[App Web Estática React/Vite]
   App --> Auth[Firebase Auth]
   App --> Firestore[Firestore]
   App --> Storage[Firebase Storage]
-  App --> LimitedAI[IA limitada local]
+  App --> BackendSeguro[Cloud Functions / Cloud Run opcional]
+  BackendSeguro --> LLM[Proveedor LLM]
 ```
 
-## Decisiones
 
-### 1. Migración a Firebase puro
+## Estructura modular incremental
 
-- [PROPUESTA]: Eliminar Express, PostgreSQL, Drizzle y API generada. Dejar una app estática conectada directamente a Firebase Auth, Firestore y Storage.
-- [PROS]: Menos puntos de fallo. Menos configuración. Despliegue directo en Firebase Hosting. Menor riesgo de pantalla blanca por API caída.
-- [CONTRAS]: La lógica sensible debe protegerse con reglas de Firestore/Storage. Para IA real segura se requiere Cloud Functions después.
+La estructura se corrige sin ruptura mediante fachadas estables y módulos internos nuevos:
 
-### 2. Firestore como base final
+```text
+src/app/                         # `routes.jsx` y `providers.jsx`
+src/features/documents/          # estados y servicios `uploadDocumentFlow` / `analyzeDocumentFlow`
+src/features/companies/          # servicios de membresía, persistencia local y roles
+src/infrastructure/firebase/      # repositorios, entity collections, normalización legacy y Storage documental
+src/api/firebaseClient.js         # fachada pública que conserva `firebase.entities.*`
+```
 
-- [PROPUESTA]: Guardar `companies`, `documents`, `auditLogs` y `users` como colecciones raíz.
-- [PROS]: Consultas simples por `ownerUid`, sincronización en tiempo real y menos configuración local.
-- [CONTRAS]: Requiere índices compuestos para ordenar por fecha y filtrar por empresa.
+Reglas de migración:
 
-### 3. Storage para PDF/XML
+- No cambiar el alias `@/*` ni las rutas públicas.
+- No eliminar `src/api/firebaseClient.js`; adelgazar internamente y mantener sus exports.
+- Mover lógica de UI a servicios por feature antes de reubicar páginas completas.
+- Centralizar providers de negocio en `src/app/providers.jsx`, no en layouts visuales.
 
-- [PROPUESTA]: Guardar binarios en `companies/{companyId}/documents/{documentId}/{fileName}`.
-- [PROS]: Evita guardar archivos en Firestore. Permite URL de descarga segura y reglas por empresa.
-- [CONTRAS]: Las reglas dependen de que exista la empresa en Firestore.
+## Principios de arquitectura
 
-### 4. IA en modo limitado
+### 1. Firebase como backend primario
 
-- [PROPUESTA]: No usar OpenAI desde navegador. Mostrar análisis local y aviso claro.
-- [PROS]: No rompe la app si falta API Key. No expone secretos.
-- [CONTRAS]: No hay análisis LLM real hasta agregar Cloud Functions.
+- La app es estática y se despliega en Firebase Hosting.
+- Firebase Auth identifica al usuario.
+- Firestore guarda metadata y entidades de negocio.
+- Storage guarda binarios PDF/XML.
+- Las reglas de Firestore/Storage son parte crítica de la arquitectura, no una capa secundaria.
 
-## Colecciones
+### 2. Multiempresa por membresía y roles
+
+Las colecciones de negocio usan `companyId` y se protegen mediante:
+
+- dueño de empresa (`companies/{companyId}.ownerUid`),
+- membresía activa (`companyMembers/{companyId}_{uid}`),
+- roles permitidos para escritura (`owner`, `director`, `admin`, `editor`).
+
+### 3. Flujo documental sin archivos huérfanos
+
+El flujo corregido es:
+
+```mermaid
+sequenceDiagram
+  participant UI as React UI
+  participant FS as Firestore
+  participant ST as Storage
+
+  UI->>FS: create documents/{documentId} status=uploading
+  UI->>ST: upload companies/{companyId}/documents/{documentId}/{fileName}
+  ST->>FS: rules verifican que documents/{documentId} existe y pertenece a companyId
+  UI->>FS: update document status=pending + storagePath
+```
+
+Decisiones:
+
+- Firestore se crea antes de Storage para que las reglas puedan verificar metadata existente.
+- Storage acepta solo `create`; no acepta `update` ni `delete` desde cliente.
+- La app guarda `storagePath`, no URLs públicas persistidas.
+- Si falla la subida, la metadata queda marcada con `status: "error"` y `errorMessage`.
+
+### 4. IA segura por backend
+
+La app no llama proveedores LLM con claves privadas desde el navegador. Si se requiere IA real:
+
+1. React envía la petición a Cloud Functions o Cloud Run.
+2. El backend valida Firebase Auth ID Token.
+3. El backend valida `companyId`, rol y cuota.
+4. El backend obtiene documentos desde Storage si corresponde.
+5. El backend llama al proveedor LLM.
+6. El backend guarda auditoría y devuelve una respuesta controlada.
+
+Sin backend configurado, la IA queda degradada con mensaje claro en la interfaz.
+
+## Colecciones principales
 
 ```text
 users/{uid}
 companies/{companyId}
+companyMembers/{companyId}_{uid}
 documents/{documentId}
 auditLogs/{logId}
+transactions/{id}
+subscriptions/{id}
+predictionLogs/{id}
+aiConversations/{id}
 ```
 
 ## Storage
@@ -50,3 +104,12 @@ auditLogs/{logId}
 ```text
 companies/{companyId}/documents/{documentId}/{fileName}
 ```
+
+Condiciones principales:
+
+- usuario autenticado;
+- permiso de lectura/escritura sobre la empresa;
+- documento Firestore existente y asociado a la misma empresa;
+- archivo PDF/XML;
+- tamaño máximo 15 MB;
+- archivo inmutable después de creado.

@@ -144,6 +144,44 @@ service cloud.firestore {
         );
     }
 
+
+
+    function hasNoPublicDocumentUrls(data) {
+      return !hasField(data, 'fileUrl')
+        && !hasField(data, 'file_url')
+        && !hasField(data, 'downloadUrl')
+        && !hasField(data, 'downloadURL')
+        && !hasField(data, 'publicUrl');
+    }
+
+    function validDocumentEnvelope(data) {
+      return data.fileSize is number
+        && data.fileSize <= 15 * 1024 * 1024
+        && data.contentType is string
+        && data.title is string
+        && data.title.size() > 0
+        && data.status in ['active', 'uploading', 'pending', 'uploaded', 'processing', 'analyzed', 'error', 'archived', 'ai_disabled']
+        && hasNoPublicDocumentUrls(data);
+    }
+
+    function validDocumentCreate() {
+      return canCreateCompanyRecord()
+        && validDocumentEnvelope(request.resource.data)
+        && (
+          request.resource.data.status == 'uploading'
+          || request.resource.data.storagePath is string
+        );
+    }
+
+    function validDocumentUpdate() {
+      return canUpdateCompanyRecord()
+        && validDocumentEnvelope(request.resource.data)
+        && (
+          request.resource.data.status in ['uploading', 'error']
+          || request.resource.data.storagePath is string
+        );
+    }
+
     match /users/{userId} {
       allow read, create, update: if signedIn() && userId == currentUid();
       allow delete: if false;
@@ -190,18 +228,9 @@ service cloud.firestore {
     }
 
     match /documents/{documentId} {
-      allow create: if canCreateCompanyRecord()
-        && request.resource.data.fileSize is number
-        && request.resource.data.fileSize <= 15 * 1024 * 1024
-        && request.resource.data.storagePath is string
-        && !hasField(request.resource.data, 'fileUrl')
-        && !hasField(request.resource.data, 'file_url')
-        && !hasField(request.resource.data, 'downloadUrl');
+      allow create: if validDocumentCreate();
       allow read: if canReadCompanyRecord();
-      allow update: if canUpdateCompanyRecord()
-        && !hasField(request.resource.data, 'fileUrl')
-        && !hasField(request.resource.data, 'file_url')
-        && !hasField(request.resource.data, 'downloadUrl');
+      allow update: if validDocumentUpdate();
       allow delete: if false;
     }
 

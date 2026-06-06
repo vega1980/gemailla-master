@@ -41,6 +41,7 @@ async function seedFirestoreAcl() {
     ownerUid: owner.uid,
     title: 'Documento protegido',
     status: 'active',
+    contentType: 'application/pdf',
     fileSize: 100,
     storagePath: `companies/${companyId}/documents/protected-doc/file.pdf`,
   }), 'admin protected document seed');
@@ -90,6 +91,7 @@ describe('Firestore security rules', () => {
       ownerUid: owner.uid,
       title: 'Documento actualizado por director',
       status: 'active',
+      contentType: 'application/pdf',
       fileSize: 100,
       storagePath: `companies/${companyId}/documents/protected-doc/file.pdf`,
     }, director), 'director document update');
@@ -122,6 +124,7 @@ describe('Firestore security rules', () => {
       ownerUid: outsider.uid,
       title: 'No permitido',
       status: 'active',
+      contentType: 'application/pdf',
       fileSize: 100,
       storagePath: `companies/${companyId}/documents/outsider-created-doc/file.pdf`,
     }, outsider), 'outsider document create');

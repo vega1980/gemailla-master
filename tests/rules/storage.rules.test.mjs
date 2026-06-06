@@ -6,6 +6,7 @@ import {
   seedCompany,
   storageDelete,
   storageRead,
+  firestoreSet,
   storageUpload,
 } from './rules-test-utils.mjs';
 
@@ -16,8 +17,11 @@ const director = { uid: 'storage-director-uid', claims: { email: 'storage-direct
 const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true } };
 const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true } };
 
-const validPdfPath = `companies/${companyId}/documents/doc-1/file.pdf`;
-const otherCompanyPdfPath = `companies/${otherCompanyId}/documents/doc-1/file.pdf`;
+const documentId = 'doc-1';
+const missingDocumentId = 'doc-missing';
+const validPdfPath = `companies/${companyId}/documents/${documentId}/file.pdf`;
+const missingDocumentPdfPath = `companies/${companyId}/documents/${missingDocumentId}/file.pdf`;
+const otherCompanyPdfPath = `companies/${otherCompanyId}/documents/doc-1-other-company/file.pdf`;
 
 async function seedStorageAcl() {
   await seedCompany({
@@ -28,6 +32,26 @@ async function seedStorageAcl() {
     ],
   });
   await seedCompany({ companyId: otherCompanyId, ownerUid: 'other-storage-owner-uid' });
+
+  await assertAllowed(firestoreSet(`documents/${documentId}`, {
+    companyId,
+    ownerUid: owner.uid,
+    title: 'Documento listo para Storage',
+    contentType: 'application/pdf',
+    fileSize: 100,
+    fileType: 'pdf',
+    status: 'uploading',
+  }), 'admin storage document seed');
+
+  await assertAllowed(firestoreSet('documents/doc-1-other-company', {
+    companyId: otherCompanyId,
+    ownerUid: otherOwner.uid,
+    title: 'Documento de otra empresa',
+    contentType: 'application/pdf',
+    fileSize: 100,
+    fileType: 'pdf',
+    status: 'uploading',
+  }), 'admin other company storage document seed');
 }
 
 describe('Cloud Storage security rules', () => {
@@ -50,6 +74,10 @@ describe('Cloud Storage security rules', () => {
     await assertDenied(
       storageUpload(`documents/${companyId}/doc-1/file.pdf`, owner),
       'upload outside companies root',
+    );
+    await assertDenied(
+      storageUpload(missingDocumentPdfPath, owner),
+      'upload without Firestore document metadata',
     );
   });
 
