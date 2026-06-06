@@ -42,11 +42,27 @@ cp public/app-config.example.js public/app-config.js
 npm run dev
 npm run lint
 npm run typecheck
+npm run typecheck:core
 npm run build
 npm run test:rules:emulators
 npm run deploy:hosting
 npm run rules:deploy
 ```
+
+
+## Estructura incremental
+
+La app mantiene las fachadas públicas existentes (`@/api/firebaseClient`, `@/lib/AuthContext`, `@/lib/companyContext` y rutas actuales), pero la lógica nueva se organiza por capas para permitir refactors sin romper imports:
+
+```text
+src/app/                         # rutas y composición de providers
+src/features/documents/          # constantes y flujos del dominio documental
+src/features/companies/          # servicios de membresía, rol y empresa activa
+src/infrastructure/firebase/      # repositorios, colecciones, normalización y Storage Firebase
+src/api/firebaseClient.js         # fachada pública de compatibilidad
+```
+
+Los módulos internos deben migrarse de forma gradual y reexportarse desde las fachadas antiguas hasta que todo el producto use las rutas nuevas.
 
 ## Arquitectura de documentos
 

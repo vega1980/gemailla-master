@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from './Sidebar';
 import MobileHeader from './MobileHeader';
 import BottomNav from './BottomNav';
-import { CompanyProvider } from '@/lib/companyContext';
 
 const pageVariants = {
   initial: { opacity: 0, x: 16 },
@@ -18,8 +17,7 @@ export default function AppLayout() {
   const location = useLocation();
 
   return (
-    <CompanyProvider>
-      <div className="flex min-h-screen" style={{background: '#050505'}}>
+    <div className="flex min-h-screen" style={{background: '#050505'}}>
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
           <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
@@ -52,7 +50,6 @@ export default function AppLayout() {
         </main>
         {/* Mobile Bottom Navigation */}
         <BottomNav />
-      </div>
-    </CompanyProvider>
+    </div>
   );
 }

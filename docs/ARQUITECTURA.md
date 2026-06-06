@@ -11,6 +11,26 @@ flowchart LR
   BackendSeguro --> LLM[Proveedor LLM]
 ```
 
+
+## Estructura modular incremental
+
+La estructura se corrige sin ruptura mediante fachadas estables y módulos internos nuevos:
+
+```text
+src/app/                         # `routes.jsx` y `providers.jsx`
+src/features/documents/          # estados y servicios `uploadDocumentFlow` / `analyzeDocumentFlow`
+src/features/companies/          # servicios de membresía, persistencia local y roles
+src/infrastructure/firebase/      # repositorios, entity collections, normalización legacy y Storage documental
+src/api/firebaseClient.js         # fachada pública que conserva `firebase.entities.*`
+```
+
+Reglas de migración:
+
+- No cambiar el alias `@/*` ni las rutas públicas.
+- No eliminar `src/api/firebaseClient.js`; adelgazar internamente y mantener sus exports.
+- Mover lógica de UI a servicios por feature antes de reubicar páginas completas.
+- Centralizar providers de negocio en `src/app/providers.jsx`, no en layouts visuales.
+
 ## Principios de arquitectura
 
 ### 1. Firebase como backend primario
