@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const statusColors = {
   [DOCUMENT_STATUSES.UPLOADED]: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
+  [DOCUMENT_STATUSES.UPLOADING]: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
   [DOCUMENT_STATUSES.PENDING]: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   [DOCUMENT_STATUSES.PROCESSING]: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   [DOCUMENT_STATUSES.ANALYZED]: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -28,6 +29,7 @@ const statusColors = {
 
 const statusLabels = {
   [DOCUMENT_STATUSES.UPLOADED]: 'Subido',
+  [DOCUMENT_STATUSES.UPLOADING]: 'Subiendo',
   [DOCUMENT_STATUSES.PENDING]: 'Pendiente',
   [DOCUMENT_STATUSES.PROCESSING]: 'Procesando',
   [DOCUMENT_STATUSES.ANALYZED]: 'Analizado',
@@ -106,22 +108,40 @@ export default function Documents() {
 
     try {
       const documentId = firebase.entities.Document.newId();
-      const { storagePath, contentType, fileSize } = await firebase.integrations.Core.UploadFile({
-        file,
-        companyId: activeCompany.id,
-        documentId,
-      });
       const fileType = ext === 'xml' ? 'xml' : ext === 'pdf' ? 'pdf' : 'image';
+      const initialContentType = file.type || (ext === 'xml' ? 'application/xml' : 'application/pdf');
 
       const doc = await firebase.entities.Document.createWithId(documentId, {
         companyId: activeCompany.id,
         title: file.name,
-        storagePath,
-        contentType,
-        fileSize,
+        contentType: initialContentType,
+        fileSize: file.size,
         fileType,
-        status: DOCUMENT_STATUSES.PENDING,
+        status: DOCUMENT_STATUSES.UPLOADING,
       });
+
+      try {
+        const { storagePath, contentType, fileSize } = await firebase.integrations.Core.UploadFile({
+          file,
+          companyId: activeCompany.id,
+          documentId,
+        });
+
+        await firebase.entities.Document.update(documentId, {
+          storagePath,
+          contentType,
+          fileSize,
+          status: DOCUMENT_STATUSES.PENDING,
+          uploadCompletedAt: new Date().toISOString(),
+          errorMessage: null,
+        });
+      } catch (uploadError) {
+        await firebase.entities.Document.update(documentId, {
+          status: DOCUMENT_STATUSES.ERROR,
+          errorMessage: getErrorMessage(uploadError, 'No se pudo completar la subida a Storage.'),
+        }).catch(() => {});
+        throw uploadError;
+      }
 
       await logAction({
         companyId: activeCompany.id,
@@ -280,7 +300,7 @@ export default function Documents() {
           <div className="flex items-center gap-3">
             <ReportGenerator company={activeCompany} transactions={[]} documents={documents} />
             <div className="relative">
-              <input type="file" id="file-upload" className="hidden" accept=".pdf,.xml,.png,.jpg,.jpeg" onChange={handleUpload} />
+              <input type="file" id="file-upload" className="hidden" accept=".pdf,.xml" onChange={handleUpload} />
               <Button
                 onClick={() => document.getElementById('file-upload').click()}
                 disabled={uploading}

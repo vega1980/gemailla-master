@@ -94,6 +94,7 @@ const MAX_UPLOAD_SIZE = 15 * 1024 * 1024;
 
 export const DOCUMENT_STATUSES = Object.freeze({
   UPLOADED: 'uploaded',
+  UPLOADING: 'uploading',
   PENDING: 'pending',
   PROCESSING: 'processing',
   ANALYZED: 'analyzed',
@@ -280,10 +281,11 @@ async function uploadFile({ file, companyId, documentId, folder = 'documents' } 
     throw new Error('El archivo supera el límite permitido de 15MB.');
   }
 
-  const contentType = file.type || 'application/octet-stream';
   const extension = String(file.name || '').split('.').pop()?.toLowerCase();
   const looksLikeXml = ['xml'].includes(extension);
   const looksLikePdf = ['pdf'].includes(extension);
+  const inferredContentType = looksLikeXml ? 'application/xml' : looksLikePdf ? 'application/pdf' : 'application/octet-stream';
+  const contentType = ALLOWED_UPLOAD_TYPES.has(file.type) ? file.type : inferredContentType;
 
   if (!ALLOWED_UPLOAD_TYPES.has(contentType) && !looksLikeXml && !looksLikePdf) {
     throw new Error('Formato no permitido. Solo se aceptan archivos PDF o XML.');
