@@ -60,8 +60,6 @@ export default function ClientDashboardShare({ company }) {
   const lastIngresos = transactions.filter(t => t.type === 'ingreso' && t.date?.startsWith(lastMonth)).reduce((s, t) => s + (t.amount || 0), 0);
   const ingChange = lastIngresos > 0 ? (((currentIngresos - lastIngresos) / lastIngresos) * 100).toFixed(1) : null;
 
-  const kpisByStatus = kpis.reduce((acc, k) => { acc[k.status] = (acc[k.status] || 0) + 1; return acc; }, {});
-
   return (
     <div className="space-y-6">
       {/* Live indicator */}

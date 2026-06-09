@@ -191,7 +191,6 @@ Responde en español, tono experto en RRHH y derecho laboral mexicano.`,
     }
   };
 
-  const selectedEmp = employees.find(e => e.id === form.employeeId);
   const selectedReview = latestReview[form.employeeId];
   const netPay = calcNet(form);
 

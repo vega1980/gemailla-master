@@ -108,8 +108,6 @@ const tutorialSteps = [
 export default function WelcomeTutorial({ onComplete }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
-
   useEffect(() => {
     const seen = localStorage.getItem('gemailla_tutorial_seen');
     if (!seen) {
