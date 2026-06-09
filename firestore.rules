@@ -77,8 +77,27 @@ service cloud.firestore {
         || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']);
     }
 
+
+    function auditCreateFieldsAreRequiredAndSafe(data) {
+      return data.createdAt is string
+        && data.createdBy is string
+        && data.updatedAt is string
+        && data.updatedBy is string
+        && data.createdBy == request.auth.uid
+        && data.updatedBy == request.auth.uid;
+    }
+
+    function auditUpdateFieldsAreRequiredAndSafe(data, currentData) {
+      return data.updatedAt is string
+        && data.updatedBy is string
+        && data.updatedBy == request.auth.uid
+        && data.createdAt == currentData.createdAt
+        && data.createdBy == currentData.createdBy;
+    }
+
     function validCompanyCreate() {
       return signedIn()
+        && auditCreateFieldsAreRequiredAndSafe(request.resource.data)
         && request.resource.data.ownerUid == currentUid()
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
@@ -87,6 +106,7 @@ service cloud.firestore {
 
     function canCreateCompanyRecord() {
       return signedIn()
+        && auditCreateFieldsAreRequiredAndSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
         && canWriteCompany(request.resource.data.companyId)
         && ownerUidIsSelfOrMissing(request.resource.data);
@@ -113,6 +133,7 @@ service cloud.firestore {
 
     function canUpdateCompanyRecord() {
       return signedIn()
+        && auditUpdateFieldsAreRequiredAndSafe(request.resource.data, resource.data)
         && companyIdUnchanged()
         && canWriteCompany(resource.data.companyId)
         && ownerUidUnchangedOrSelf();
@@ -120,6 +141,7 @@ service cloud.firestore {
 
     function canCreateOwnedOrCompanyRecord() {
       return signedIn()
+        && auditCreateFieldsAreRequiredAndSafe(request.resource.data)
         && ownerUidIsSelfOrMissing(request.resource.data)
         && (
           (hasCompanyId(request.resource.data) && canWriteCompany(request.resource.data.companyId))
@@ -137,6 +159,7 @@ service cloud.firestore {
 
     function canUpdateOwnedOrCompanyRecord() {
       return signedIn()
+        && auditUpdateFieldsAreRequiredAndSafe(request.resource.data, resource.data)
         && ownerUidUnchangedOrSelf()
         && (
           (hasCompanyId(resource.data) && companyIdUnchanged() && canWriteCompany(resource.data.companyId))
@@ -183,7 +206,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, create, update: if signedIn() && userId == currentUid();
+      allow read: if signedIn() && userId == currentUid();
+      allow create: if signedIn() && userId == currentUid() && auditCreateFieldsAreRequiredAndSafe(request.resource.data);
+      allow update: if signedIn() && userId == currentUid() && auditUpdateFieldsAreRequiredAndSafe(request.resource.data, resource.data);
       allow delete: if false;
     }
 
@@ -191,12 +216,14 @@ service cloud.firestore {
       allow create: if validCompanyCreate();
       allow read: if canReadCompany(companyId);
       allow update: if canManageCompany(companyId)
+        && auditUpdateFieldsAreRequiredAndSafe(request.resource.data, resource.data)
         && request.resource.data.ownerUid == resource.data.ownerUid;
       allow delete: if false;
     }
 
     match /companyMembers/{memberId} {
       allow create: if signedIn()
+        && auditCreateFieldsAreRequiredAndSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
         && canManageCompany(request.resource.data.companyId)
         && request.resource.data.status in ['active', 'pending', 'archived']
@@ -211,6 +238,7 @@ service cloud.firestore {
         );
 
       allow update: if signedIn()
+        && auditUpdateFieldsAreRequiredAndSafe(request.resource.data, resource.data)
         && hasCompanyId(resource.data)
         && hasCompanyId(request.resource.data)
         && request.resource.data.companyId == resource.data.companyId
