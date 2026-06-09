@@ -100,7 +100,6 @@ export default function FinancialStatements({ transactions, company }) {
   const exportPDF = async () => {
     setExporting(true);
     await new Promise(r => setTimeout(r, 800));
-    const content = document.getElementById('financial-report');
     const { jsPDF } = await import('jspdf');
     const doc = new jsPDF({ format: 'a4' });
     doc.setFontSize(18);

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle, XCircle, Info, ChevronDown, ChevronUp,
-  Bell, TrendingDown, Activity, ShieldAlert, X
+  AlertTriangle, XCircle, Info, ChevronDown, ChevronUp, Bell, X
 } from 'lucide-react';
 
 const LEVEL_CONFIG = {
@@ -41,13 +40,6 @@ const LEVEL_CONFIG = {
   },
 };
 
-const CATEGORY_ICONS = {
-  threshold: ShieldAlert,
-  balance: TrendingDown,
-  anomaly: Activity,
-  prediction: TrendingDown,
-  risk: AlertTriangle,
-};
 
 export default function ProactiveAlerts({ alerts, criticalCount, warningCount }) {
   const [open, setOpen] = useState(true);
@@ -118,7 +110,6 @@ export default function ProactiveAlerts({ alerts, criticalCount, warningCount })
                 {visibleAlerts.map(alert => {
                   const lcfg = LEVEL_CONFIG[alert.level];
                   const LIcon = lcfg.icon;
-                  const CatIcon = CATEGORY_ICONS[alert.category] || AlertTriangle;
                   return (
                     <motion.div
                       key={alert.id}

@@ -112,17 +112,6 @@ export default function ReportGenerator({ company, transactions = [], documents 
         y += 12;
       };
 
-      const subLabel = (label, value, yPos, col = margin) => {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(...gray);
-        doc.text(label, col, yPos);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(...white);
-        doc.text(value, col, yPos + 5.5);
-      };
-
       // ── KPIs ──────────────────────────────────────────────────────
       sectionTitle('1. Indicadores Clave de Desempeño (KPIs)');
 

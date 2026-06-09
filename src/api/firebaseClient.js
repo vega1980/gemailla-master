@@ -66,9 +66,6 @@ function withAuditFields(data = {}, mode = 'create') {
   return payload;
 }
 
-function serializeDocument(snapshot) {
-  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
-}
 
 async function getAuthHeader() {
   const user = getCurrentUser();
@@ -111,7 +108,7 @@ async function invokeLLM(params = {}) {
   if (raw) {
     try {
       payload = JSON.parse(raw);
-    } catch (_error) {
+    } catch {
       payload = { message: raw };
     }
   }

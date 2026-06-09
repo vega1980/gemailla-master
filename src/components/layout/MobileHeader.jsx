@@ -140,7 +140,7 @@ export default function MobileHeader() {
             )}
           </div>
           <nav className="p-3 space-y-1">
-            {navItems.map((item, index) => {
+            {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <Link 

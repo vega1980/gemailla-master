@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCompany } from '@/lib/companyContext';
-import { useAuth } from '@/lib/AuthContext';
 import {
   LayoutDashboard, FileText, ArrowUpDown, Shield, Brain,
   Building2, Activity, ChevronLeft, ChevronRight, LogOut,
@@ -31,7 +30,6 @@ const navItems = [
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
-  const { user } = useAuth();
   const { companies, activeCompany, switchCompany } = useCompany();
 
   return (

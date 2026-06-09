@@ -41,7 +41,7 @@ export default function WeeklyInsights({ company, transactions, monthlyData }) {
     }
   }, [company?.id]);
 
-  const generateInsight = async (force = false) => {
+  const generateInsight = async () => {
     if (loading) return;
     setLoading(true);
 
