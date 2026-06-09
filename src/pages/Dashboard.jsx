@@ -29,12 +29,31 @@ export default function Dashboard() {
 
 
   const monthlyData = useMemo(() => {
-    const data = [];
-    for (let i = 5; i >= 0; i--) {
-      data.push({ value: Math.random() * 100 });
-    }
-    return data;
-  }, []);
+    const buckets = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - index));
+      return {
+        key: `${date.getFullYear()}-${date.getMonth()}`,
+        value: 0,
+      };
+    });
+
+    const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+    transactions.forEach((transaction) => {
+      const rawDate = transaction.date || transaction.createdAt || transaction.updatedAt;
+      const date = rawDate ? new Date(rawDate) : null;
+      if (!date || Number.isNaN(date.getTime())) return;
+
+      const bucket = bucketByKey.get(`${date.getFullYear()}-${date.getMonth()}`);
+      if (!bucket) return;
+
+      const amount = Number(transaction.amount) || 0;
+      bucket.value += transaction.type === 'gasto' ? -amount : amount;
+    });
+
+    return buckets.map((bucket) => ({ value: Math.max(bucket.value, 0) }));
+  }, [transactions]);
 
   if (companyLoading) {
     return (

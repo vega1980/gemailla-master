@@ -89,16 +89,13 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
 }
 
 async function invokeLLM(params = {}) {
-  const endpoint = import.meta.env.VITE_LLM_ENDPOINT;
+  const endpoint = import.meta.env.VITE_LLM_ENDPOINT || '/api/ai';
   const frontendOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
   if (frontendOpenAiKey) {
     return aiDisabledPayload('IA no configurada: no se permite exponer claves privadas directamente en el navegador. Usa un backend seguro.');
   }
 
-  if (!endpoint) {
-    return aiDisabledPayload('IA no configurada: configura VITE_LLM_ENDPOINT apuntando a un backend seguro.');
-  }
 
   const response = await fetch(endpoint, {
     method: 'POST',
