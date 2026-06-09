@@ -1,4 +1,4 @@
-import Dashboard from '@/pages/GemaillaDashboard';
+import Dashboard from '@/pages/Dashboard';
 import Documents from '@/pages/Documents';
 import ERP from '@/pages/ERP';
 import Audit from '@/pages/Audit';
