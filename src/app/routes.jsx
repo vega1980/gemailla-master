@@ -12,9 +12,13 @@ import ClientPanel from '@/pages/ClientPanel';
 import Operations from '@/pages/Operations';
 import CRM from '@/pages/CRM';
 import HumanResources from '@/pages/HumanResources';
+import AuthRequiredPage from '@/components/auth/AuthRequiredPage';
+
+export const publicRoutes = [
+  { path: '/', element: <AuthRequiredPage /> },
+];
 
 export const appRoutes = [
-  { path: '/', element: <Dashboard /> },
   { path: '/dashboard', element: <Dashboard /> },
   { path: '/documents', element: <Documents /> },
   { path: '/erp', element: <ERP /> },
