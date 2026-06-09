@@ -13,7 +13,7 @@ const ModuleLoader = (Component) => (
   </Suspense>
 );
 
-// Importaciones diferidas (Lazy Loading) - Versión entrante optimizada
+// Importaciones diferidas (Lazy Loading)
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
 const Documents = lazy(() => import('@/pages/Documents'));
 const ERP = lazy(() => import('@/pages/ERP'));
@@ -34,10 +34,7 @@ import AuthRequiredPage from '@/components/auth/AuthRequiredPage';
 
 // Definición de Rutas Públicas
 export const publicRoutes = [
-  {
-    path: '/',
-    element: <AuthRequiredPage />,
-  },
+  { path: '/', element: <AuthRequiredPage /> },
 ];
 
 // Definición de Rutas Protegidas (Módulos de negocio)
@@ -46,35 +43,19 @@ export const appRoutes = [
   { path: '/documents', element: ModuleLoader(Documents) },
   { path: '/erp', element: ModuleLoader(ERP) },
   { path: '/audit', element: ModuleLoader(Audit) },
+  { path: '/ai', element: ModuleLoader(AIAssistant) },
   { path: '/ai-assistant', element: ModuleLoader(AIAssistant) },
   { path: '/companies', element: ModuleLoader(Companies) },
+  { path: '/activity', element: ModuleLoader(ActivityLog) },
   { path: '/activity-log', element: ModuleLoader(ActivityLog) },
   { path: '/subscriptions', element: ModuleLoader(Subscriptions) },
+  { path: '/predictive', element: ModuleLoader(PredictiveAnalysis) },
   { path: '/predictive-analysis', element: ModuleLoader(PredictiveAnalysis) },
+  { path: '/finance', element: ModuleLoader(FinancialHub) },
   { path: '/financial-hub', element: ModuleLoader(FinancialHub) },
+  { path: '/client', element: ModuleLoader(ClientPanel) },
   { path: '/client-panel', element: ModuleLoader(ClientPanel) },
   { path: '/operations', element: ModuleLoader(Operations) },
   { path: '/crm', element: ModuleLoader(CRM) },
   { path: '/hr', element: ModuleLoader(HumanResources) },
-];
-
-export const publicRoutes = [
-  { path: '/', element: <AuthRequiredPage /> },
-];
-
-export const appRoutes = [
-  { path: '/dashboard', element: <Dashboard /> },
-  { path: '/documents', element: <Documents /> },
-  { path: '/erp', element: <ERP /> },
-  { path: '/audit', element: <Audit /> },
-  { path: '/ai', element: <AIAssistant /> },
-  { path: '/companies', element: <Companies /> },
-  { path: '/activity', element: <ActivityLog /> },
-  { path: '/subscriptions', element: <Subscriptions /> },
-  { path: '/predictive', element: <PredictiveAnalysis /> },
-  { path: '/finance', element: <FinancialHub /> },
-  { path: '/client', element: <ClientPanel /> },
-  { path: '/operations', element: <Operations /> },
-  { path: '/crm', element: <CRM /> },
-  { path: '/hr', element: <HumanResources /> },
 ];
