@@ -3,17 +3,16 @@ export { default as app, auth, db, storage } from '@/firebase';
 import { DOCUMENT_STATUSES, AI_DISABLED_RESPONSE_STATUSES } from '@/features/documents/constants/documentStatuses';
 import { ENTITY_COLLECTIONS } from '@/infrastructure/firebase/repositories/entityCollections';
 import { normalizeData, normalizeFilters, normalizeKey } from '@/infrastructure/firebase/repositories/normalization';
+import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { createRepository } from '@/infrastructure/firebase/repositories/createRepository';
 import { getDocumentAccessUrl, uploadFile } from '@/infrastructure/firebase/storage/documentStorage';
 export { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatuses';
 
 import {
-  addDoc,
   collection,
   doc,
   getDoc,
   onSnapshot,
-  updateDoc,
 } from 'firebase/firestore';
 export function isAiDisabledResponse(response = {}) {
   if (!response || typeof response !== 'object') return false;
@@ -49,23 +48,14 @@ function keepVisibleRecords(records, includeArchived = false) {
   return includeArchived ? records : records.filter((item) => !isArchivedRecord(item));
 }
 
-function withAuditFields(data = {}, mode = 'create') {
-  const user = getCurrentUser();
-  const userUid = getCurrentUserUid();
-  const timestamp = nowIso();
+const mutations = createAuditMutationMiddleware({ getCurrentUserUid, nowIso });
+
+function withCreateDefaults(data = {}) {
   const payload = normalizeData(data);
-
-  if (mode === 'create') {
-    payload.createdAt = payload.createdAt || timestamp;
-    payload.status = payload.status || 'active';
-    if (userUid && !payload.ownerUid) payload.ownerUid = userUid;
-    if (user?.email && !payload.userEmail && ['CompanyMember'].includes(payload.entityName)) payload.userEmail = user.email;
-  }
-
-  payload.updatedAt = timestamp;
+  payload.status = payload.status || 'active';
+  if (!payload.ownerUid) payload.ownerUid = getCurrentUserUid();
   return payload;
 }
-
 
 async function getAuthHeader() {
   const user = getCurrentUser();
@@ -92,7 +82,6 @@ async function invokeLLM(params = {}) {
   if (frontendOpenAiKey) {
     return aiDisabledPayload('IA no configurada: no se permite exponer claves privadas directamente en el navegador. Usa un backend seguro.');
   }
-
 
   const response = await fetch(endpoint, {
     method: 'POST',
@@ -165,15 +154,15 @@ const connectors = {
 
 const agents = {
   createConversation: async ({ metadata = {}, agent_name: agentName = 'assistant' } = {}) => {
-    const payload = withAuditFields({
+    const payload = withCreateDefaults({
       agentName,
       metadata,
       ownerUid: getCurrentUserUid(),
       messages: [],
       status: 'active',
     });
-    const refDoc = await addDoc(collection(db, 'aiConversations'), payload);
-    return { id: refDoc.id, ...payload };
+    const { refDoc, payload: auditedPayload } = await mutations.add(collection(db, 'aiConversations'), payload);
+    return { id: refDoc.id, ...auditedPayload };
   },
 
   addMessage: async (conversation, message) => {
@@ -195,7 +184,7 @@ const agents = {
       });
     }
 
-    await updateDoc(refDoc, { messages, updatedAt: nowIso() });
+    await mutations.update(refDoc, { messages });
     return { id: conversationId, messages };
   },
 

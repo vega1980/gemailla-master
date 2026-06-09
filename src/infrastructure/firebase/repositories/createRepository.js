@@ -1,7 +1,6 @@
 // @ts-check
 
 import {
-  addDoc,
   collection,
   doc,
   getDoc,
@@ -9,11 +8,10 @@ import {
   limit,
   orderBy,
   query,
-  setDoc,
-  updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore';
+import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 
 function serializeDocument(snapshot) {
   return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
@@ -33,6 +31,7 @@ export function createRepository({
   nowIso,
 }) {
   const col = () => collection(db, collectionName);
+  const mutations = createAuditMutationMiddleware({ getCurrentUserUid, nowIso });
 
   function newId() {
     return doc(col()).id;
@@ -87,15 +86,13 @@ export function createRepository({
     const payload = {
       ...normalized,
       ownerUid: normalized.ownerUid || userUid || null,
-      createdAt: normalized.createdAt || nowIso(),
-      updatedAt: nowIso(),
       status: normalized.status || 'active',
     };
 
     if (entityName === 'User' && (payload.uid || userUid)) {
       const id = payload.uid || userUid;
-      await setDoc(doc(db, collectionName, id), { ...payload, uid: id }, { merge: true });
-      return { id, ...payload, uid: id };
+      const { payload: auditedPayload } = await mutations.set(doc(db, collectionName, id), { ...payload, uid: id }, { merge: true });
+      return { id, ...auditedPayload, uid: id };
     }
 
     if (entityName === 'Company') {
@@ -116,13 +113,13 @@ export function createRepository({
           : null;
 
       if (docId) {
-        await setDoc(doc(db, collectionName, docId), payload, { merge: true });
-        return { id: docId, ...payload };
+        const { payload: auditedPayload } = await mutations.set(doc(db, collectionName, docId), payload, { merge: true });
+        return { id: docId, ...auditedPayload };
       }
     }
 
-    const refDoc = await addDoc(col(), payload);
-    return { id: refDoc.id, ...payload };
+    const { refDoc, payload: auditedPayload } = await mutations.add(col(), payload);
+    return { id: refDoc.id, ...auditedPayload };
   }
 
   async function createWithId(id, data = {}) {
@@ -134,13 +131,11 @@ export function createRepository({
     const payload = {
       ...normalized,
       ownerUid: normalized.ownerUid || userUid || null,
-      createdAt: normalized.createdAt || nowIso(),
-      updatedAt: nowIso(),
       status: normalized.status || 'active',
     };
 
-    await setDoc(doc(db, collectionName, safeId), payload);
-    return { id: safeId, ...payload };
+    const { payload: auditedPayload } = await mutations.set(doc(db, collectionName, safeId), payload);
+    return { id: safeId, ...auditedPayload };
   }
 
   async function bulkCreate(items = []) {
@@ -154,12 +149,10 @@ export function createRepository({
       const payload = {
         ...normalizeData(item),
         ownerUid: item.ownerUid || userUid,
-        createdAt: item.createdAt || nowIso(),
-        updatedAt: nowIso(),
         status: item.status || 'active',
       };
-      batch.set(refDoc, payload);
-      created.push({ id: refDoc.id, ...payload });
+      const auditedPayload = mutations.batchSet(batch, refDoc, payload);
+      created.push({ id: refDoc.id, ...auditedPayload });
     });
 
     await batch.commit();
@@ -167,11 +160,7 @@ export function createRepository({
   }
 
   async function update(id, data = {}) {
-    const payload = {
-      ...normalizeData(data),
-      updatedAt: nowIso(),
-    };
-    await updateDoc(doc(db, collectionName, id), payload);
+    const { payload } = await mutations.update(doc(db, collectionName, id), normalizeData(data));
     return { id, ...payload };
   }
 
@@ -181,10 +170,9 @@ export function createRepository({
       status: 'archived',
       deletedAt: nowIso(),
       deletedBy: userUid,
-      updatedAt: nowIso(),
     };
-    await updateDoc(doc(db, collectionName, id), payload);
-    return { id, ...payload };
+    const { payload: auditedPayload } = await mutations.update(doc(db, collectionName, id), payload);
+    return { id, ...auditedPayload };
   }
 
   return {

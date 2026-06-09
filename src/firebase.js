@@ -1,6 +1,11 @@
 import { initializeApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
-import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import {
+  connectFirestoreEmulator,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore';
 import { connectStorageEmulator, getStorage } from 'firebase/storage';
 
 const runtimeConfig = typeof window !== 'undefined' ? window.GEMAILLA_FIREBASE_CONFIG || {} : {};
@@ -55,7 +60,11 @@ if (missingConfigKeys.length > 0) {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 export const storage = getStorage(app);
 
 if (useFirebaseEmulators && !globalThis.__GEMAILLA_FIREBASE_EMULATORS__) {
