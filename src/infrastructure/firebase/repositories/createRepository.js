@@ -27,6 +27,16 @@ export const createRepository = (collectionName) => {
 
   const newId = () => doc(collectionRef).id;
 
+  const softDelete = async (id) => {
+    const docRef = doc(db, collectionName, id);
+    const deleteData = auditMiddleware.withUpdateAuditFields({
+      deleted: true,
+      deletedAt: new Date().toISOString()
+    });
+    await updateDoc(docRef, deleteData);
+    return { id, ...deleteData };
+  };
+
   return {
     get: async (id) => {
       const docRef = doc(db, collectionName, id);
@@ -41,6 +51,7 @@ export const createRepository = (collectionName) => {
 
     filter: async (field, operator, value) => {
       if (field && typeof field === 'object' && !Array.isArray(field)) {
+        /** @type {import('firebase/firestore').QueryConstraint[]} */
         const constraints = Object.entries(field)
           .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all')
           .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
@@ -96,26 +107,12 @@ export const createRepository = (collectionName) => {
       return { id, ...dataWithAudit };
     },
 
-    softDelete: async (id) => {
-      const docRef = doc(db, collectionName, id);
-      const deleteData = auditMiddleware.withUpdateAuditFields({
-        deleted: true,
-        deletedAt: new Date().toISOString()
-      });
-      await updateDoc(docRef, deleteData);
-      return { id, ...deleteData };
-    },
+    softDelete,
 
     newId,
 
-    delete: async (id) => {
-      const docRef = doc(db, collectionName, id);
-      const deleteData = auditMiddleware.withUpdateAuditFields({
-        deleted: true,
-        deletedAt: new Date().toISOString()
-      });
-      await updateDoc(docRef, deleteData);
-      return { id, ...deleteData };
-    }
+    // Alias legacy explícito: las reglas de Firebase bloquean borrado físico,
+    // así que `delete` conserva el contrato anterior delegando en softDelete.
+    delete: softDelete
   };
 };
