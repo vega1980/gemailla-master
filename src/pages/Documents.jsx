@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DOCUMENT_STATUSES, firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { companyEntityQueryKey, useCompanyDocuments } from '@/lib/companyEntityQueries';
+import { getPaginatedItems, paginatedCompanyEntityQueryKey, usePaginatedCompanyDocuments } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -67,9 +67,17 @@ export default function Documents() {
   const [analyzing, setAnalyzing] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
 
-  const { data: documents = [], isLoading } = useCompanyDocuments(activeCompany);
+  const documentFilters = useMemo(() => (filterType === 'all' ? {} : { docType: filterType }), [filterType]);
+  const {
+    data: documentsPages,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePaginatedCompanyDocuments(activeCompany, { pageSize: 25, filters: documentFilters });
+  const documents = useMemo(() => getPaginatedItems(documentsPages), [documentsPages]);
 
-  const documentsQueryKey = companyEntityQueryKey('documents', activeCompany);
+  const documentsQueryKey = paginatedCompanyEntityQueryKey('documents', activeCompany, { pageSize: 25, filters: documentFilters });
 
   const invalidateDocuments = () => queryClient.invalidateQueries({ queryKey: documentsQueryKey });
 
@@ -164,8 +172,7 @@ export default function Documents() {
 
   const filtered = documents.filter(d => {
     const matchSearch = d.title?.toLowerCase().includes(search.toLowerCase()) || d.rfc_emisor?.toLowerCase().includes(search.toLowerCase());
-    const matchType = filterType === 'all' || d.docType === filterType;
-    return matchSearch && matchType;
+    return matchSearch;
   });
 
   if (!activeCompany) return <EmptyState icon={FileText} title="Selecciona una empresa" description="Necesitas una empresa activa para ver documentos." />;
@@ -269,6 +276,14 @@ export default function Documents() {
               </motion.div>
             ))}
           </AnimatePresence>
+          {hasNextPage && (
+            <div className="flex justify-center pt-3">
+              <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="border-border">
+                {isFetchingNextPage ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Cargar más documentos
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

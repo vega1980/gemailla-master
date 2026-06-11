@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { companyEntityQueryKey, useCompanyCrmClients, useCompanyCrmInteractions } from '@/lib/companyEntityQueries';
+import { companyEntityQueryKey, getPaginatedItems, usePaginatedCompanyCrmClients, useCompanyCrmInteractions } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,7 +48,15 @@ export default function ClientList({ company }) {
   const [form, setForm] = useState(EMPTY_CLIENT);
   const [intForm, setIntForm] = useState(EMPTY_INT);
 
-  const { data: clients = [], isLoading } = useCompanyCrmClients(company);
+  const clientFilters = useMemo(() => (segFilter === 'all' ? {} : { segment: segFilter }), [segFilter]);
+  const {
+    data: clientPages,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePaginatedCompanyCrmClients(company, { pageSize: 40, filters: clientFilters });
+  const clients = useMemo(() => getPaginatedItems(clientPages), [clientPages]);
 
   const { data: interactions = [] } = useCompanyCrmInteractions(company);
 
@@ -56,12 +64,12 @@ export default function ClientList({ company }) {
     mutationFn: (data) => editingClient
       ? firebase.entities.CRMClient.update(editingClient.id, data)
       : firebase.entities.CRMClient.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); setOpenClient(false); setEditingClient(null); setForm(EMPTY_CLIENT); toast.success('Cliente guardado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['company-entity-page', 'crmClients', company?.id] }); setOpenClient(false); setEditingClient(null); setForm(EMPTY_CLIENT); toast.success('Cliente guardado'); },
   });
 
   const delClient = useMutation({
     mutationFn: (id) => firebase.entities.CRMClient.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); toast.success('Cliente eliminado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['company-entity-page', 'crmClients', company?.id] }); toast.success('Cliente eliminado'); },
   });
 
   const saveInt = useMutation({
@@ -69,11 +77,7 @@ export default function ClientList({ company }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmInteractions', company) }); setOpenInt(false); setIntForm(EMPTY_INT); toast.success('Interacción registrada'); },
   });
 
-  const filtered = clients.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase());
-    const matchSeg = segFilter === 'all' || c.segment === segFilter;
-    return matchSearch && matchSeg;
-  });
+  const filtered = clients.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.email?.toLowerCase().includes(search.toLowerCase()));
 
   const openNewClient = () => { setEditingClient(null); setForm(EMPTY_CLIENT); setOpenClient(true); };
   const openEditClient = (c) => { setEditingClient(c); setForm({ ...c }); setOpenClient(true); };
@@ -107,7 +111,7 @@ export default function ClientList({ company }) {
         <div className="flex gap-2 flex-1 min-w-0">
           <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar cliente..." className="pl-8 bg-secondary border-border h-9 text-sm" />
+            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar en clientes cargados..." className="pl-8 bg-secondary border-border h-9 text-sm" />
           </div>
           <Select value={segFilter} onValueChange={setSegFilter}>
             <SelectTrigger className="w-36 h-9 bg-secondary border-border text-sm"><SelectValue /></SelectTrigger>
@@ -199,6 +203,15 @@ export default function ClientList({ company }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {hasNextPage && (
+        <div className="flex justify-center pt-2">
+          <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="border-border">
+            {isFetchingNextPage ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Cargar más clientes
+          </Button>
         </div>
       )}
 

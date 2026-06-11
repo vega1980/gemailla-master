@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { useCompany } from '@/lib/companyContext';
-import { useCompanyTransactions } from '@/lib/companyEntityQueries';
+import { getPaginatedItems, usePaginatedCompanyTransactions } from '@/lib/companyEntityQueries';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2 } from 'lucide-react';
+import { Building2, Loader2 } from 'lucide-react';
 import { format, subMonths, startOfMonth } from 'date-fns';
+import { Button } from '@/components/ui/button';
 import FinancialStatements from '@/components/finance/FinancialStatements';
 import RiskManagement from '@/components/finance/RiskManagement';
 import BudgetPlanner from '@/components/finance/BudgetPlanner';
@@ -14,7 +15,17 @@ import ReportDownloader from '@/components/finance/ReportDownloader';
 export default function FinancialHub() {
   const { activeCompany, loading: companyLoading } = useCompany();
 
-  const { data: transactions = [] } = useCompanyTransactions(activeCompany);
+  const financialFilters = useMemo(() => ({
+    date: { op: '>=', value: format(startOfMonth(subMonths(new Date(), 11)), 'yyyy-MM-dd') },
+  }), []);
+  const {
+    data: transactionPages,
+    isLoading: transactionsLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePaginatedCompanyTransactions(activeCompany, { pageSize: 100, filters: financialFilters });
+  const transactions = useMemo(() => getPaginatedItems(transactionPages), [transactionPages]);
 
   const monthlyData = useMemo(() => {
     const data = [];
@@ -54,6 +65,19 @@ export default function FinancialHub() {
         description="Estados financieros, gestión de riesgos y planificación de presupuestos en tiempo real."
         actions={<ReportDownloader transactions={transactions} company={activeCompany} />}
       />
+
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground">
+        <span>
+          {transactionsLoading ? 'Cargando transacciones financieras...' : `${transactions.length} transacciones financieras cargadas desde Firestore`}
+        </span>
+        {hasNextPage && (
+          <Button variant="outline" size="sm" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="border-border">
+            {isFetchingNextPage ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Cargar más datos financieros
+          </Button>
+        )}
+      </div>
 
       <Tabs defaultValue="statements" className="space-y-6">
         <TabsList className="bg-card border border-border p-1 rounded-xl flex-wrap h-auto gap-1">

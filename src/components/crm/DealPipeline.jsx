@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { companyEntityQueryKey, useCompanyCrmClients, useCompanyCrmDeals } from '@/lib/companyEntityQueries';
+import { getPaginatedItems, useCompanyCrmClients, usePaginatedCompanyCrmDeals } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -48,23 +48,30 @@ export default function DealPipeline({ company }) {
 
   const { data: clients = [] } = useCompanyCrmClients(company);
 
-  const { data: deals = [], isLoading } = useCompanyCrmDeals(company);
+  const {
+    data: dealPages,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePaginatedCompanyCrmDeals(company, { pageSize: 60 });
+  const deals = useMemo(() => getPaginatedItems(dealPages), [dealPages]);
 
   const save = useMutation({
     mutationFn: (data) => editing
       ? firebase.entities.CRMDeal.update(editing.id, data)
       : firebase.entities.CRMDeal.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmDeals', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Oportunidad guardada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['company-entity-page', 'crmDeals', company?.id] }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Oportunidad guardada'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.CRMDeal.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmDeals', company) }); toast.success('Oportunidad eliminada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['company-entity-page', 'crmDeals', company?.id] }); toast.success('Oportunidad eliminada'); },
   });
 
   const moveStage = (deal, stage) => {
     const prob = stageConfig[stage]?.prob ?? deal.probability;
-    firebase.entities.CRMDeal.update(deal.id, { stage, probability: prob }).then(() => qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmDeals', company) }));
+    firebase.entities.CRMDeal.update(deal.id, { stage, probability: prob }).then(() => qc.invalidateQueries({ queryKey: ['company-entity-page', 'crmDeals', company?.id] }));
   };
 
   const openNew  = () => { setEditing(null); setForm(EMPTY); setOpen(true); };
@@ -237,6 +244,15 @@ Responde en español, tono director comercial, con datos y recomendaciones concr
               </div>
             );
           })}
+        </div>
+      )}
+
+      {hasNextPage && (
+        <div className="flex justify-center pt-2">
+          <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="border-border">
+            {isFetchingNextPage ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Cargar más oportunidades
+          </Button>
         </div>
       )}
 

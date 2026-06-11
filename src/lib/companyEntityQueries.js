@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { firebase } from '@/api/firebaseClient';
 
 const COMPANY_ENTITY_QUERIES = Object.freeze({
@@ -9,8 +9,8 @@ const COMPANY_ENTITY_QUERIES = Object.freeze({
   projectTasks: { entity: 'ProjectTask' },
   subscriptions: { entity: 'Subscription' },
   supportTickets: { entity: 'SupportTicket', orderBy: '-createdAt' },
-  crmClients: { entity: 'CRMClient' },
-  crmDeals: { entity: 'CRMDeal' },
+  crmClients: { entity: 'CRMClient', orderBy: '-createdAt' },
+  crmDeals: { entity: 'CRMDeal', orderBy: '-createdAt' },
   crmInteractions: { entity: 'CRMInteraction', orderBy: '-createdAt' },
   employees: { entity: 'Employee' },
   performanceReviews: { entity: 'PerformanceReview', orderBy: '-createdAt' },
@@ -30,6 +30,45 @@ export const companyEntityQueryKey = (queryName, companyOrId, options = {}) => {
   const resultLimit = options.limit ?? config.limit ?? null;
   return ['company-entity', queryName, companyId, { orderBy, limit: resultLimit }];
 };
+
+
+export const paginatedCompanyEntityQueryKey = (queryName, companyOrId, options = {}) => {
+  const companyId = getCompanyId(companyOrId);
+  const config = COMPANY_ENTITY_QUERIES[queryName] || {};
+  const orderBy = options.orderBy ?? config.orderBy ?? null;
+  const pageSize = options.pageSize ?? options.limit ?? config.limit ?? 25;
+  const filters = options.filters ?? {};
+  return ['company-entity-page', queryName, companyId, { orderBy, pageSize, filters }];
+};
+
+export const buildPaginatedCompanyEntityQuery = (queryName, companyOrId, options = {}) => {
+  const config = COMPANY_ENTITY_QUERIES[queryName];
+  if (!config) throw new Error(`Query paginada de entidad desconocida: ${queryName}`);
+
+  const companyId = getCompanyId(companyOrId);
+  const orderBy = options.orderBy ?? config.orderBy;
+  const pageSize = options.pageSize ?? options.limit ?? config.limit ?? 25;
+  const filters = { companyId, ...(options.filters || {}) };
+
+  return {
+    queryKey: paginatedCompanyEntityQueryKey(queryName, companyId, { orderBy, pageSize, filters: options.filters || {} }),
+    queryFn: ({ pageParam = null }) => firebase.entities[config.entity].paginate({ filters, orderBy, limit: pageSize, cursor: pageParam }),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => (lastPage?.hasMore ? lastPage.cursor : undefined),
+    enabled: options.enabled ?? Boolean(companyId),
+  };
+};
+
+export const usePaginatedCompanyEntityQuery = (queryName, companyOrId, options = {}) => {
+  const queryOptions = buildPaginatedCompanyEntityQuery(queryName, companyOrId, options);
+  return useInfiniteQuery({
+    ...queryOptions,
+    ...options.query,
+    enabled: options.query?.enabled ?? queryOptions.enabled,
+  });
+};
+
+export const getPaginatedItems = (data) => data?.pages?.flatMap((page) => page.items || []) || [];
 
 export const buildCompanyEntityQuery = (queryName, companyOrId, options = {}) => {
   const config = COMPANY_ENTITY_QUERIES[queryName];
@@ -70,3 +109,9 @@ export const useCompanyPerformanceReviews = (companyOrId, options) => useCompany
 export const useCompanyPayrolls = (companyOrId, options) => useCompanyEntityQuery('payrolls', companyOrId, options);
 export const useCompanyAuditLogs = (companyOrId, options) => useCompanyEntityQuery('auditLogs', companyOrId, options);
 export const useCompanyAiConversations = (companyOrId, options) => useCompanyEntityQuery('aiConversations', companyOrId, options);
+
+export const usePaginatedCompanyTransactions = (companyOrId, options) => usePaginatedCompanyEntityQuery('transactions', companyOrId, options);
+export const usePaginatedCompanyDocuments = (companyOrId, options) => usePaginatedCompanyEntityQuery('documents', companyOrId, options);
+export const usePaginatedCompanyAuditLogs = (companyOrId, options) => usePaginatedCompanyEntityQuery('auditLogs', companyOrId, options);
+export const usePaginatedCompanyCrmClients = (companyOrId, options) => usePaginatedCompanyEntityQuery('crmClients', companyOrId, options);
+export const usePaginatedCompanyCrmDeals = (companyOrId, options) => usePaginatedCompanyEntityQuery('crmDeals', companyOrId, options);

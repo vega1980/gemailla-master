@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { companyEntityQueryKey, useCompanyTransactions } from '@/lib/companyEntityQueries';
+import { getPaginatedItems, usePaginatedCompanyTransactions } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -43,10 +43,17 @@ export default function ERP() {
   const [filterType, setFilterType] = useState('all');
   const [formData, setFormData] = useState(createEmptyTransactionForm);
 
-  const transactionsQueryKey = companyEntityQueryKey('transactions', activeCompany);
-  const invalidateTransactions = () => queryClient.invalidateQueries({ queryKey: transactionsQueryKey });
+  const transactionFilters = useMemo(() => (filterType === 'all' ? {} : { type: filterType }), [filterType]);
+  const invalidateTransactions = () => queryClient.invalidateQueries({ queryKey: ['company-entity-page', 'transactions', activeCompany?.id] });
 
-  const { data: transactions = [], isLoading } = useCompanyTransactions(activeCompany);
+  const {
+    data: transactionPages,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePaginatedCompanyTransactions(activeCompany, { pageSize: 50, filters: transactionFilters });
+  const transactions = useMemo(() => getPaginatedItems(transactionPages), [transactionPages]);
 
   const createMutation = useMutation({
     mutationFn: (data) => firebase.entities.Transaction.create(data),
@@ -71,11 +78,6 @@ export default function ERP() {
     mutationFn: (id) => firebase.entities.Transaction.delete(id),
     onSuccess: invalidateTransactions,
   });
-
-  const filteredTransactions = useMemo(
-    () => transactions.filter((transaction) => filterType === 'all' || transaction.type === filterType),
-    [filterType, transactions],
-  );
 
   const transactionTotals = useMemo(() => {
     const totalIngresos = transactions
@@ -122,9 +124,12 @@ export default function ERP() {
       />
       <TransactionFilters filterType={filterType} onFilterTypeChange={setFilterType} />
       <TransactionList
-        transactions={filteredTransactions}
+        transactions={transactions}
         isLoading={isLoading}
         onDeleteTransaction={(transactionId) => deleteMutation.mutate(transactionId)}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={() => fetchNextPage()}
       />
       <TransactionFormDialog
         open={showForm}

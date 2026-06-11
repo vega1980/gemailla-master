@@ -10,6 +10,7 @@ import {
   where,
   orderBy,
   limit,
+  startAfter,
   writeBatch
 } from 'firebase/firestore';
 import { db } from '@/firebase';
@@ -24,6 +25,26 @@ export const createRepository = (collectionName) => {
   const auditMiddleware = createAuditMutationMiddleware();
 
   const serializeSnapshot = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+
+  const normalizeFilters = (filters = {}) => Object.entries(filters)
+    .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all' && filterValue !== '')
+    .flatMap(([filterField, filterValue]) => {
+      const values = Array.isArray(filterValue) ? filterValue : [filterValue];
+      return values
+        .filter((currentValue) => currentValue !== undefined && currentValue !== null && currentValue !== 'all' && currentValue !== '')
+        .map((currentValue) => {
+          if (currentValue && typeof currentValue === 'object') {
+            return where(filterField, currentValue.operator || currentValue.op || '==', currentValue.value);
+          }
+          return where(filterField, '==', currentValue);
+        });
+    });
+
+  const normalizeOrder = (sort) => {
+    if (!sort) return null;
+    const direction = String(sort).startsWith('-') ? 'desc' : 'asc';
+    return orderBy(String(sort).replace(/^-/, ''), direction);
+  };
 
   const newId = () => doc(collectionRef).id;
 
@@ -52,14 +73,9 @@ export const createRepository = (collectionName) => {
     filter: async (field, operator, value) => {
       if (field && typeof field === 'object' && !Array.isArray(field)) {
         /** @type {import('firebase/firestore').QueryConstraint[]} */
-        const constraints = Object.entries(field)
-          .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all')
-          .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
-
-        if (operator) {
-          const direction = String(operator).startsWith('-') ? 'desc' : 'asc';
-          constraints.push(orderBy(String(operator).replace(/^-/, ''), direction));
-        }
+        const constraints = normalizeFilters(field);
+        const sortConstraint = normalizeOrder(operator);
+        if (sortConstraint) constraints.push(sortConstraint);
 
         if (value) constraints.push(limit(value));
 
@@ -70,6 +86,25 @@ export const createRepository = (collectionName) => {
       const q = query(collectionRef, where(field, operator, value));
       const snapshot = await getDocs(q);
       return serializeSnapshot(snapshot);
+    },
+
+
+    paginate: async ({ filters = {}, orderBy: sort, limit: pageSize = 25, cursor = null } = {}) => {
+      const constraints = normalizeFilters(filters);
+      const sortConstraint = normalizeOrder(sort);
+      if (sortConstraint) constraints.push(sortConstraint);
+      if (cursor) constraints.push(startAfter(cursor));
+      constraints.push(limit(pageSize + 1));
+
+      const snapshot = await getDocs(query(collectionRef, ...constraints));
+      const docs = snapshot.docs.slice(0, pageSize);
+      const hasMore = snapshot.docs.length > pageSize;
+
+      return {
+        items: docs.map((item) => ({ id: item.id, ...item.data() })),
+        cursor: docs.length ? docs[docs.length - 1] : null,
+        hasMore,
+      };
     },
 
     create: async (data) => {

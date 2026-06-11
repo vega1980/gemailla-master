@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useCompanyAuditLogs } from '@/lib/companyEntityQueries';
+import React, { useMemo, useState } from 'react';
+import { getPaginatedItems, usePaginatedCompanyAuditLogs } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
@@ -11,7 +11,7 @@ import {
   Activity, FileText, ArrowUpDown, Brain, Building2, Shield,
   UserPlus, LogIn, Trash2, Download, Search, Loader2, X, SlidersHorizontal
 } from 'lucide-react';
-import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -52,10 +52,31 @@ export default function ActivityLog() {
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: logs = [], isLoading } = useCompanyAuditLogs(activeCompany);
+  const activityFilters = useMemo(() => {
+    const filters = {};
+    if (filterAction !== 'all') filters.action = filterAction;
+    if (filterEntity !== 'all') filters.entity_type = filterEntity;
+    if (filterUser) filters.userEmail = filterUser;
 
-  // Unique users from logs
-  const uniqueUsers = [...new Set(logs.map(l => l.userEmail).filter(Boolean))];
+    const dateFilters = [];
+    if (dateFrom) dateFilters.push({ op: '>=', value: startOfDay(parseISO(dateFrom)).toISOString() });
+    if (dateTo) dateFilters.push({ op: '<=', value: endOfDay(parseISO(dateTo)).toISOString() });
+    if (dateFilters.length) filters.createdAt = dateFilters;
+
+    return filters;
+  }, [dateFrom, dateTo, filterAction, filterEntity, filterUser]);
+
+  const {
+    data: logPages,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = usePaginatedCompanyAuditLogs(activeCompany, { pageSize: 50, filters: activityFilters });
+  const logs = useMemo(() => getPaginatedItems(logPages), [logPages]);
+
+  // Unique users from loaded log pages; selecting one moves the user filter to Firestore.
+  const uniqueUsers = useMemo(() => [...new Set(logs.map(l => l.userEmail).filter(Boolean))], [logs]);
 
   const clearFilters = () => {
     setFilterAction('all');
@@ -69,20 +90,8 @@ export default function ActivityLog() {
   const hasActiveFilters = filterAction !== 'all' || filterEntity !== 'all' || filterUser || dateFrom || dateTo || search;
 
   const filtered = logs.filter(l => {
-    const matchAction = filterAction === 'all' || l.action === filterAction;
-    const matchEntity = filterEntity === 'all' || l.entity_type === filterEntity;
-    const matchUser = !filterUser || l.userEmail === filterUser;
     const matchSearch = !search || l.details?.toLowerCase().includes(search.toLowerCase()) || l.userEmail?.toLowerCase().includes(search.toLowerCase()) || l.userName?.toLowerCase().includes(search.toLowerCase());
-    let matchDate = true;
-    if (dateFrom || dateTo) {
-      const logDate = l.createdAt ? parseISO(l.createdAt) : null;
-      if (logDate) {
-        if (dateFrom && dateTo) matchDate = isWithinInterval(logDate, { start: startOfDay(parseISO(dateFrom)), end: endOfDay(parseISO(dateTo)) });
-        else if (dateFrom) matchDate = logDate >= startOfDay(parseISO(dateFrom));
-        else if (dateTo) matchDate = logDate <= endOfDay(parseISO(dateTo));
-      }
-    }
-    return matchAction && matchEntity && matchUser && matchSearch && matchDate;
+    return matchSearch;
   });
 
   if (!activeCompany) return <EmptyState icon={Activity} title="Selecciona una empresa" description="Necesitas una empresa activa." />;
@@ -104,7 +113,7 @@ export default function ActivityLog() {
       {/* Search bar always visible */}
       <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por usuario, detalle..." className="pl-10 bg-card border-border" />
+        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar en actividad cargada..." className="pl-10 bg-card border-border" />
       </div>
 
       {/* Advanced filters panel */}
@@ -208,6 +217,14 @@ export default function ActivityLog() {
               );
             })}
           </AnimatePresence>
+          {hasNextPage && (
+            <div className="flex justify-center pt-3">
+              <Button variant="outline" onClick={() => fetchNextPage()} disabled={isFetchingNextPage} className="border-border">
+                {isFetchingNextPage ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Cargar más actividad
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -5,7 +5,7 @@ import { transactionCategoryLabels } from '@/components/erp/transactionCatalog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpDown, ArrowUpRight, CalendarClock, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 
-export default function TransactionList({ transactions, isLoading, onDeleteTransaction }) {
+export default function TransactionList({ transactions, isLoading, onDeleteTransaction, hasNextPage, isFetchingNextPage, onLoadMore }) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
@@ -69,6 +69,14 @@ export default function TransactionList({ transactions, isLoading, onDeleteTrans
           );
         })}
       </AnimatePresence>
+      {hasNextPage && (
+        <div className="flex justify-center pt-3">
+          <Button variant="outline" onClick={onLoadMore} disabled={isFetchingNextPage} className="border-border">
+            {isFetchingNextPage ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Cargar más transacciones
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
