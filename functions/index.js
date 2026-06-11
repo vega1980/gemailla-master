@@ -7,6 +7,37 @@ admin.initializeApp();
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const DEFAULT_MODEL = 'gpt-4o-mini';
 const MAX_PROMPT_LENGTH = 12000;
+const RELEASE_METADATA = Object.freeze({
+  appVersion: process.env.APP_VERSION || '1.0.0',
+  buildId: process.env.BUILD_ID || process.env.K_REVISION || 'local',
+  gitSha: process.env.GIT_SHA || process.env.GITHUB_SHA || 'unknown',
+  deployEnv: process.env.DEPLOY_ENV || process.env.NODE_ENV || 'production',
+});
+
+function createCorrelationId(prefix = 'srv') {
+  const crypto = require('node:crypto');
+  return `${prefix}_${crypto.randomUUID()}`;
+}
+
+function getCorrelationId(req) {
+  const headerValue = req.get('x-correlation-id');
+  const bodyValue = req.body?.correlationId;
+  return String(headerValue || bodyValue || createCorrelationId('ai')).trim();
+}
+
+function structuredLog(severity, eventName, payload = {}) {
+  const entry = {
+    severity,
+    eventName,
+    timestamp: new Date().toISOString(),
+    ...RELEASE_METADATA,
+    ...payload,
+  };
+  const line = JSON.stringify(entry);
+  if (severity === 'ERROR' || severity === 'CRITICAL') console.error(line);
+  else if (severity === 'WARNING') console.warn(line);
+  else console.log(line);
+}
 
 function getAllowedOrigins() {
   return (process.env.ALLOWED_ORIGINS || '')
@@ -24,7 +55,7 @@ function applyCors(req, res) {
 
   res.set('Access-Control-Allow-Origin', allowedOrigin);
   res.set('Vary', 'Origin');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
 }
 
@@ -87,12 +118,14 @@ function extractOutputText(payload = {}) {
   return chunks.join('\n').trim();
 }
 
-async function callOpenAI({ apiKey, prompt, user }) {
+async function callOpenAI({ apiKey, prompt, user, correlationId }) {
+  const startedAt = Date.now();
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
+      'X-Correlation-Id': correlationId,
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
@@ -108,12 +141,25 @@ async function callOpenAI({ apiKey, prompt, user }) {
       ],
       metadata: {
         firebase_uid: user.uid || 'unknown',
+        correlation_id: correlationId,
+        app_version: RELEASE_METADATA.appVersion,
+        build_id: RELEASE_METADATA.buildId,
+        git_sha: RELEASE_METADATA.gitSha,
+        deploy_env: RELEASE_METADATA.deployEnv,
       },
     }),
   });
 
+  const latencyMs = Date.now() - startedAt;
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
+    structuredLog('ERROR', 'openai_request_failed', {
+      correlationId,
+      firebaseUid: user.uid || 'unknown',
+      status: response.status,
+      latencyMs,
+      message: payload?.error?.message || payload?.message || 'OpenAI error',
+    });
     const message = payload?.error?.message || payload?.message || `OpenAI respondió HTTP ${response.status}.`;
     const error = new Error(message);
     error.status = response.status >= 500 ? 502 : response.status;
@@ -127,11 +173,26 @@ async function callOpenAI({ apiKey, prompt, user }) {
     throw error;
   }
 
-  return outputText;
+  structuredLog('INFO', 'openai_request_completed', {
+    correlationId,
+    firebaseUid: user.uid || 'unknown',
+    status: response.status,
+    latencyMs,
+    model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+  });
+
+  return { outputText, latencyMs };
 }
 
 exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res) => {
+  const startedAt = Date.now();
+  const correlationId = getCorrelationId(req);
   applyCors(req, res);
+  res.set('X-Correlation-Id', correlationId);
+  res.set('X-App-Version', RELEASE_METADATA.appVersion);
+  res.set('X-Build-Id', RELEASE_METADATA.buildId);
+  res.set('X-Git-Sha', RELEASE_METADATA.gitSha);
+  res.set('X-Deploy-Env', RELEASE_METADATA.deployEnv);
 
   if (req.method === 'OPTIONS') {
     res.status(204).send('');
@@ -139,28 +200,60 @@ exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res
   }
 
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Método no permitido. Usa POST.' });
+    structuredLog('WARNING', 'ai_request_rejected', { correlationId, method: req.method, status: 405 });
+    res.status(405).json({ error: 'Método no permitido. Usa POST.', correlationId, release: RELEASE_METADATA });
     return;
   }
 
   try {
     const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      res.status(503).json({ error: 'Backend IA no configurado: falta OPENAI_API_KEY en Firebase Functions.' });
+      structuredLog('ERROR', 'ai_backend_not_configured', { correlationId, status: 503 });
+      res.status(503).json({
+        error: 'Backend IA no configurado: falta OPENAI_API_KEY en Firebase Functions.',
+        correlationId,
+        release: RELEASE_METADATA,
+      });
       return;
     }
 
     const user = await verifyFirebaseUser(req);
     const prompt = getPrompt(req.body);
-    const answer = await callOpenAI({ apiKey, prompt, user });
+    structuredLog('INFO', 'ai_request_started', {
+      correlationId,
+      firebaseUid: user.uid || 'unknown',
+      promptLength: prompt.length,
+      model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+    });
+
+    const { outputText } = await callOpenAI({ apiKey, prompt, user, correlationId });
 
     res.status(200).json({
-      response: answer,
+      response: outputText,
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
       status: 'completed',
+      correlationId,
+      release: RELEASE_METADATA,
+    });
+
+    structuredLog('INFO', 'ai_request_completed', {
+      correlationId,
+      firebaseUid: user.uid || 'unknown',
+      status: 200,
+      latencyMs: Date.now() - startedAt,
     });
   } catch (error) {
     const status = Number(error.status) || 500;
-    res.status(status).json({ error: error.message || 'No se pudo completar la consulta de IA.' });
+    structuredLog(status >= 500 ? 'ERROR' : 'WARNING', 'ai_request_failed', {
+      correlationId,
+      status,
+      latencyMs: Date.now() - startedAt,
+      message: error.message || 'No se pudo completar la consulta de IA.',
+    });
+    res.status(status).json({
+      error: error.message || 'No se pudo completar la consulta de IA.',
+      correlationId,
+      release: RELEASE_METADATA,
+    });
   }
 });

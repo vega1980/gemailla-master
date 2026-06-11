@@ -3,18 +3,23 @@
 import firebase, { isAiDisabledResponse } from '@/api/firebaseClient';
 import { logAction } from '@/lib/auditLogger';
 import { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatuses';
+import { ensureCorrelationId, getReleaseMetadata, logFrontendEvent } from '@/lib/observability';
 
 function getErrorMessage(error, fallback) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export async function analyzeDocumentFlow({ doc, company, user }) {
+export async function analyzeDocumentFlow({ doc, company, user, correlationId: providedCorrelationId }) {
   if (!doc?.id) throw new Error('Documento inválido.');
+
+  const correlationId = ensureCorrelationId(providedCorrelationId || doc.correlationId, 'doc_ai');
 
   await firebase.entities.Document.update(doc.id, {
     status: DOCUMENT_STATUSES.PROCESSING,
     aiDisabled: false,
     errorMessage: null,
+    correlationId,
+    release: getReleaseMetadata(),
   });
 
   try {
@@ -32,6 +37,7 @@ export async function analyzeDocumentFlow({ doc, company, user }) {
         El archivo está en: ${doc.storagePath}
         Nombre: ${doc.title}`,
       storagePaths: [doc.storagePath],
+      correlationId,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -58,7 +64,8 @@ export async function analyzeDocumentFlow({ doc, company, user }) {
         status: result?.documentStatus || DOCUMENT_STATUSES.AI_DISABLED,
         aiDisabled: true,
         ai_summary: message,
-        errorMessage: message,
+        errorMessage: `${message} (correlationId: ${correlationId})`,
+        correlationId,
       });
 
       return { status: 'ai_disabled', message };
@@ -69,6 +76,8 @@ export async function analyzeDocumentFlow({ doc, company, user }) {
       status: DOCUMENT_STATUSES.ANALYZED,
       aiDisabled: false,
       errorMessage: null,
+      correlationId,
+      release: getReleaseMetadata(),
     });
 
     await logAction({
@@ -79,15 +88,18 @@ export async function analyzeDocumentFlow({ doc, company, user }) {
       entityType: 'Document',
       entityId: doc.id,
       details: `Analizado: ${doc.title}`,
+      correlationId,
     });
 
-    return { status: 'analyzed', result };
+    return { status: 'analyzed', result, correlationId };
   } catch (error) {
     const message = getErrorMessage(error, 'No se pudo analizar el documento.');
     await firebase.entities.Document.update(doc.id, {
       status: DOCUMENT_STATUSES.ERROR,
-      errorMessage: message,
+      errorMessage: `${message} (correlationId: ${correlationId})`,
+      correlationId,
     });
+    logFrontendEvent('document_analyze_failed', { correlationId, documentId: doc.id, companyId: company?.id, message }, 'error');
     throw error;
   }
 }

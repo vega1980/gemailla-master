@@ -2,9 +2,19 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import packageJson from './package.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+
+function getGitSha() {
+  return process.env.GIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || 'unknown';
+}
+
+function getBuildId() {
+  return process.env.BUILD_ID || process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_RUN_ID || 'local';
+}
 
 const vendorChunkGroups = [
   { name: 'react-vendor', packages: ['react', 'react-dom', 'react-router-dom'] },
@@ -35,6 +45,12 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.APP_VERSION || packageJson.version),
+    __BUILD_ID__: JSON.stringify(getBuildId()),
+    __GIT_SHA__: JSON.stringify(getGitSha()),
+    __DEPLOY_ENV__: JSON.stringify(process.env.DEPLOY_ENV || process.env.NODE_ENV || 'development'),
   },
   build: {
     outDir: 'dist',

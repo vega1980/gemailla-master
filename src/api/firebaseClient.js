@@ -6,6 +6,7 @@ import { normalizeData } from '@/infrastructure/firebase/repositories/normalizat
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { createRepository } from '@/infrastructure/firebase/repositories/createRepository';
 import { getDocumentAccessUrl, uploadFile } from '@/infrastructure/firebase/storage/documentStorage';
+import { ensureCorrelationId, getReleaseMetadata, logFrontendEvent, persistObservabilityEvent } from '@/lib/observability';
 export { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatuses';
 
 import {
@@ -57,7 +58,7 @@ async function getAuthHeader() {
   return { Authorization: `Bearer ${token}` };
 }
 
-function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.') {
+function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.', correlationId = ensureCorrelationId('', 'ai')) {
   return {
     disabled: true,
     status: 'disabled',
@@ -65,24 +66,32 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
     message: reason,
     summary: reason,
     response: reason,
+    correlationId,
+    release: getReleaseMetadata(),
   };
 }
 
 async function invokeLLM(params = {}) {
+  const correlationId = ensureCorrelationId(params.correlationId, 'ai');
   const endpoint = import.meta.env.VITE_LLM_ENDPOINT || '/api/ai';
   const frontendOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
   if (frontendOpenAiKey) {
-    return aiDisabledPayload('IA no configurada: no se permite exponer claves privadas directamente en el navegador. Usa un backend seguro.');
+    return aiDisabledPayload('IA no configurada: no se permite exponer claves privadas directamente en el navegador. Usa un backend seguro.', correlationId);
   }
 
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-Correlation-Id': correlationId,
       ...(await getAuthHeader()),
     },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      ...params,
+      correlationId,
+      release: getReleaseMetadata(),
+    }),
   });
 
   const raw = await response.text();
@@ -97,10 +106,21 @@ async function invokeLLM(params = {}) {
 
   if (!response.ok) {
     const message = payload?.error || payload?.message || `Error HTTP ${response.status} al llamar IA.`;
-    throw new Error(message);
+    logFrontendEvent('ai_request_failed', { correlationId, status: response.status, message }, 'error');
+    await persistObservabilityEvent('ai_request_failed', {
+      correlationId,
+      severity: 'ERROR',
+      source: 'frontend',
+      status: response.status,
+      message,
+    }).catch(() => null);
+    throw new Error(`${message} (correlationId: ${correlationId})`);
   }
 
-  return payload?.data || payload?.result || payload;
+  logFrontendEvent('ai_request_completed', { correlationId, status: response.status });
+  const result = payload?.data || payload?.result || payload;
+  if (result && typeof result === 'object') return { ...result, correlationId: result.correlationId || correlationId };
+  return { response: result, correlationId };
 }
 
 async function extractDataFromUploadedFile() {
@@ -251,9 +271,12 @@ const agents = {
     messages.push({ ...message, createdAt: nowIso() });
 
     if (message?.role === 'user') {
-      const aiResponse = await invokeLLM({ prompt: message.content });
+      const correlationId = ensureCorrelationId(message.correlationId, 'ai');
+      const aiResponse = await invokeLLM({ prompt: message.content, correlationId });
       messages.push({
         role: 'assistant',
+        correlationId,
+        release: getReleaseMetadata(),
         content: typeof aiResponse === 'string' ? aiResponse : aiResponse?.response || aiResponse?.message || 'IA desactivada temporalmente.',
         createdAt: nowIso(),
       });

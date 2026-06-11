@@ -252,6 +252,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /observabilityEvents/{eventId} {
+      allow create: if canCreateOwnedOrCompanyRecord();
+      allow read: if canReadOwnedOrCompanyRecord();
+      allow update, delete: if false;
+    }
+
     match /documents/{documentId} {
       allow create: if validDocumentCreate();
       allow read: if canReadCompanyRecord();
