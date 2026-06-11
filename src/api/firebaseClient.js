@@ -132,6 +132,7 @@ async function extractDataFromUploadedFile() {
 }
 
 async function invokeFunction(name, payload = {}) {
+  const correlationId = ensureCorrelationId(payload.correlationId, name || 'fn');
   const endpoint = import.meta.env.VITE_FUNCTIONS_ENDPOINT || import.meta.env.VITE_LLM_ENDPOINT;
   if (!endpoint) {
     return {
@@ -140,6 +141,7 @@ async function invokeFunction(name, payload = {}) {
         disabled: true,
         message: `Función ${name} desactivada: falta backend seguro.`,
         results: {},
+        correlationId,
       },
     };
   }
@@ -148,13 +150,22 @@ async function invokeFunction(name, payload = {}) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-Correlation-Id': correlationId,
       ...(await getAuthHeader()),
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      correlationId,
+      release: payload.release || getReleaseMetadata(),
+    }),
   });
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || data?.message || `No se pudo ejecutar ${name}.`);
+  if (!response.ok) {
+    const message = data?.error || data?.message || `No se pudo ejecutar ${name}.`;
+    logFrontendEvent('function_request_failed', { correlationId, functionName: name, status: response.status, message }, 'error');
+    throw new Error(`${message} (correlationId: ${correlationId})`);
+  }
   return { data };
 }
 

@@ -78,7 +78,13 @@ export async function uploadFile({ file, companyId, documentId, folder = 'docume
     },
   });
 
-  logFrontendEvent('document_storage_uploaded', { correlationId, companyId: safeCompanyId, documentId: safeDocumentId, storagePath });
+  logFrontendEvent('document_storage_uploaded', {
+    correlationId,
+    companyId: safeCompanyId,
+    documentId: safeDocumentId,
+    contentType,
+    fileSize: file.size,
+  });
 
   return {
     storagePath,
