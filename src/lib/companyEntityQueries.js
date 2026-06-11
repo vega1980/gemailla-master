@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { firebase } from '@/api/firebaseClient';
 
 export const COMPANY_ENTITY_DEFAULT_LIMIT = 100;
-export const COMPANY_ENTITY_STALE_TIME = 60 * 1000;
-export const COMPANY_ENTITY_GC_TIME = 5 * 60 * 1000;
+export const COMPANY_ENTITY_STALE_TIME = 5 * 60 * 1000;
+export const COMPANY_ENTITY_GC_TIME = 30 * 60 * 1000;
 
 const COMPANY_ENTITY_QUERIES = Object.freeze({
   transactions: { entity: 'Transaction', orderBy: '-date', limit: COMPANY_ENTITY_DEFAULT_LIMIT },

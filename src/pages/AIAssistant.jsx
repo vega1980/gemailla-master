@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { firebase, isAiDisabledResponse } from '@/api/firebaseClient';
-import { useCompanyAiConversations, useCompanyDocuments, useCompanyTransactions } from '@/lib/companyEntityQueries';
+import { useCompanyAiConversations } from '@/lib/companyEntityQueries';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -63,8 +64,7 @@ export default function AIAssistant() {
   const isMountedRef = useRef(false);
   const hasHydratedSavedConversationsRef = useRef(false);
 
-  const { data: documents = [] } = useCompanyDocuments(activeCompany);
-  const { data: transactions = [] } = useCompanyTransactions(activeCompany);
+  const { documents, transactions } = useCompanyData(activeCompany);
   const { data: savedConvos = [] } = useCompanyAiConversations(activeCompany);
 
   useEffect(() => {
