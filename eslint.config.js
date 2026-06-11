@@ -11,7 +11,13 @@ export default [
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
     languageOptions: {
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        __APP_VERSION__: "readonly",
+        __BUILD_ID__: "readonly",
+        __GIT_SHA__: "readonly",
+        __DEPLOY_ENV__: "readonly",
+      },
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: "module",

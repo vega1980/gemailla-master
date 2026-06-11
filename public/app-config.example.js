@@ -10,3 +10,11 @@ window.GEMAILLA_FIREBASE_CONFIG = {
 // Valores permitidos: "auto", true, false.
 // "auto" conecta a emuladores solo en localhost/127.0.0.1.
 window.GEMAILLA_USE_FIREBASE_EMULATORS = "auto";
+
+
+window.GEMAILLA_RELEASE = {
+  APP_VERSION: "1.0.0",
+  BUILD_ID: "local",
+  GIT_SHA: "unknown",
+  DEPLOY_ENV: "development"
+};

@@ -1,10 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import '@/index.css';
+import { installGlobalErrorTracking } from '@/lib/observability';
 
 function ensureRuntimeConfigDefaults() {
   window.GEMAILLA_FIREBASE_CONFIG = window.GEMAILLA_FIREBASE_CONFIG || {};
   window.GEMAILLA_USE_FIREBASE_EMULATORS = window.GEMAILLA_USE_FIREBASE_EMULATORS ?? 'auto';
+  window.GEMAILLA_RELEASE = window.GEMAILLA_RELEASE || {};
 }
 
 async function loadOptionalRuntimeConfig() {
@@ -33,6 +35,7 @@ async function loadOptionalRuntimeConfig() {
 }
 
 async function bootstrap() {
+  installGlobalErrorTracking();
   await loadOptionalRuntimeConfig();
 
   const { default: App } = await import('@/App.jsx');

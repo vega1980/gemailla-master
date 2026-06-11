@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { firebase, isAiDisabledResponse } from '@/api/firebaseClient';
+import { createCorrelationId } from '@/lib/observability';
 import { useCompanyAiConversations } from '@/lib/companyEntityQueries';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
@@ -116,6 +117,7 @@ export default function AIAssistant() {
       .filter(d => filterDocType === 'all' || d.docType === filterDocType)
       .slice(0, 15);
     const docIds = relevantDocs.map(d => d.id);
+    const correlationId = createCorrelationId('ai');
     const pendingId = createPendingConversationId();
     const pendingConvo = { id: pendingId, query: userQuery, response: null, docs: docIds };
     if (isMountedRef.current) {
@@ -142,6 +144,7 @@ export default function AIAssistant() {
         filters_used: { docType: filterDocType },
         status,
         errorMessage,
+        correlationId,
       });
     };
 
@@ -174,7 +177,8 @@ RESUMEN FINANCIERO:
 PREGUNTA DEL USUARIO:
 ${userQuery}
 
-Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`
+Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`,
+        correlationId,
       });
       const response = normalizeAIResponse(aiResponse);
       updateConversation(response);
@@ -183,7 +187,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
 
       await logAction({
         companyId: activeCompany.id, userEmail: user?.email, userName: user?.fullName,
-        action: 'ai_query', entityType: 'AIConversation', details: userQuery
+        action: 'ai_query', entityType: 'AIConversation', details: userQuery, correlationId: aiResponse?.correlationId || correlationId
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error, 'Verifica la configuración del backend seguro y vuelve a intentar.');
@@ -199,6 +203,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
           action: 'ai_query_error',
           entityType: 'AIConversation',
           details: `${userQuery} — ${errorMessage}`,
+          correlationId,
         });
       } catch (persistenceError) {
         console.error('Error persisting failed AI conversation:', persistenceError);
