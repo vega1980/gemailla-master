@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -20,11 +20,7 @@ export default function Audit() {
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState(null);
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', activeCompany?.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
+  const { data: transactions = [] } = useCompanyTransactions(activeCompany);
 
   const runAudit = async () => {
     setRunning(true);

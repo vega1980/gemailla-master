@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { firebase, isAiDisabledResponse } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyAiConversations, useCompanyDocuments, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -63,23 +63,9 @@ export default function AIAssistant() {
   const isMountedRef = useRef(false);
   const hasHydratedSavedConversationsRef = useRef(false);
 
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', activeCompany?.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
-
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', activeCompany?.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
-
-  const { data: savedConvos = [] } = useQuery({
-    queryKey: ['conversations', activeCompany?.id],
-    queryFn: () => firebase.entities.AIConversation.filter({ companyId: activeCompany.id }, '-createdAt', 20),
-    enabled: !!activeCompany,
-  });
+  const { data: documents = [] } = useCompanyDocuments(activeCompany);
+  const { data: transactions = [] } = useCompanyTransactions(activeCompany);
+  const { data: savedConvos = [] } = useCompanyAiConversations(activeCompany);
 
   useEffect(() => {
     isMountedRef.current = true;

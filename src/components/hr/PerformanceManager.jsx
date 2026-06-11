@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyEmployees, useCompanyPerformanceReviews } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,26 +47,20 @@ export default function PerformanceManager({ company }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [selectedReview, setSelectedReview] = useState(null);
 
-  const { data: employees = [] } = useQuery({
-    queryKey: ['employees', company.id],
-    queryFn: () => firebase.entities.Employee.filter({ companyId: company.id }),
-  });
+  const { data: employees = [] } = useCompanyEmployees(company);
 
-  const { data: reviews = [], isLoading } = useQuery({
-    queryKey: ['reviews', company.id],
-    queryFn: () => firebase.entities.PerformanceReview.filter({ companyId: company.id }),
-  });
+  const { data: reviews = [], isLoading } = useCompanyPerformanceReviews(company);
 
   const save = useMutation({
     mutationFn: (data) => editing
       ? firebase.entities.PerformanceReview.update(editing.id, data)
       : firebase.entities.PerformanceReview.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries(['reviews', company.id]); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Evaluación guardada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('performanceReviews', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Evaluación guardada'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.PerformanceReview.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['reviews', company.id]); if (selectedReview?.id === editing?.id) setSelectedReview(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('performanceReviews', company) }); if (selectedReview?.id === editing?.id) setSelectedReview(null); },
   });
 
   const openNew = () => { setEditing(null); setForm(EMPTY); setOpen(true); };

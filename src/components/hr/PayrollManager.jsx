@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyEmployees, useCompanyPayrolls, useCompanyPerformanceReviews } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,35 +71,26 @@ export default function PayrollManager({ company }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [autoMode, setAutoMode] = useState(true);
 
-  const { data: employees = [] } = useQuery({
-    queryKey: ['employees', company.id],
-    queryFn: () => firebase.entities.Employee.filter({ companyId: company.id }),
-  });
+  const { data: employees = [] } = useCompanyEmployees(company);
 
-  const { data: reviews = [] } = useQuery({
-    queryKey: ['reviews', company.id],
-    queryFn: () => firebase.entities.PerformanceReview.filter({ companyId: company.id }),
-  });
+  const { data: reviews = [] } = useCompanyPerformanceReviews(company);
 
-  const { data: payrolls = [], isLoading } = useQuery({
-    queryKey: ['payrolls', company.id],
-    queryFn: () => firebase.entities.Payroll.filter({ companyId: company.id }),
-  });
+  const { data: payrolls = [], isLoading } = useCompanyPayrolls(company);
 
   const save = useMutation({
     mutationFn: (data) => editing
       ? firebase.entities.Payroll.update(editing.id, data)
       : firebase.entities.Payroll.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries(['payrolls', company.id]); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Nómina guardada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('payrolls', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Nómina guardada'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.Payroll.delete(id),
-    onSuccess: () => qc.invalidateQueries(['payrolls', company.id]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: companyEntityQueryKey('payrolls', company) }),
   });
 
   const updateStatus = (id, status) =>
-    firebase.entities.Payroll.update(id, { status }).then(() => qc.invalidateQueries(['payrolls', company.id]));
+    firebase.entities.Payroll.update(id, { status }).then(() => qc.invalidateQueries({ queryKey: companyEntityQueryKey('payrolls', company) }));
 
   const openNew = () => { setEditing(null); setForm(EMPTY); setOpen(true); setAutoMode(true); };
   const openEdit = (p) => { setEditing(p); setForm({ ...p }); setOpen(true); setAutoMode(false); };
@@ -138,7 +130,7 @@ export default function PayrollManager({ company }) {
       };
     });
     await firebase.entities.Payroll.bulkCreate(records);
-    qc.invalidateQueries(['payrolls', company.id]);
+    qc.invalidateQueries({ queryKey: companyEntityQueryKey('payrolls', company) });
     toast.success(`✅ ${records.length} nóminas generadas automáticamente para ${period}`);
   };
 

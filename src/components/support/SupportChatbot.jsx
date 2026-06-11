@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyDocuments, useCompanySupportTickets, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -36,26 +37,15 @@ export default function SupportChatbot({ company }) {
   const [showTickets, setShowTickets] = useState(false);
   const bottomRef = useRef(null);
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', company.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: company.id }),
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', company.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: company.id }),
-  });
-
-  const { data: tickets = [] } = useQuery({
-    queryKey: ['support-tickets', company.id],
-    queryFn: () => firebase.entities.SupportTicket.filter({ companyId: company.id }),
-  });
+  const { data: transactions = [] } = useCompanyTransactions(company);
+  const { data: documents = [] } = useCompanyDocuments(company);
+  const { data: tickets = [] } = useCompanySupportTickets(company);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, aiLoading]);
 
   const updateTicket = useMutation({
     mutationFn: ({ id, data }) => firebase.entities.SupportTicket.update(id, data),
-    onSuccess: () => qc.invalidateQueries(['support-tickets', company.id]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: companyEntityQueryKey('supportTickets', company) }),
   });
 
   const createTicket = async (subject, description) => {
@@ -63,7 +53,7 @@ export default function SupportChatbot({ company }) {
       companyId: company.id, subject, description, category: 'consulta', status: 'resuelto', priority: 'media',
       resolved_date: new Date().toISOString().split('T')[0],
     });
-    qc.invalidateQueries(['support-tickets', company.id]);
+    qc.invalidateQueries({ queryKey: companyEntityQueryKey('supportTickets', company) });
   };
 
   const sendMessage = async (text) => {

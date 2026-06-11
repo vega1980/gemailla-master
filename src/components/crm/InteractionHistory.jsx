@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyCrmClients, useCompanyCrmInteractions } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -35,26 +36,20 @@ export default function InteractionHistory({ company }) {
   const [typeFilter, setTypeFilter] = useState('all');
   const [clientFilter, setClientFilter] = useState('all');
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ['crm-clients', company.id],
-    queryFn: () => firebase.entities.CRMClient.filter({ companyId: company.id }),
-  });
+  const { data: clients = [] } = useCompanyCrmClients(company);
 
-  const { data: interactions = [], isLoading } = useQuery({
-    queryKey: ['crm-interactions', company.id],
-    queryFn: () => firebase.entities.CRMInteraction.filter({ companyId: company.id }),
-  });
+  const { data: interactions = [], isLoading } = useCompanyCrmInteractions(company);
 
   const save = useMutation({
     mutationFn: (data) => editing
       ? firebase.entities.CRMInteraction.update(editing.id, data)
       : firebase.entities.CRMInteraction.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries(['crm-interactions', company.id]); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Interacción guardada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmInteractions', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Interacción guardada'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.CRMInteraction.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['crm-interactions', company.id]); toast.success('Interacción eliminada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmInteractions', company) }); toast.success('Interacción eliminada'); },
   });
 
   const openEdit = (i) => { setEditing(i); setForm({ ...i }); setOpen(true); };

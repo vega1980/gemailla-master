@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DOCUMENT_STATUSES, firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyDocuments } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -66,13 +67,9 @@ export default function Documents() {
   const [analyzing, setAnalyzing] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
 
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', activeCompany?.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: activeCompany.id }, '-createdAt'),
-    enabled: !!activeCompany,
-  });
+  const { data: documents = [], isLoading } = useCompanyDocuments(activeCompany);
 
-  const documentsQueryKey = ['documents', activeCompany?.id];
+  const documentsQueryKey = companyEntityQueryKey('documents', activeCompany);
 
   const invalidateDocuments = () => queryClient.invalidateQueries({ queryKey: documentsQueryKey });
 

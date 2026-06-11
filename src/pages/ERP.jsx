@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -42,14 +43,10 @@ export default function ERP() {
   const [filterType, setFilterType] = useState('all');
   const [formData, setFormData] = useState(createEmptyTransactionForm);
 
-  const transactionsQueryKey = ['transactions', activeCompany?.id];
+  const transactionsQueryKey = companyEntityQueryKey('transactions', activeCompany);
   const invalidateTransactions = () => queryClient.invalidateQueries({ queryKey: transactionsQueryKey });
 
-  const { data: transactions = [], isLoading } = useQuery({
-    queryKey: transactionsQueryKey,
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }, '-date'),
-    enabled: !!activeCompany,
-  });
+  const { data: transactions = [], isLoading } = useCompanyTransactions(activeCompany);
 
   const createMutation = useMutation({
     mutationFn: (data) => firebase.entities.Transaction.create(data),

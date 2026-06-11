@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyKpis, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sparkles, Loader2, GitBranch, Clock, TrendingDown, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -32,17 +32,8 @@ export default function ProcessOptimizer({ company }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', company?.id],
-    queryFn: () => company ? firebase.entities.Transaction.filter({ companyId: company.id }) : Promise.resolve([]),
-    enabled: !!company,
-  });
-
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['kpis', company?.id],
-    queryFn: () => company ? firebase.entities.KPI.filter({ companyId: company.id }) : Promise.resolve([]),
-    enabled: !!company,
-  });
+  const { data: transactions = [] } = useCompanyTransactions(company);
+  const { data: kpis = [] } = useCompanyKpis(company);
 
   const displayTransactions = company ? transactions : [];
   const displayKPIs = company ? kpis : [];

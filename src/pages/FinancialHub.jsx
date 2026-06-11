@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { useCompany } from '@/lib/companyContext';
-import { useQuery } from '@tanstack/react-query';
-import { firebase } from '@/api/firebaseClient';
+import { useCompanyTransactions } from '@/lib/companyEntityQueries';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,11 +14,7 @@ import ReportDownloader from '@/components/finance/ReportDownloader';
 export default function FinancialHub() {
   const { activeCompany, loading: companyLoading } = useCompany();
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', activeCompany?.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
+  const { data: transactions = [] } = useCompanyTransactions(activeCompany);
 
   const monthlyData = useMemo(() => {
     const data = [];
