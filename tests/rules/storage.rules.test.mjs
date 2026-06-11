@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 import {
   assertAllowed,
@@ -18,6 +19,13 @@ const director = { uid: 'storage-director-uid', claims: { email: 'storage-direct
 const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true } };
 const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true } };
 const runId = `${Date.now()}-${process.pid}`;
+const STORAGE_DOCUMENT_MATCH = /^companies\/[^/]+\/documents\/[^/]+\/[^/]+$/;
+
+function documentStoragePath(pathCompanyId, pathDocumentId, fileName) {
+  const path = `companies/${pathCompanyId}/documents/${pathDocumentId}/${fileName}`;
+  assert.match(path, STORAGE_DOCUMENT_MATCH, 'test fixture path must match storage.rules document object route');
+  return path;
+}
 
 let testNumber = 0;
 let documentId;
@@ -33,10 +41,10 @@ function resetStoragePaths() {
   documentId = `doc-${runId}-${testNumber}`;
   missingDocumentId = `doc-missing-${runId}-${testNumber}`;
   otherCompanyDocumentId = `doc-other-company-${runId}-${testNumber}`;
-  validPdfPath = `companies/${companyId}/documents/${documentId}/file.pdf`;
-  validXmlPath = `companies/${companyId}/documents/${documentId}/file.xml`;
-  missingDocumentPdfPath = `companies/${companyId}/documents/${missingDocumentId}/file.pdf`;
-  otherCompanyPdfPath = `companies/${otherCompanyId}/documents/${otherCompanyDocumentId}/file.pdf`;
+  validPdfPath = documentStoragePath(companyId, documentId, 'file.pdf');
+  validXmlPath = documentStoragePath(companyId, documentId, 'file.xml');
+  missingDocumentPdfPath = documentStoragePath(companyId, missingDocumentId, 'file.pdf');
+  otherCompanyPdfPath = documentStoragePath(otherCompanyId, otherCompanyDocumentId, 'file.pdf');
 }
 
 async function seedStorageAcl() {
@@ -86,7 +94,7 @@ describe('Cloud Storage security rules', () => {
       contentType: 'application/xml',
       body: '<invoice id="fixture" />',
     }), 'director upload XML to existing document path');
-    await assertAllowed(storageUpload(`companies/${companyId}/documents/${documentId}/file-text.xml`, director, {
+    await assertAllowed(storageUpload(documentStoragePath(companyId, documentId, 'file-text.xml'), director, {
       contentType: 'text/xml',
       body: '<invoice id="text-xml-fixture" />',
     }), 'director upload text/xml to existing document path');
@@ -112,17 +120,17 @@ describe('Cloud Storage security rules', () => {
   it('rejects unauthenticated uploads, invalid MIME types and files larger than 15 MB', async () => {
     await assertDenied(storageUpload(validPdfPath, null), 'anonymous upload');
 
-    await assertDenied(storageUpload(`companies/${companyId}/documents/${documentId}/file.exe`, owner, {
+    await assertDenied(storageUpload(documentStoragePath(companyId, documentId, 'file.exe'), owner, {
       contentType: 'application/octet-stream',
       body: 'not a PDF or XML',
     }), 'invalid MIME upload');
 
-    await assertDenied(storageUpload(`companies/${companyId}/documents/${documentId}/renamed-pdf.txt`, owner, {
+    await assertDenied(storageUpload(documentStoragePath(companyId, documentId, 'renamed-pdf.txt'), owner, {
       contentType: 'text/plain',
       body: '%PDF bytes with an unsafe MIME',
     }), 'PDF-looking bytes with invalid MIME upload');
 
-    await assertDenied(storageUpload(`companies/${companyId}/documents/${documentId}/oversized.pdf`, owner, {
+    await assertDenied(storageUpload(documentStoragePath(companyId, documentId, 'oversized.pdf'), owner, {
       contentType: 'application/pdf',
       body: Buffer.alloc((15 * 1024 * 1024) + 1, 0x61),
     }), 'oversized PDF upload');
@@ -135,7 +143,7 @@ describe('Cloud Storage security rules', () => {
     );
 
     await assertDenied(
-      storageUpload(`companies/${companyId}/documents/${otherCompanyDocumentId}/file.pdf`, owner),
+      storageUpload(documentStoragePath(companyId, otherCompanyDocumentId, 'file.pdf'), owner),
       'upload path company differs from Firestore document company',
     );
   });
@@ -161,7 +169,7 @@ describe('Cloud Storage security rules', () => {
 
   it('denies access to another company', async () => {
     await assertDenied(
-      storageUpload(`companies/${otherCompanyId}/documents/doc-2-${runId}-${testNumber}/file.pdf`, owner),
+      storageUpload(documentStoragePath(otherCompanyId, `doc-2-${runId}-${testNumber}`, 'file.pdf'), owner),
       'owner upload to another company',
     );
 
