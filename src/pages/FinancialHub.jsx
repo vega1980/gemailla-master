@@ -6,6 +6,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2 } from 'lucide-react';
 import { format, subMonths, startOfMonth } from 'date-fns';
+import { es } from 'date-fns/locale';
 import FinancialStatements from '@/components/finance/FinancialStatements';
 import RiskManagement from '@/components/finance/RiskManagement';
 import BudgetPlanner from '@/components/finance/BudgetPlanner';
@@ -17,16 +18,39 @@ export default function FinancialHub() {
   const { data: transactions = [] } = useCompanyTransactions(activeCompany);
 
   const monthlyData = useMemo(() => {
-    const data = [];
-    for (let i = 11; i >= 0; i--) {
-      const monthStart = startOfMonth(subMonths(new Date(), i));
+    const buckets = Array.from({ length: 12 }, (_, index) => {
+      const monthStart = startOfMonth(subMonths(new Date(), 11 - index));
       const monthStr = format(monthStart, 'yyyy-MM');
-      const monthLabel = format(monthStart, 'MMM yy');
-      const inc = transactions.filter(t => t.type === 'ingreso' && t.date?.startsWith(monthStr)).reduce((s, t) => s + (t.amount || 0), 0);
-      const exp = transactions.filter(t => t.type === 'gasto' && t.date?.startsWith(monthStr)).reduce((s, t) => s + (t.amount || 0), 0);
-      data.push({ month: monthLabel, monthStr, ingresos: inc, gastos: exp });
-    }
-    return data;
+
+      return {
+        month: format(monthStart, 'MMM yy', { locale: es }),
+        monthStr,
+        ingresos: 0,
+        gastos: 0,
+      };
+    });
+
+    const bucketByMonth = new Map(buckets.map((bucket) => [bucket.monthStr, bucket]));
+
+    transactions.forEach((transaction) => {
+      if (!transaction.date) return;
+
+      const date = new Date(transaction.date);
+      if (Number.isNaN(date.getTime())) return;
+
+      const monthStr = format(date, 'yyyy-MM');
+      const bucket = bucketByMonth.get(monthStr);
+      if (!bucket) return;
+
+      const amount = Number(transaction.amount) || 0;
+      if (transaction.type === 'ingreso') {
+        bucket.ingresos += amount;
+      } else if (transaction.type === 'gasto') {
+        bucket.gastos += amount;
+      }
+    });
+
+    return buckets;
   }, [transactions]);
 
   if (companyLoading) {

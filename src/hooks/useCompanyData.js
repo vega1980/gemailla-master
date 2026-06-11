@@ -1,4 +1,3 @@
-
 import { useQueries } from '@tanstack/react-query';
 import { buildCompanyEntityQuery } from '@/lib/companyEntityQueries';
 
@@ -23,13 +22,35 @@ export const COMPANY_DATA_QUERY_NAMES = Object.freeze([
 export const useCompanyData = (companyOrId, options = {}) => {
   const queryNames = options.queryNames ?? COMPANY_DATA_QUERY_NAMES;
   const queryOptionsByName = options.queries ?? {};
+  const sharedOptions = {
+    enabled: options.enabled,
+    staleTime: options.staleTime,
+    gcTime: options.gcTime,
+  };
+  const {
+    enabled: queryEnabled,
+    queryKey: _queryKey,
+    queryFn: _queryFn,
+    ...reactQueryOptions
+  } = options.query ?? {};
 
   const results = useQueries({
-    queries: queryNames.map((queryName) => buildCompanyEntityQuery(
-      queryName,
-      companyOrId,
-      queryOptionsByName[queryName] ?? {},
-    )),
+    queries: queryNames.map((queryName) => {
+      const queryOptions = buildCompanyEntityQuery(
+        queryName,
+        companyOrId,
+        {
+          ...sharedOptions,
+          ...(queryOptionsByName[queryName] ?? {}),
+        },
+      );
+
+      return {
+        ...queryOptions,
+        ...reactQueryOptions,
+        enabled: queryOptions.enabled && (queryEnabled ?? true),
+      };
+    }),
   });
 
   return queryNames.reduce((acc, queryName, index) => {
@@ -39,50 +60,9 @@ export const useCompanyData = (companyOrId, options = {}) => {
     acc.isLoading = acc.isLoading || result?.isLoading || false;
     acc.isFetching = acc.isFetching || result?.isFetching || false;
     acc.isError = acc.isError || result?.isError || false;
+    acc.error = acc.error || result?.error || null;
     return acc;
-  }, { isLoading: false, isFetching: false, isError: false });
+  }, { isLoading: false, isFetching: false, isError: false, error: null });
 };
 
-import { useQuery } from '@tanstack/react-query';
-import { buildCompanyEntityQuery } from '@/lib/companyEntityQueries';
-
-const getCompanyId = (companyOrId) => (
-  typeof companyOrId === 'string' ? companyOrId : companyOrId?.id
-);
-
-const getQueryData = (query) => query.data || [];
-
-export function useCompanyData(companyOrId, options = {}) {
-  const companyId = getCompanyId(companyOrId);
-  const enabled = !!companyId && (options.enabled ?? true);
-
-  const sharedOptions = {
-    enabled,
-    staleTime: options.staleTime,
-    gcTime: options.gcTime,
-    query: options.query,
-  };
-
-  const transactionsQuery = useQuery(buildCompanyEntityQuery('transactions', companyId, sharedOptions));
-  const documentsQuery = useQuery(buildCompanyEntityQuery('documents', companyId, sharedOptions));
-  const kpisQuery = useQuery(buildCompanyEntityQuery('kpis', companyId, sharedOptions));
-  const queries = [transactionsQuery, documentsQuery, kpisQuery];
-
-  return {
-    transactions: getQueryData(transactionsQuery),
-    documents: getQueryData(documentsQuery),
-    kpis: getQueryData(kpisQuery),
-    isLoading: queries.some((query) => query.isLoading),
-    isFetching: queries.some((query) => query.isFetching),
-    isError: queries.some((query) => query.isError),
-    error: transactionsQuery.error || documentsQuery.error || kpisQuery.error,
-    queries: {
-      transactions: transactionsQuery,
-      documents: documentsQuery,
-      kpis: kpisQuery,
-    },
-  };
-}
-
 export default useCompanyData;
-
