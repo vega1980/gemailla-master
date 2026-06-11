@@ -20,9 +20,135 @@ const MAX_REQUESTED_DOCUMENTS = 25;
 const MAX_CORRELATION_ID_LENGTH = 160;
 const MAX_LOG_STRING_LENGTH = 500;
 const MAX_LOG_DEPTH = 5;
+const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 30;
+const DEFAULT_DAILY_TOKEN_LIMIT = 50000;
+const DEFAULT_DAILY_BUDGET_USD = 5;
+const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
+const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
 const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const TOKEN_PATTERN = /(bearer\s+|token['"\s:=]+|api[_-]?key['"\s:=]+|secret['"\s:=]+)[A-Za-z0-9._~+/=-]{12,}/gi;
 const SENSITIVE_KEY_PATTERN = /(authorization|api[_-]?key|secret|token|password|prompt|content|document(Content|Text)?|raw(Document)?|file(Name)?|storagePath|downloadUrl|url|query|response|rfc|email)$/i;
+
+
+function getPositiveNumberEnv(name, fallback) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function getAiLimitConfig() {
+  return {
+    rateLimitWindowMs: getPositiveNumberEnv('AI_RATE_LIMIT_WINDOW_MS', DEFAULT_RATE_LIMIT_WINDOW_MS),
+    rateLimitMaxRequests: getPositiveNumberEnv('AI_RATE_LIMIT_MAX_REQUESTS', DEFAULT_RATE_LIMIT_MAX_REQUESTS),
+    dailyTokenLimit: getPositiveNumberEnv('AI_DAILY_TOKEN_LIMIT', DEFAULT_DAILY_TOKEN_LIMIT),
+    dailyBudgetUsd: getPositiveNumberEnv('AI_DAILY_BUDGET_USD', DEFAULT_DAILY_BUDGET_USD),
+    reservedOutputTokens: getPositiveNumberEnv('AI_RESERVED_OUTPUT_TOKENS', DEFAULT_RESERVED_OUTPUT_TOKENS),
+    costPer1kTokensUsd: getPositiveNumberEnv('AI_COST_PER_1K_TOKENS_USD', DEFAULT_COST_PER_1K_TOKENS_USD),
+  };
+}
+
+function estimateTokenCount(text = '') {
+  return Math.max(1, Math.ceil(String(text).length / 4));
+}
+
+function getUtcDateKey(now = new Date()) {
+  return now.toISOString().slice(0, 10);
+}
+
+function toCounterNumber(value) {
+  return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+function getLimitDocIds({ companyId, uid, now = new Date() }) {
+  const safeUid = String(uid || 'unknown').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 160) || 'unknown';
+  return {
+    usageDocId: `${getUtcDateKey(now)}_${companyId}`,
+    rateDocId: `${companyId}_${safeUid}`,
+  };
+}
+
+async function enforceAiLimits({ user, authorization, prompt, correlationId, now = new Date() }) {
+  const config = getAiLimitConfig();
+  const promptTokens = estimateTokenCount(prompt);
+  const estimatedTokens = promptTokens + config.reservedOutputTokens;
+  const estimatedCostUsd = (estimatedTokens / 1000) * config.costPer1kTokensUsd;
+  const { usageDocId, rateDocId } = getLimitDocIds({ companyId: authorization.companyId, uid: user.uid, now });
+  const db = admin.firestore();
+  const rateRef = db.collection('aiRateLimits').doc(rateDocId);
+  const usageRef = db.collection('aiUsage').doc(usageDocId);
+  const nowMs = now.getTime();
+
+  await db.runTransaction(async (transaction) => {
+    const rateSnap = await transaction.get(rateRef);
+    const rateData = rateSnap.exists ? (rateSnap.data() || {}) : {};
+    const windowStartedAtMs = toCounterNumber(rateData.windowStartedAtMs);
+    const requestCount = toCounterNumber(rateData.requestCount);
+    const windowExpired = !windowStartedAtMs || nowMs - windowStartedAtMs >= config.rateLimitWindowMs;
+    const nextRequestCount = windowExpired ? 1 : requestCount + 1;
+
+    if (!windowExpired && requestCount >= config.rateLimitMaxRequests) {
+      structuredLog('WARNING', 'ai_rate_limit_exceeded', {
+        correlationId,
+        firebaseUid: user.uid || 'unknown',
+        companyId: authorization.companyId,
+        requestCount,
+        rateLimitMaxRequests: config.rateLimitMaxRequests,
+        rateLimitWindowMs: config.rateLimitWindowMs,
+      });
+      fail(429, 'Límite de frecuencia de IA excedido. Intenta de nuevo más tarde.');
+    }
+
+    const usageSnap = await transaction.get(usageRef);
+    const usageData = usageSnap.exists ? (usageSnap.data() || {}) : {};
+    const usedTokens = toCounterNumber(usageData.reservedTokens || usageData.tokensUsed);
+    const usedBudgetUsd = toCounterNumber(usageData.reservedBudgetUsd || usageData.budgetUsedUsd);
+    const nextTokens = usedTokens + estimatedTokens;
+    const nextBudgetUsd = usedBudgetUsd + estimatedCostUsd;
+
+    if (nextTokens > config.dailyTokenLimit) {
+      structuredLog('WARNING', 'ai_token_quota_exceeded', {
+        correlationId,
+        firebaseUid: user.uid || 'unknown',
+        companyId: authorization.companyId,
+        usedTokens,
+        estimatedTokens,
+        dailyTokenLimit: config.dailyTokenLimit,
+      });
+      fail(429, 'Cuota diaria de tokens IA excedida para esta empresa.');
+    }
+
+    if (nextBudgetUsd > config.dailyBudgetUsd) {
+      structuredLog('WARNING', 'ai_budget_exceeded', {
+        correlationId,
+        firebaseUid: user.uid || 'unknown',
+        companyId: authorization.companyId,
+        usedBudgetUsd,
+        estimatedCostUsd,
+        dailyBudgetUsd: config.dailyBudgetUsd,
+      });
+      fail(429, 'Presupuesto diario de IA excedido para esta empresa.');
+    }
+
+    transaction.set(rateRef, {
+      companyId: authorization.companyId,
+      userUid: user.uid || 'unknown',
+      windowStartedAtMs: windowExpired ? nowMs : windowStartedAtMs,
+      requestCount: nextRequestCount,
+      updatedAtMs: nowMs,
+    }, { merge: true });
+
+    transaction.set(usageRef, {
+      companyId: authorization.companyId,
+      dateKey: getUtcDateKey(now),
+      reservedTokens: nextTokens,
+      reservedBudgetUsd: Number(nextBudgetUsd.toFixed(8)),
+      requestCount: toCounterNumber(usageData.requestCount) + 1,
+      updatedAtMs: nowMs,
+    }, { merge: true });
+  });
+
+  return { estimatedTokens, estimatedCostUsd };
+}
 
 function createCorrelationId(prefix = 'srv') {
   const crypto = require('node:crypto');
@@ -326,7 +452,7 @@ async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }
   return { outputText, latencyMs };
 }
 
-exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res) => {
+async function aiHandler(req, res) {
   const startedAt = Date.now();
   const correlationId = getCorrelationId(req);
   applyCors(req, res);
@@ -364,6 +490,7 @@ exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res
     const user = await verifyFirebaseUser(req);
     const prompt = getPrompt(req.body);
     authorization = await authorizeAiRequest({ user, body: req.body || {} });
+    const limitReservation = await enforceAiLimits({ user, authorization, prompt, correlationId });
     structuredLog('INFO', 'ai_request_started', {
       correlationId,
       firebaseUid: user.uid || 'unknown',
@@ -372,6 +499,8 @@ exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res
       requestedDocumentCount: authorization.documents.length,
       promptLength: prompt.length,
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+      estimatedTokens: limitReservation.estimatedTokens,
+      estimatedCostUsd: Number(limitReservation.estimatedCostUsd.toFixed(8)),
     });
 
     const { outputText } = await callOpenAI({ apiKey, prompt, user, authorization, correlationId });
@@ -407,4 +536,13 @@ exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res
       release: RELEASE_METADATA,
     });
   }
-});
+}
+
+exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, aiHandler);
+
+exports._test = {
+  aiHandler,
+  enforceAiLimits,
+  estimateTokenCount,
+  getAiLimitConfig,
+};
