@@ -8,7 +8,9 @@ import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell } from 'recha
 export default function Dashboard() {
   const { activeCompany, loading: companyLoading, companies = [] } = useCompany();
 
-  const { transactions, documents, kpis } = useCompanyData(activeCompany);
+  const { transactions, documents, kpis } = useCompanyData(activeCompany?.id, {
+    queryNames: ['transactions', 'documents', 'kpis'],
+  });
 
 
   const monthlyData = useMemo(() => {

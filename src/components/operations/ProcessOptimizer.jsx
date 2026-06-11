@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useCompanyKpis, useCompanyTransactions } from '@/lib/companyEntityQueries';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sparkles, Loader2, GitBranch, Clock, TrendingDown, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -32,8 +32,9 @@ export default function ProcessOptimizer({ company }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { data: transactions = [] } = useCompanyTransactions(company);
-  const { data: kpis = [] } = useCompanyKpis(company);
+  const { transactions, kpis } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'kpis'],
+  });
 
   const displayTransactions = company ? transactions : [];
   const displayKPIs = company ? kpis : [];

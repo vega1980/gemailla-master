@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useCompanyDocuments, useCompanyKpis, useCompanyProjects, useCompanyTransactions } from '@/lib/companyEntityQueries';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileOutput, Loader2, Download, Sparkles, FileText, BarChart3, Shield, Receipt } from 'lucide-react';
@@ -23,10 +23,9 @@ export default function AutoReports({ company }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { data: transactions = [] } = useCompanyTransactions(company);
-  const { data: documents = [] } = useCompanyDocuments(company);
-  const { data: kpis = [] } = useCompanyKpis(company);
-  const { data: projects = [] } = useCompanyProjects(company);
+  const { transactions, documents, kpis, projects } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'documents', 'kpis', 'projects'],
+  });
 
   const generateReport = async () => {
     setLoading(true);

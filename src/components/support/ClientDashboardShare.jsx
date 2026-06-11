@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useCompanyDocuments, useCompanyKpis, useCompanyTransactions } from '@/lib/companyEntityQueries';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -18,9 +18,9 @@ const ChartTooltip = ({ active, payload, label }) => {
 };
 
 export default function ClientDashboardShare({ company }) {
-  const { data: transactions = [] } = useCompanyTransactions(company);
-  const { data: documents = [] } = useCompanyDocuments(company);
-  const { data: kpis = [] } = useCompanyKpis(company);
+  const { transactions, documents, kpis } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'documents', 'kpis'],
+  });
 
   const monthlyData = useMemo(() => {
     const data = [];

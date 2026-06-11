@@ -68,6 +68,7 @@ export const useCompanyEntityQuery = (queryName, companyOrId, options = {}) => {
   });
 };
 
+
 export const useCompanyTransactions = (companyOrId, options) => useCompanyEntityQuery('transactions', companyOrId, options);
 export const useCompanyDocuments = (companyOrId, options) => useCompanyEntityQuery('documents', companyOrId, options);
 export const useCompanyKpis = (companyOrId, options) => useCompanyEntityQuery('kpis', companyOrId, options);
