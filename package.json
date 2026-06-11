@@ -17,7 +17,8 @@
     "rules:deploy": "firebase deploy --only firestore:rules,storage",
     "test:rules": "node --test --test-concurrency=1 tests/rules/*.test.mjs",
     "test:rules:emulators": "firebase emulators:exec --only firestore,storage --project demo-gemailla-test \"npm run test:rules\"",
-    "typecheck:core": "tsc -p ./jsconfig.core.json"
+    "typecheck:core": "tsc -p ./jsconfig.core.json",
+    "test:unit": "node --test tests/unit/*.test.mjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

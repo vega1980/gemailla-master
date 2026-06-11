@@ -7,6 +7,7 @@
 3. **Errores atribuibles a release**: cada evento incluye `APP_VERSION`, `BUILD_ID`, `GIT_SHA` y `DEPLOY_ENV`.
 4. **Respuesta definida**: los runbooks enlazados definen owner, severidad, diagnóstico y rollback.
 5. **Privacidad por defecto**: los logs operacionales se sanitizan antes de escribirse en consola, Cloud Logging u `observabilityEvents`.
+6. **Política verificable de ruido**: los eventos de alto volumen tienen política explícita de persistencia, muestreo y retención para evitar costos innecesarios.
 
 ## Campos obligatorios
 
@@ -29,6 +30,8 @@
 
 ## Calidad de propagación a verificar
 
+La política reusable vive en `src/lib/observabilityPolicy.js` y sus garantías críticas están cubiertas por `npm run test:unit`. La revisión de un incidente no debe aceptar solamente que exista un ID: debe confirmar que el mismo ID atraviesa todos los sistemas relevantes.
+
 | Caso | Estado esperado | Evidencia |
 | --- | --- | --- |
 | Reintentos manuales de IA | Reusar el `correlationId` de la operación visible para el usuario o generar uno nuevo solo para un nuevo intento explícito. | Error UI y log backend comparten el mismo ID. |
@@ -36,6 +39,8 @@
 | Análisis posterior al upload | `analyzeDocumentFlow()` toma `doc.correlationId` si no recibe uno explícito. | Documento pasa de `pending` a `processing/analyzed` sin cambiar el ID. |
 | Llamadas paralelas | Cada operación paralela debe crear su propio ID salvo que sea parte del mismo flujo de negocio. | Topología clara en Cloud Logging por ID. |
 | Cloud Logging | Logs backend son JSON en stdout/stderr, por lo que Cloud Logging los indexa como `jsonPayload`. | Filtro `jsonPayload.correlationId="..."`. |
+| Reintentos automáticos/red | El error conserva el ID original; un reintento automático de la misma acción no debe ocultar el ID fallido. | UI, consola y evento `*_failed` muestran el mismo `correlationId`. |
+| Reintentos manuales/nueva intención | Un nuevo click del usuario puede crear un nuevo ID, pero debe quedar claro en auditoría que es otra ejecución. | Dos eventos con IDs distintos y timestamps consecutivos. |
 
 ## PII y datos sensibles
 
@@ -43,16 +48,20 @@ Los logs operacionales **no deben contener** prompts completos, documentos, ruta
 
 Controles implementados:
 
+- `sanitizeObservabilityPayload()` centraliza la sanitización para frontend y pruebas unitarias.
 - `logFrontendEvent()` sanitiza payloads antes de escribirlos en consola.
 - `persistObservabilityEvent()` sanitiza payloads y ya no persiste `userEmail`; conserva `ownerUid` cuando existe.
 - `structuredLog()` de Functions sanitiza payloads antes de emitir JSON a stdout/stderr.
 - El backend registra `promptLength`, `status`, `latencyMs`, `model`, `firebaseUid` y `correlationId`, pero no el prompt.
 - Los uploads registran `contentType` y `fileSize`, pero no `storagePath` ni nombre original del archivo en eventos operacionales.
+- Las claves sensibles (`prompt`, `content`, `documentText`, `fileName`, `storagePath`, `downloadUrl`, `email`, `rfc`, `token`, `secret`, `apiKey`) se redactan por nombre de campo; emails/tokens embebidos en mensajes se reemplazan por marcadores.
 - La auditoría de consultas IA registra longitud y cantidad de documentos, no el texto consultado.
 
 > Nota: Firestore puede almacenar contenido funcional necesario para la experiencia del producto (por ejemplo, conversaciones guardadas). Esta política se refiere a logs operacionales y eventos de observabilidad.
 
 ## Control de ruido, cardinalidad y costo
+
+`getObservabilityEventPolicy()` define por evento si debe persistirse, su muestreo sugerido y la retención operativa. La regla base es: errores y warnings accionables se conservan completos; eventos `*_completed`/`*_started` de alto volumen se dejan como consola JSON o se muestrean antes de persistirlos.
 
 Revisión operativa recomendada semanal:
 
@@ -61,7 +70,7 @@ Revisión operativa recomendada semanal:
 | Volumen diario | Bytes/día en Cloud Logging por `eventName` y `deployEnv`. | Reducir logs `INFO` de flujos de alta frecuencia o moverlos a métricas agregadas. |
 | Cardinalidad | Conteo de valores distintos por `eventName`, `correlationId`, `companyId`, `route`, `status`. | No agregar campos libres como prompts, nombres de archivo, correos o URLs. |
 | Costos | Ingesta y retención por sink/bucket. | Retención corta para debug; retención mayor solo para auditoría necesaria. |
-| Filtros | Revisar exclusiones de logs no accionables. | Mantener errores y warnings; muestrear eventos `*_completed` si el volumen crece. |
+| Filtros | Revisar exclusiones de logs no accionables. | Mantener errores y warnings; aplicar la política de `sampleRate` para `*_started` y `*_completed`. |
 | Alert fatigue | Número de alertas por semana y falsos positivos. | Ajustar umbrales por p95/p99 y ventanas de 5-10 min. |
 
 ## Error tracking frontend
@@ -106,6 +115,7 @@ Crear alertas en Cloud Monitoring / Firebase con las siguientes condiciones por 
 | Upload failures | `eventName="document_upload_failed"` o documentos `status="error"` | > 5 en 10 min | SEV2 | Equipo Documentos |
 | Backend unavailable | HTTP 5xx en función `ai` | > 1% durante 5 min | SEV1/SEV2 | Equipo Plataforma |
 | Log ingestion spike | Bytes/minuto por `deployEnv=production` | > 2x baseline durante 15 min | SEV3 | Equipo Plataforma |
+| PII leakage sentinel | Logs con patrones de email/token en `jsonPayload.message` o campos no permitidos | > 0 en 5 min | SEV2 | Equipo Plataforma/Seguridad |
 
 ## Dashboard mínimo
 
@@ -121,3 +131,9 @@ Crear alertas en Cloud Monitoring / Firebase con las siguientes condiciones por 
 - [Incidente IA](../runbooks/AI_INCIDENT_RUNBOOK.md)
 - [Incidente documental / uploads](../runbooks/DOCUMENT_UPLOAD_INCIDENT_RUNBOOK.md)
 - [Checklist de rollback](../runbooks/ROLLBACK_CHECKLIST.md)
+
+## Checks automatizados mínimos
+
+- `npm run test:unit` valida normalización de `correlationId`, límites de longitud/profundidad/cardinalidad, redacción de PII y política de persistencia/muestreo.
+- `npm run lint` debe ejecutarse antes de desplegar para detectar importaciones o payloads inconsistentes.
+- `npm run build` confirma que los cambios de instrumentación no rompen el bundle de frontend.
