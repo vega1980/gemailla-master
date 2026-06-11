@@ -73,6 +73,8 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
 
 async function invokeLLM(params = {}) {
   const correlationId = ensureCorrelationId(params.correlationId, 'ai');
+  const companyId = typeof params.companyId === 'string' ? params.companyId.trim() : '';
+  if (!companyId) throw new Error('companyId es obligatorio para usar IA.');
   const endpoint = import.meta.env.VITE_LLM_ENDPOINT || '/api/ai';
   const frontendOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
@@ -89,6 +91,7 @@ async function invokeLLM(params = {}) {
     },
     body: JSON.stringify({
       ...params,
+      companyId,
       correlationId,
       release: getReleaseMetadata(),
     }),
@@ -283,7 +286,12 @@ const agents = {
 
     if (message?.role === 'user') {
       const correlationId = ensureCorrelationId(message.correlationId, 'ai');
-      const aiResponse = await invokeLLM({ prompt: message.content, correlationId });
+      const aiResponse = await invokeLLM({
+        companyId: current.companyId,
+        documentIds: current.context_documents || current.documentIds || [],
+        prompt: message.content,
+        correlationId,
+      });
       messages.push({
         role: 'assistant',
         correlationId,

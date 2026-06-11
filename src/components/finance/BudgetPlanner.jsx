@@ -114,6 +114,7 @@ export default function BudgetPlanner({ transactions, monthlyData }) {
     setAiLoading(true);
     setAiInsight(null);
     const data = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un CFO experto en finanzas para PyMEs mexicanas. Analiza este presupuesto mensual:
 
 PRESUPUESTO PLANIFICADO:

@@ -138,6 +138,7 @@ export default function PayrollManager({ company }) {
     setAiLoading(true);
     setAiInsight('');
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres experto en nóminas y RRHH para PyMEs mexicanas. Analiza la nómina de "${company.name}".
 Empleados activos: ${employees.filter(e => e.status === 'activo').length}
 Nómina base mensual total: ${fmt(employees.filter(e => e.status === 'activo').reduce((s, e) => s + (e.baseSalary||0), 0))}

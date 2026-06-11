@@ -42,6 +42,7 @@ export default function Audit() {
     });
 
     const result = await firebase.integrations.Core.InvokeLLM({
+      companyId: activeCompany.id,
       prompt: `Eres un auditor financiero experto. Analiza estos datos financieros de la empresa "${activeCompany.name}" y genera un diagnóstico completo:
 
 Datos:

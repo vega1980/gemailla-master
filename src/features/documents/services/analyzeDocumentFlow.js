@@ -24,6 +24,7 @@ export async function analyzeDocumentFlow({ doc, company, user, correlationId: p
 
   try {
     const result = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Analiza este documento fiscal/financiero mexicano. Extrae toda la información posible:
         - Tipo de documento (factura, nota de crédito, recibo, contrato, estado de cuenta, declaración, nómina, otro)
         - RFC emisor y receptor
@@ -36,6 +37,7 @@ export async function analyzeDocumentFlow({ doc, company, user, correlationId: p
 
         El archivo está en: ${doc.storagePath}
         Nombre: ${doc.title}`,
+      documentIds: [doc.id],
       storagePaths: [doc.storagePath],
       correlationId,
       response_json_schema: {

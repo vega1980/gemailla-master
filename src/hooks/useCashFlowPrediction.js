@@ -7,7 +7,7 @@ export function useCashFlowPrediction() {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const predict = async (transactions, historicalData) => {
+  const predict = async (transactions, historicalData, company = null) => {
     if (!transactions.length || loading) return;
     setLoading(true);
 
@@ -30,6 +30,7 @@ export function useCashFlowPrediction() {
 
     try {
       const result = await firebase.integrations.Core.InvokeLLM({
+        companyId: company?.id,
         prompt: `Eres un experto en análisis financiero y predicción de flujos de caja.
 
 Resumen mensual histórico:

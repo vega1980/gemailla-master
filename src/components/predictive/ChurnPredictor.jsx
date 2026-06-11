@@ -42,6 +42,7 @@ export default function ChurnPredictor({ subscriptions, transactions }) {
     setLoading(true);
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un experto en análisis de churn (fuga de clientes) para SaaS. Analiza los siguientes datos de suscriptores y predice cuáles están en riesgo de cancelar.
 
 Datos de clientes/suscriptores:

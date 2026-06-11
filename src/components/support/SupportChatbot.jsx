@@ -73,6 +73,7 @@ export default function SupportChatbot({ company }) {
     const history = newMessages.slice(-6).map(m => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`).join('\n');
 
     const response = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres el asistente virtual de GEMAILLA AI para la empresa "${company.name}". Eres un experto en contabilidad, finanzas, fiscal y operaciones para PyMEs mexicanas. Responde de forma clara, directa y útil. Si no sabes algo específico, guía al usuario a consultar con un especialista.
 
 CONTEXTO FINANCIERO DE LA EMPRESA:

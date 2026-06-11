@@ -72,6 +72,7 @@ export default function PerformanceManager({ company }) {
     setAiInsight('');
     const emp = employees.find(e => e.id === review.employeeId);
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un experto en gestión del talento y desarrollo humano. Analiza la evaluación de desempeño de "${review.employeeName}" en la empresa "${company.name}".
 
 DATOS DEL EMPLEADO:

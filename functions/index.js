@@ -13,6 +13,10 @@ const RELEASE_METADATA = Object.freeze({
   gitSha: process.env.GIT_SHA || process.env.GITHUB_SHA || 'unknown',
   deployEnv: process.env.DEPLOY_ENV || process.env.NODE_ENV || 'production',
 });
+const ACTIVE_STATUSES = new Set(['active', 'activo']);
+const AI_ALLOWED_ROLES = new Set(['owner', 'director', 'admin', 'editor', 'viewer']);
+const COMPANY_ID_PATTERN = /^[A-Za-z0-9_-]{1,160}$/;
+const MAX_REQUESTED_DOCUMENTS = 25;
 const MAX_CORRELATION_ID_LENGTH = 160;
 const MAX_LOG_STRING_LENGTH = 500;
 const MAX_LOG_DEPTH = 5;
@@ -102,10 +106,6 @@ function getBearerToken(req) {
 }
 
 async function verifyFirebaseUser(req) {
-  if (process.env.ALLOW_UNAUTHENTICATED_AI === 'true') {
-    return { uid: 'local-dev', email: 'local-dev@gemailla.local' };
-  }
-
   const token = getBearerToken(req);
   if (!token) {
     const error = new Error('Autenticación requerida para usar IA.');
@@ -139,6 +139,110 @@ function getPrompt(body = {}) {
   return prompt;
 }
 
+
+function fail(status, message) {
+  const error = new Error(message);
+  error.status = status;
+  throw error;
+}
+
+function requireCompanyId(body = {}) {
+  const companyId = typeof body.companyId === 'string' ? body.companyId.trim() : '';
+  if (!companyId) fail(400, 'El campo companyId es obligatorio para usar IA.');
+  if (!COMPANY_ID_PATTERN.test(companyId)) fail(400, 'companyId inválido.');
+  return companyId;
+}
+
+function isActiveStatus(status) {
+  return ACTIVE_STATUSES.has(String(status || '').toLowerCase());
+}
+
+function normalizeRequestedList(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) fail(400, 'Los documentos solicitados deben enviarse como arreglo.');
+  const cleaned = value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean);
+  if (cleaned.length !== value.length) fail(400, 'Todos los documentos solicitados deben ser identificadores válidos.');
+  return [...new Set(cleaned)];
+}
+
+function getRequestedDocuments(body = {}) {
+  const documentIds = normalizeRequestedList(body.documentIds || body.contextDocumentIds || body.context_documents);
+  const storagePaths = normalizeRequestedList(body.storagePaths);
+  if (documentIds.length + storagePaths.length > MAX_REQUESTED_DOCUMENTS) {
+    fail(400, `No se pueden solicitar más de ${MAX_REQUESTED_DOCUMENTS} documentos por consulta IA.`);
+  }
+  return { documentIds, storagePaths };
+}
+
+async function validateCompanyAccess({ user, companyId }) {
+  const companyRef = admin.firestore().collection('companies').doc(companyId);
+  const companySnap = await companyRef.get();
+  if (!companySnap.exists) fail(403, 'Empresa no válida o sin acceso.');
+
+  const company = companySnap.data() || {};
+  if (!isActiveStatus(company.status)) fail(403, 'La empresa no está activa para usar IA.');
+
+  const ownerUid = company.ownerUid || company.createdBy;
+  if (ownerUid === user.uid) {
+    return { companyRef, company, role: 'owner', membership: null };
+  }
+
+  const membershipId = `${companyId}_${user.uid}`;
+  const membershipSnap = await admin.firestore().collection('companyMembers').doc(membershipId).get();
+  if (!membershipSnap.exists) fail(403, 'Se requiere membresía activa en la empresa para usar IA.');
+
+  const membership = membershipSnap.data() || {};
+  if (membership.companyId !== companyId || membership.userUid !== user.uid || !isActiveStatus(membership.status)) {
+    fail(403, 'Se requiere membresía activa en la empresa para usar IA.');
+  }
+
+  const role = String(membership.role || '').trim().toLowerCase();
+  if (!AI_ALLOWED_ROLES.has(role)) fail(403, 'Tu rol no permite usar IA en esta empresa.');
+
+  return { companyRef, company, role, membership };
+}
+
+async function validateRequestedDocuments({ companyId, documentIds, storagePaths }) {
+  const documentRefs = [];
+  const seenDocIds = new Set();
+
+  for (const documentId of documentIds) {
+    const docSnap = await admin.firestore().collection('documents').doc(documentId).get();
+    if (!docSnap.exists) fail(403, 'Documento solicitado no válido o sin acceso.');
+    const data = docSnap.data() || {};
+    if (data.companyId !== companyId) fail(403, 'Documento solicitado no pertenece a la empresa validada.');
+    if (!seenDocIds.has(docSnap.id)) {
+      seenDocIds.add(docSnap.id);
+      documentRefs.push({ id: docSnap.id, ...data });
+    }
+  }
+
+  for (const storagePath of storagePaths) {
+    const querySnap = await admin.firestore()
+      .collection('documents')
+      .where('companyId', '==', companyId)
+      .where('storagePath', '==', storagePath)
+      .limit(1)
+      .get();
+    if (querySnap.empty) fail(403, 'Ruta de documento solicitada no válida o sin acceso.');
+    const docSnap = querySnap.docs[0];
+    if (!seenDocIds.has(docSnap.id)) {
+      seenDocIds.add(docSnap.id);
+      documentRefs.push({ id: docSnap.id, ...(docSnap.data() || {}) });
+    }
+  }
+
+  return documentRefs;
+}
+
+async function authorizeAiRequest({ user, body }) {
+  const companyId = requireCompanyId(body);
+  const access = await validateCompanyAccess({ user, companyId });
+  const requested = getRequestedDocuments(body);
+  const documents = await validateRequestedDocuments({ companyId, ...requested });
+  return { companyId, ...access, requested, documents };
+}
+
 function extractOutputText(payload = {}) {
   if (typeof payload.output_text === 'string' && payload.output_text.trim()) {
     return payload.output_text.trim();
@@ -154,7 +258,7 @@ function extractOutputText(payload = {}) {
   return chunks.join('\n').trim();
 }
 
-async function callOpenAI({ apiKey, prompt, user, correlationId }) {
+async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }) {
   const startedAt = Date.now();
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -177,6 +281,8 @@ async function callOpenAI({ apiKey, prompt, user, correlationId }) {
       ],
       metadata: {
         firebase_uid: user.uid || 'unknown',
+        company_id: authorization.companyId,
+        company_role: authorization.role,
         correlation_id: correlationId,
         app_version: RELEASE_METADATA.appVersion,
         build_id: RELEASE_METADATA.buildId,
@@ -241,6 +347,8 @@ exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res
     return;
   }
 
+  let authorization = null;
+
   try {
     const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
     if (!apiKey) {
@@ -255,26 +363,32 @@ exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res
 
     const user = await verifyFirebaseUser(req);
     const prompt = getPrompt(req.body);
+    authorization = await authorizeAiRequest({ user, body: req.body || {} });
     structuredLog('INFO', 'ai_request_started', {
       correlationId,
       firebaseUid: user.uid || 'unknown',
+      companyId: authorization.companyId,
+      role: authorization.role,
+      requestedDocumentCount: authorization.documents.length,
       promptLength: prompt.length,
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
     });
 
-    const { outputText } = await callOpenAI({ apiKey, prompt, user, correlationId });
+    const { outputText } = await callOpenAI({ apiKey, prompt, user, authorization, correlationId });
 
     res.status(200).json({
       response: outputText,
       model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
       status: 'completed',
       correlationId,
+      ...(authorization?.companyId ? { companyId: authorization.companyId } : {}),
       release: RELEASE_METADATA,
     });
 
     structuredLog('INFO', 'ai_request_completed', {
       correlationId,
       firebaseUid: user.uid || 'unknown',
+      companyId: authorization.companyId,
       status: 200,
       latencyMs: Date.now() - startedAt,
     });
@@ -289,6 +403,7 @@ exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, async (req, res
     res.status(status).json({
       error: error.message || 'No se pudo completar la consulta de IA.',
       correlationId,
+      ...(authorization?.companyId ? { companyId: authorization.companyId } : {}),
       release: RELEASE_METADATA,
     });
   }

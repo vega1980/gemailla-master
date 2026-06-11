@@ -90,6 +90,7 @@ export default function DealPipeline({ company }) {
     setAiLoading(true);
     setAiInsight('');
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un director comercial experto en ventas B2B para PyMEs mexicanas. Analiza el pipeline de ventas de "${company.name}".
 
 PIPELINE ACTIVO (${active.length} oportunidades):

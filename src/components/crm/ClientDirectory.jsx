@@ -60,6 +60,7 @@ export default function ClientDirectory({ company }) {
     setAiLoading(true);
     const clientInteractions = interactions.filter(i => i.clientId === client.id);
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un consultor de CRM experto en PyMEs mexicanas. Analiza al cliente "${client.name}" de la empresa "${company.name}" y genera una estrategia personalizada.
 
 DATOS DEL CLIENTE:

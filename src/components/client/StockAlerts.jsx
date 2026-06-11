@@ -34,6 +34,7 @@ export default function StockAlerts({ transactions, monthlyData }) {
   const getAIAlerts = async () => {
     setLoading(true);
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un CFO experto. Analiza los datos financieros y genera alertas críticas para el negocio.
 
 MES ACTUAL:

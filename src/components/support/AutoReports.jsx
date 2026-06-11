@@ -126,6 +126,7 @@ El reporte debe incluir:
     };
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: prompts[reportType] + '\n\nResponde en español. Formato Markdown profesional y detallado.',
       model: 'claude_sonnet_4_6',
     });

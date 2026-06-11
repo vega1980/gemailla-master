@@ -63,6 +63,7 @@ export default function StrategicKPIs({ company }) {
     setAiLoading(true);
     setAiInsight(null);
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company?.id,
       prompt: `Eres un consultor estratégico experto en PyMEs mexicanas. Analiza los KPIs de la empresa "${company?.name || 'Empresa sin seleccionar'}" y entrega un diagnóstico ejecutivo.
 
 KPIs:

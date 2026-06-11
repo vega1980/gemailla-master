@@ -71,6 +71,7 @@ Responde ÚNICAMENTE con un JSON con esta estructura exacta:
 }`;
 
     const data = await firebase.integrations.Core.InvokeLLM({
+      companyId: company?.id,
       prompt,
       response_json_schema: {
         type: 'object',

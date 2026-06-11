@@ -55,6 +55,7 @@ export default function ProcessOptimizer({ company }) {
     const proc = PROCESSES.find(p => p.id === selectedProcess);
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un experto en optimización de procesos y cadena de suministro para PyMEs mexicanas.
 
 EMPRESA: ${company?.name || 'Empresa sin seleccionar'} | Industria: ${company?.industry || 'tecnología'}

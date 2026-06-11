@@ -144,6 +144,7 @@ export default function AIAssistant() {
         filters_used: { docType: filterDocType },
         status,
         errorMessage,
+        documentIds: docIds,
         correlationId,
       });
     };
@@ -160,6 +161,7 @@ export default function AIAssistant() {
       };
 
       const aiResponse = await firebase.integrations.Core.InvokeLLM({
+        companyId: activeCompany.id,
         prompt: `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
 
 Empresa: ${activeCompany.name}
@@ -178,6 +180,7 @@ PREGUNTA DEL USUARIO:
 ${userQuery}
 
 Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`,
+        documentIds: docIds,
         correlationId,
       });
       const response = normalizeAIResponse(aiResponse);

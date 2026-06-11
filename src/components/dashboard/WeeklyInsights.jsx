@@ -72,6 +72,7 @@ export default function WeeklyInsights({ company, transactions, monthlyData }) {
     const weekLabel = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "'Semana del' d 'de' MMMM yyyy", { locale: es });
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company?.id,
       prompt: `Eres el consultor financiero de ${company?.name || 'la empresa'}. Genera el resumen semanal de inteligencia financiera para ${weekLabel}.
 
 DATOS FINANCIEROS:

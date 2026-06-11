@@ -55,6 +55,7 @@ export default function ClientSegments({ company }) {
     }));
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un experto en CRM y segmentación de mercado para PyMEs mexicanas.
 
 EMPRESA: ${company.name}
