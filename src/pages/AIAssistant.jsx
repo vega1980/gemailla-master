@@ -187,7 +187,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
 
       await logAction({
         companyId: activeCompany.id, userEmail: user?.email, userName: user?.fullName,
-        action: 'ai_query', entityType: 'AIConversation', details: userQuery, correlationId: aiResponse?.correlationId || correlationId
+        action: 'ai_query', entityType: 'AIConversation', details: `Consulta IA completada (longitud: ${userQuery.length}, documentos: ${docIds.length})`, correlationId: aiResponse?.correlationId || correlationId
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error, 'Verifica la configuración del backend seguro y vuelve a intentar.');
@@ -202,7 +202,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
           userName: user?.fullName,
           action: 'ai_query_error',
           entityType: 'AIConversation',
-          details: `${userQuery} — ${errorMessage}`,
+          details: `Consulta IA fallida (longitud: ${userQuery.length}, documentos: ${docIds.length}) — ${errorMessage}`,
           correlationId,
         });
       } catch (persistenceError) {
