@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useCompanyData } from '@/lib/companyEntityQueries';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
 import { Link } from 'react-router-dom';
 import { Building2, Search, Bell, HelpCircle, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, Zap, FileText, Calculator, Shield, TrendingUp, Users, Briefcase, PieChart as PieChartIcon } from 'lucide-react';
