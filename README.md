@@ -105,6 +105,10 @@ Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint
 - El borrado físico desde cliente está bloqueado en Firestore y Storage.
 - El borrado funcional debe hacerse como borrado lógico con `status: "archived"`.
 
+## Regla de estabilización
+
+Antes de añadir nuevos módulos al roadmap, la próxima iteración debe dedicarse exclusivamente a estabilización: reglas Firestore/Storage, Emulator Suite, deploy de staging, Lighthouse móvil, Playwright E2E para Auth/Multiempresa/Documentos/IA, monitoreo/alertas y revisión de costos. Ver `docs/ITERACION_ESTABILIZACION.md`.
+
 ## Despliegue
 
 ```bash
