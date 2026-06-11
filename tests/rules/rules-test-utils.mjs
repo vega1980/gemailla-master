@@ -78,22 +78,6 @@ export async function clearFirestore() {
   );
 }
 
-
-export async function clearStorage() {
-  const response = await fetch(
-    `http://${STORAGE_HOST}/emulator/v1/projects/${PROJECT_ID}/buckets/${STORAGE_BUCKET}/o`,
-    {
-      method: 'DELETE',
-      headers: ownerHeaders(),
-    },
-  );
-
-  assert.ok(
-    response.ok,
-    `Expected Storage emulator cleanup to succeed, got ${response.status}: ${await response.text()}`,
-  );
-}
-
 export async function firestoreSet(path, data, auth = 'owner') {
   const response = await fetch(`${firestoreBase}/${path}`, {
     method: 'PATCH',

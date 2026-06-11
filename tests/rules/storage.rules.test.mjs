@@ -3,7 +3,6 @@ import {
   assertAllowed,
   assertDenied,
   clearFirestore,
-  clearStorage,
   seedCompany,
   storageDelete,
   storageRead,
@@ -18,13 +17,27 @@ const owner = { uid: 'storage-owner-uid', claims: { email: 'storage-owner@gemail
 const director = { uid: 'storage-director-uid', claims: { email: 'storage-director@gemailla.test', email_verified: true } };
 const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true } };
 const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true } };
+const runId = `${Date.now()}-${process.pid}`;
 
-const documentId = 'doc-1';
-const missingDocumentId = 'doc-missing';
-const validPdfPath = `companies/${companyId}/documents/${documentId}/file.pdf`;
-const validXmlPath = `companies/${companyId}/documents/${documentId}/file.xml`;
-const missingDocumentPdfPath = `companies/${companyId}/documents/${missingDocumentId}/file.pdf`;
-const otherCompanyPdfPath = `companies/${otherCompanyId}/documents/doc-1-other-company/file.pdf`;
+let testNumber = 0;
+let documentId;
+let missingDocumentId;
+let otherCompanyDocumentId;
+let validPdfPath;
+let validXmlPath;
+let missingDocumentPdfPath;
+let otherCompanyPdfPath;
+
+function resetStoragePaths() {
+  testNumber += 1;
+  documentId = `doc-${runId}-${testNumber}`;
+  missingDocumentId = `doc-missing-${runId}-${testNumber}`;
+  otherCompanyDocumentId = `doc-other-company-${runId}-${testNumber}`;
+  validPdfPath = `companies/${companyId}/documents/${documentId}/file.pdf`;
+  validXmlPath = `companies/${companyId}/documents/${documentId}/file.xml`;
+  missingDocumentPdfPath = `companies/${companyId}/documents/${missingDocumentId}/file.pdf`;
+  otherCompanyPdfPath = `companies/${otherCompanyId}/documents/${otherCompanyDocumentId}/file.pdf`;
+}
 
 async function seedStorageAcl() {
   await seedCompany({
@@ -46,7 +59,7 @@ async function seedStorageAcl() {
     status: 'uploading',
   }), 'admin storage document seed');
 
-  await assertAllowed(firestoreSet('documents/doc-1-other-company', {
+  await assertAllowed(firestoreSet(`documents/${otherCompanyDocumentId}`, {
     companyId: otherCompanyId,
     ownerUid: otherOwner.uid,
     title: 'Documento de otra empresa',
@@ -59,8 +72,8 @@ async function seedStorageAcl() {
 
 describe('Cloud Storage security rules', () => {
   beforeEach(async () => {
+    resetStoragePaths();
     await clearFirestore();
-    await clearStorage();
     await seedStorageAcl();
   });
 
@@ -83,11 +96,11 @@ describe('Cloud Storage security rules', () => {
       'upload missing documentId path segment',
     );
     await assertDenied(
-      storageUpload(`companies/${companyId}/private/doc-1/file.pdf`, owner),
+      storageUpload(`companies/${companyId}/private/${documentId}/file.pdf`, owner),
       'upload outside documents nest',
     );
     await assertDenied(
-      storageUpload(`documents/${companyId}/doc-1/file.pdf`, owner),
+      storageUpload(`documents/${companyId}/${documentId}/file.pdf`, owner),
       'upload outside companies root',
     );
     await assertDenied(
@@ -122,7 +135,7 @@ describe('Cloud Storage security rules', () => {
     );
 
     await assertDenied(
-      storageUpload(`companies/${companyId}/documents/doc-1-other-company/file.pdf`, owner),
+      storageUpload(`companies/${companyId}/documents/${otherCompanyDocumentId}/file.pdf`, owner),
       'upload path company differs from Firestore document company',
     );
   });
@@ -148,7 +161,7 @@ describe('Cloud Storage security rules', () => {
 
   it('denies access to another company', async () => {
     await assertDenied(
-      storageUpload(`companies/${otherCompanyId}/documents/doc-2/file.pdf`, owner),
+      storageUpload(`companies/${otherCompanyId}/documents/doc-2-${runId}-${testNumber}/file.pdf`, owner),
       'owner upload to another company',
     );
 
