@@ -18,7 +18,11 @@
     "test:rules": "node --test --test-concurrency=1 tests/rules/*.test.mjs",
     "test:rules:emulators": "firebase emulators:exec --only firestore,storage --project demo-gemailla-test \"npm run test:rules\"",
     "typecheck:core": "tsc -p ./jsconfig.core.json",
-    "test:unit": "node --test tests/unit/*.test.mjs"
+    "test:unit": "node --test tests/unit/*.test.mjs",
+    "test:e2e": "npx --yes @playwright/test@1.56.1 test",
+    "test:e2e:headed": "npx --yes @playwright/test@1.56.1 test --headed",
+    "test:e2e:install": "npx --yes @playwright/test@1.56.1 install --with-deps chromium",
+    "test:e2e:emulators": "firebase emulators:exec --only auth,firestore,storage --project demo-gemailla-e2e \"npm run test:e2e\""
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

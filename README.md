@@ -45,6 +45,7 @@ npm run typecheck
 npm run typecheck:core
 npm run build
 npm run test:rules:emulators
+npm run test:e2e:emulators
 npm run deploy:hosting
 npm run rules:deploy
 ```
@@ -108,6 +109,10 @@ Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint
 ## Regla de estabilización
 
 Antes de añadir nuevos módulos al roadmap, la próxima iteración debe dedicarse exclusivamente a estabilización: reglas Firestore/Storage, Emulator Suite, deploy de staging, Lighthouse móvil, Playwright E2E para Auth/Multiempresa/Documentos/IA, monitoreo/alertas y revisión de costos. Ver `docs/ITERACION_ESTABILIZACION.md`.
+
+## Pruebas E2E críticas
+
+La suite Playwright cubre los flujos integrados de mayor riesgo: Auth, cambio de empresa, reglas Firebase, Storage, contrato `/api/ai`, restricciones por rol y cierre de sesión. Ver `docs/E2E_PLAYWRIGHT.md`.
 
 ## Despliegue
 

@@ -182,6 +182,7 @@ export default function Documents() {
               <input type="file" id="file-upload" className="hidden" accept=".pdf,.xml" onChange={handleUpload} />
               <Button
                 onClick={() => document.getElementById('file-upload').click()}
+                aria-label="Subir documento"
                 disabled={uploading}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
@@ -253,16 +254,17 @@ export default function Documents() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleAnalyze(doc)}
+                      aria-label={`Analizar documento ${doc.title}`}
                       disabled={analyzing === doc.id}
                       className="border-primary/30 text-primary hover:bg-primary/10"
                     >
                       {analyzing === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => setSelectedDoc(doc)} className="border-border">
+                  <Button size="sm" variant="outline" onClick={() => setSelectedDoc(doc)} aria-label={`Ver documento ${doc.title}`} className="border-border">
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => deleteMutation.mutate(doc.id)} className="border-border text-destructive hover:bg-destructive/10">
+                  <Button size="sm" variant="outline" onClick={() => deleteMutation.mutate(doc.id)} aria-label={`Archivar documento ${doc.title}`} className="border-border text-destructive hover:bg-destructive/10">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
