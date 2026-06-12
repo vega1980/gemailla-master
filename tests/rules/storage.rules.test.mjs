@@ -13,10 +13,10 @@ import {
 
 const companyId = 'company-storage';
 const otherCompanyId = 'company-storage-other';
-const owner = { uid: 'storage-owner-uid', claims: { email: 'storage-owner@gemailla.test', email_verified: true } };
-const director = { uid: 'storage-director-uid', claims: { email: 'storage-director@gemailla.test', email_verified: true } };
-const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true } };
-const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true } };
+const owner = { uid: 'storage-owner-uid', claims: { email: 'storage-owner@gemailla.test', email_verified: true, companyId, companyRole: 'owner', membershipStatus: 'active' } };
+const director = { uid: 'storage-director-uid', claims: { email: 'storage-director@gemailla.test', email_verified: true, companyId, companyRole: 'director', membershipStatus: 'active' } };
+const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true, companyId: 'company-outsider', companyRole: 'viewer', membershipStatus: 'active' } };
+const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true, companyId: otherCompanyId, companyRole: 'owner', membershipStatus: 'active' } };
 
 const documentId = 'doc-1';
 const missingDocumentId = 'doc-missing';
@@ -62,15 +62,17 @@ describe('Cloud Storage security rules', () => {
     await seedStorageAcl();
   });
 
-  it('allows PDF and XML uploads only when a matching Firestore document exists', async () => {
+  it('allows PDF and XML uploads only with matching tenant claims and custom metadata', async () => {
     await assertAllowed(storageUpload(validPdfPath, owner, {
       contentType: 'application/pdf',
       body: '%PDF-1.7 fixture',
-    }), 'owner upload PDF to existing document path');
+      metadata: { companyId, documentId },
+    }), 'owner upload PDF with matching tenant metadata');
     await assertAllowed(storageUpload(validXmlPath, director, {
       contentType: 'application/xml',
       body: '<invoice id="fixture" />',
-    }), 'director upload XML to existing document path');
+      metadata: { companyId, documentId },
+    }), 'director upload XML with matching tenant metadata');
 
     await assertDenied(
       storageUpload(`companies/${companyId}/documents/file.pdf`, owner),
@@ -86,7 +88,7 @@ describe('Cloud Storage security rules', () => {
     );
     await assertDenied(
       storageUpload(missingDocumentPdfPath, owner),
-      'upload without Firestore document metadata',
+      'upload without required Storage custom metadata',
     );
   });
 
@@ -102,20 +104,22 @@ describe('Cloud Storage security rules', () => {
     }), 'oversized PDF upload');
   });
 
-  it('rejects uploads when the Firestore document is missing or belongs to another company', async () => {
+  it('rejects uploads when required custom metadata is missing or belongs to another company', async () => {
     await assertDenied(
       storageUpload(missingDocumentPdfPath, owner),
-      'upload without Firestore document metadata',
+      'upload without required Storage custom metadata',
     );
 
     await assertDenied(
-      storageUpload(`companies/${companyId}/documents/doc-1-other-company/file.pdf`, owner),
-      'upload path company differs from Firestore document company',
+      storageUpload(`companies/${companyId}/documents/doc-1-other-company/file.pdf`, owner, {
+        metadata: { companyId: otherCompanyId, documentId: 'doc-1-other-company' },
+      }),
+      'upload path company differs from Storage custom metadata',
     );
   });
 
   it('allows reads only with valid company permissions', async () => {
-    await assertAllowed(storageUpload(validPdfPath, owner), 'owner fixture upload');
+    await assertAllowed(storageUpload(validPdfPath, owner, { metadata: { companyId, documentId } }), 'owner fixture upload');
 
     await assertAllowed(storageRead(validPdfPath, owner), 'owner read');
     await assertAllowed(storageRead(validPdfPath, director), 'active director read');
@@ -123,7 +127,7 @@ describe('Cloud Storage security rules', () => {
   });
 
   it('blocks client updates and physical deletes even for permitted company users', async () => {
-    await assertAllowed(storageUpload(validPdfPath, owner), 'owner fixture upload before update/delete');
+    await assertAllowed(storageUpload(validPdfPath, owner, { metadata: { companyId, documentId } }), 'owner fixture upload before update/delete');
 
     await assertDenied(storageUpdate(validPdfPath, owner), 'owner physical update');
     await assertDenied(storageUpdate(validPdfPath, director), 'director physical update');
@@ -133,11 +137,15 @@ describe('Cloud Storage security rules', () => {
 
   it('denies access to another company', async () => {
     await assertDenied(
-      storageUpload(`companies/${otherCompanyId}/documents/doc-2/file.pdf`, owner),
+      storageUpload(`companies/${otherCompanyId}/documents/doc-2/file.pdf`, owner, {
+        metadata: { companyId: otherCompanyId, documentId: 'doc-2' },
+      }),
       'owner upload to another company',
     );
 
-    await assertAllowed(storageUpload(otherCompanyPdfPath, otherOwner), 'other company owner fixture upload');
+    await assertAllowed(storageUpload(otherCompanyPdfPath, otherOwner, {
+      metadata: { companyId: otherCompanyId, documentId: 'doc-1-other-company' },
+    }), 'other company owner fixture upload');
     await assertDenied(storageRead(otherCompanyPdfPath, owner), 'owner read from another company');
   });
 });
