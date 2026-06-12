@@ -64,6 +64,13 @@ export async function createOwnedCompany({ companyId, ownerUid, ownerEmail, name
 }
 
 export async function addCompanyMember({ companyId, userUid, userEmail, role = 'viewer', actorUid }) {
+  const companySnap = await getDoc(doc(db, 'companies', companyId));
+  const companyOwnerUid = companySnap.exists() ? companySnap.data().ownerUid : null;
+
+  if (companyOwnerUid === userUid && role !== 'owner') {
+    throw new Error('El harness E2E no puede degradar al propietario de la empresa a otro rol.');
+  }
+
   const now = new Date().toISOString();
   await setDoc(doc(db, 'companyMembers', `${companyId}_${userUid}`), {
     companyId,
@@ -75,7 +82,7 @@ export async function addCompanyMember({ companyId, userUid, userEmail, role = '
     createdBy: actorUid,
     updatedAt: now,
     updatedBy: actorUid,
-  });
+  }, { merge: true });
 }
 
 export async function createAnalyzableDocument({ documentId, companyId, ownerUid, title = 'factura-e2e.pdf' }) {

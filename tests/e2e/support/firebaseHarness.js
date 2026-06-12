@@ -49,25 +49,46 @@ export async function readDocument(page, documentId) {
 
 export async function signInWithCompany(page, { email, companyId, companyName, role = 'owner' }) {
   await page.goto('/');
-  const user = await createAndLoginUser(page, { email });
-  await createCompany(page, {
-    companyId,
-    ownerUid: user.uid,
-    ownerEmail: email,
-    name: companyName,
-  });
 
-  if (role !== 'owner') {
-    await addCompanyMember(page, {
+  if (role === 'owner') {
+    const owner = await createAndLoginUser(page, { email });
+    await createCompany(page, {
       companyId,
-      userUid: user.uid,
-      userEmail: email,
-      role,
-      actorUid: user.uid,
+      ownerUid: owner.uid,
+      ownerEmail: email,
+      name: companyName,
     });
+
+    await page.goto('/dashboard');
+    await page.getByText(companyName).first().waitFor({ timeout: 15_000 });
+    return owner;
   }
 
+  const ownerEmail = `${uniqueId('owner')}@gemailla-e2e.test`;
+  const owner = await createAndLoginUser(page, { email: ownerEmail });
+  await createCompany(page, {
+    companyId,
+    ownerUid: owner.uid,
+    ownerEmail,
+    name: companyName,
+  });
+  await logoutUser(page);
+
+  const member = await createAndLoginUser(page, { email });
+  await logoutUser(page);
+
+  await loginUser(page, { email: ownerEmail });
+  await addCompanyMember(page, {
+    companyId,
+    userUid: member.uid,
+    userEmail: email,
+    role,
+    actorUid: owner.uid,
+  });
+  await logoutUser(page);
+
+  await loginUser(page, { email });
   await page.goto('/dashboard');
   await page.getByText(companyName).first().waitFor({ timeout: 15_000 });
-  return user;
+  return member;
 }
