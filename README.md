@@ -26,15 +26,15 @@ Repositorio maestro unificado de GEMAILLA AI: aplicación web estática React/Vi
 npm install
 ```
 
-2. Crea la configuración runtime local a partir del ejemplo:
+2. Opcionalmente crea la configuración runtime local a partir del ejemplo:
 
 ```bash
 cp public/app-config.example.js public/app-config.js
 ```
 
-3. Edita `public/app-config.js` con los valores del proyecto Firebase de desarrollo. Este archivo no debe versionarse; cada entorno debe generar su propia configuración.
+3. Edita `public/app-config.js` con los valores del proyecto Firebase de desarrollo si no usarás variables `VITE_FIREBASE_*`. Este archivo no debe versionarse; cada entorno puede generar su propia configuración. Si falta, la app arranca con defaults seguros y usa las variables de entorno disponibles.
 
-> Alternativamente puedes usar variables `VITE_FIREBASE_*`. Si ambas fuentes existen, las variables de entorno tienen prioridad sobre `window.GEMAILLA_FIREBASE_CONFIG`.
+> Las variables `VITE_FIREBASE_*` tienen prioridad sobre `window.GEMAILLA_FIREBASE_CONFIG`.
 
 ## Comandos principales
 
@@ -45,6 +45,7 @@ npm run typecheck
 npm run typecheck:core
 npm run build
 npm run test:rules:emulators
+npm run test:e2e:emulators
 npm run deploy:hosting
 npm run rules:deploy
 ```
@@ -77,7 +78,26 @@ El flujo documental está diseñado para evitar archivos huérfanos y URLs públ
 
 ## IA
 
-No configures claves privadas de OpenAI/LLM en el frontend. Si aparece `VITE_OPENAI_API_KEY`, la app desactiva la IA para evitar exponer secretos. Para IA real se requiere backend seguro, por ejemplo Firebase Cloud Functions o Cloud Run, que valide Firebase Auth, permisos de empresa y límites de uso.
+No configures claves privadas de OpenAI/LLM en el frontend. Si aparece `VITE_OPENAI_API_KEY`, la app desactiva la IA para evitar exponer secretos.
+
+El repositorio incluye un backend real en `functions/` con Firebase Cloud Functions. La app llama por defecto a `/api/ai`, ruta que Firebase Hosting reescribe a la función `ai`. La función valida un token Firebase Auth, limita el tamaño del prompt y llama a OpenAI desde servidor.
+
+Configuración mínima del backend:
+
+```bash
+cd functions
+npm install
+firebase functions:secrets:set OPENAI_API_KEY
+firebase deploy --only functions,hosting
+```
+
+Variables opcionales para Functions:
+
+- `OPENAI_MODEL`: modelo a usar; por defecto `gpt-4o-mini`.
+- `ALLOWED_ORIGINS`: lista separada por comas para CORS cuando se llama desde otro origen.
+- `ALLOW_UNAUTHENTICATED_AI=true`: solo para emuladores/desarrollo local sin sesión Firebase.
+
+Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint HTTPS propio que acepte `POST { prompt }` y devuelva `{ response }`.
 
 ## Reglas de seguridad
 
@@ -85,6 +105,14 @@ No configures claves privadas de OpenAI/LLM en el frontend. Si aparece `VITE_OPE
 - Storage valida empresa, membresía, documento Firestore existente, tamaño y tipo de archivo.
 - El borrado físico desde cliente está bloqueado en Firestore y Storage.
 - El borrado funcional debe hacerse como borrado lógico con `status: "archived"`.
+
+## Regla de estabilización
+
+Antes de añadir nuevos módulos al roadmap, la próxima iteración debe dedicarse exclusivamente a estabilización: reglas Firestore/Storage, Emulator Suite, deploy de staging, Lighthouse móvil, Playwright E2E para Auth/Multiempresa/Documentos/IA, monitoreo/alertas y revisión de costos. Ver `docs/ITERACION_ESTABILIZACION.md`.
+
+## Pruebas E2E críticas
+
+La suite Playwright cubre los flujos integrados de mayor riesgo: Auth, cambio de empresa, reglas Firebase, Storage, contrato `/api/ai`, restricciones por rol y cierre de sesión. Ver `docs/E2E_PLAYWRIGHT.md`.
 
 ## Despliegue
 

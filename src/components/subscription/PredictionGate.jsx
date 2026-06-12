@@ -16,7 +16,7 @@ import { Link } from 'react-router-dom';
  *   compact        – shows a small inline banner instead of full gate
  */
 export default function PredictionGate({ children, requiredPlan = 'pro', featureName = 'Predicciones IA', compact = false }) {
-  const { plan, planCfg, canUsePredictions, predictionsRemaining, isAtLimit, loading } = useSubscription();
+  const { plan, planCfg, predictionsRemaining, isAtLimit, loading } = useSubscription();
 
   if (loading) return null;
 

@@ -1,49 +1,35 @@
 rules_version = '2';
 service firebase.storage {
+  // Todas las reglas aplican al bucket configurado en Firebase Storage.
   match /b/{bucket}/o {
+    // Verifica que la solicitud venga de un usuario autenticado por Firebase Auth.
     function signedIn() {
       return request.auth != null;
     }
 
-    function currentUid() {
-      return request.auth.uid;
-    }
-
-    function membershipId(companyId) {
-      return companyId + '_' + currentUid();
-    }
-
-    function companyExists(companyId) {
-      return firestore.exists(/databases/(default)/documents/companies/$(companyId));
-    }
-
-    function isCompanyOwner(companyId) {
+    // El tenant permitido se obtiene exclusivamente de Custom Claims de Firebase Auth.
+    function belongsToCompany(companyId) {
       return signedIn()
-        && companyExists(companyId)
-        && firestore.get(/databases/(default)/documents/companies/$(companyId)).data.ownerUid == currentUid();
+        && request.auth.token.companyId == companyId
+        && request.auth.token.membershipStatus == 'active';
     }
 
-    function hasActiveMembership(companyId) {
-      let memberId = membershipId(companyId);
-      return signedIn()
-        && firestore.exists(/databases/(default)/documents/companyMembers/$(memberId))
-        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.status == 'active';
+    // Rol operativo del usuario dentro del tenant indicado por sus Custom Claims.
+    function hasWriteRole() {
+      return request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
-    function memberRole(companyId) {
-      let memberId = membershipId(companyId);
-      return firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.role;
-    }
-
+    // Lectura: usuario autenticado con membresía activa del mismo tenant.
     function canReadCompany(companyId) {
-      return isCompanyOwner(companyId) || hasActiveMembership(companyId);
+      return belongsToCompany(companyId);
     }
 
+    // Escritura: mismo tenant y rol autorizado, sin lecturas a Firestore desde Storage Rules.
     function canWriteCompany(companyId) {
-      return isCompanyOwner(companyId)
-        || (hasActiveMembership(companyId) && memberRole(companyId) in ['owner', 'director', 'admin', 'editor']);
+      return belongsToCompany(companyId) && hasWriteRole();
     }
 
+    // Valida archivos documentales: máximo 15 MB y únicamente PDF/XML por MIME declarado.
     function validDocumentFile() {
       return request.resource.size <= 15 * 1024 * 1024
         && (
@@ -53,25 +39,33 @@ service firebase.storage {
         );
     }
 
-    function documentRecordPath(documentId) {
-      return /databases/(default)/documents/documents/$(documentId);
+    // La ruta y los metadatos custom del objeto deben apuntar al mismo tenant y documento.
+    function validDocumentMetadata(companyId, documentId) {
+      return request.resource.metadata.companyId == companyId
+        && request.resource.metadata.documentId == documentId;
     }
 
-    function documentRecordExists(companyId, documentId) {
-      return firestore.exists(documentRecordPath(documentId))
-        && firestore.get(documentRecordPath(documentId)).data.companyId == companyId
-        && firestore.get(documentRecordPath(documentId)).data.status in ['uploading', 'pending', 'uploaded', 'processing', 'analyzed', 'error', 'ai_disabled'];
+    // En lectura se valida el aislamiento multi-tenant contra los metadatos persistidos del objeto.
+    function storedDocumentMetadataMatches(companyId, documentId) {
+      return resource.metadata.companyId == companyId
+        && resource.metadata.documentId == documentId;
     }
 
-    function documentAcceptsUpload(companyId, documentId) {
-      return documentRecordExists(companyId, documentId)
-        && firestore.get(documentRecordPath(documentId)).data.status == 'uploading';
-    }
-
+    // Carpeta privada multi-tenant: companies/{companyId}/documents/{documentId}/{fileName}.
     match /companies/{companyId}/documents/{documentId}/{fileName} {
-      allow read: if canReadCompany(companyId) && documentRecordExists(companyId, documentId);
-      allow create: if canWriteCompany(companyId) && documentAcceptsUpload(companyId, documentId) && validDocumentFile();
+      // Leer: solo usuarios con claims activos del mismo tenant y metadatos persistidos consistentes.
+      allow read: if canReadCompany(companyId) && storedDocumentMetadataMatches(companyId, documentId);
+
+      // Crear: solo roles autorizados del tenant, con metadatos custom consistentes y PDF/XML <= 15 MB.
+      allow create: if canWriteCompany(companyId) && validDocumentMetadata(companyId, documentId) && validDocumentFile();
+
+      // Modificar o borrar bytes desde clientes queda bloqueado; cualquier remediación debe pasar por backend admin.
       allow update, delete: if false;
+    }
+
+    // Denegación explícita para cualquier ruta no modelada, evitando buckets públicos accidentales.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

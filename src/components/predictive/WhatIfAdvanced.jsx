@@ -55,6 +55,7 @@ export default function WhatIfAdvanced({ transactions, monthlyData }) {
     const next6 = [1, 2, 3, 4, 5, 6].map(i => format(addMonths(startOfMonth(new Date()), i), 'MMM yy', { locale: es }));
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un consultor financiero experto en simulación de escenarios de negocio. 
 
 Datos base actuales:

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileOutput, Loader2, Download, Sparkles, FileText, BarChart3, Shield, Receipt } from 'lucide-react';
@@ -23,24 +23,8 @@ export default function AutoReports({ company }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', company.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: company.id }),
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', company.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: company.id }),
-  });
-
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['kpis', company.id],
-    queryFn: () => firebase.entities.KPI.filter({ companyId: company.id }),
-  });
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects', company.id],
-    queryFn: () => firebase.entities.Project.filter({ companyId: company.id }),
+  const { transactions, documents, kpis, projects } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'documents', 'kpis', 'projects'],
   });
 
   const generateReport = async () => {
@@ -142,6 +126,7 @@ El reporte debe incluir:
     };
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: prompts[reportType] + '\n\nResponde en español. Formato Markdown profesional y detallado.',
       model: 'claude_sonnet_4_6',
     });

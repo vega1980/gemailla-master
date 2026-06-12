@@ -1,53 +1,56 @@
+import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
-import { useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-
-import AppLayout from '@/components/layout/AppLayout';
 import { AppProviders } from '@/app/providers';
-import { appRoutes } from '@/app/routes';
+import { appRoutes, publicRoutes } from '@/app/routes';
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, authError } = useAuth();
+// Guardias y Layout base (Se cargan una sola vez al inicio)
+const ProtectedRoute = lazy(() => import('@/components/auth/ProtectedRoute'));
+const PublicRoute = lazy(() => import('@/components/auth/PublicRoute'));
+const AppLayout = lazy(() => import('@/components/layout/AppLayout'));
+const PageNotFound = lazy(() => import('@/lib/PageNotFound'));
 
-  if (isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-muted-foreground">Cargando GEMAILLA AI...</span>
-        </div>
-      </div>
-    );
-  }
+// Pantalla de carga global inicial (Solo para el arranque de la app o guards)
+const AppLoadingScreen = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-background">
+    <div className="flex flex-col items-center gap-4">
+      <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <span className="text-sm text-muted-foreground">Iniciando GEMAILLA AI...</span>
+    </div>
+  </div>
+);
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      window.location.href = '/';
-      return null;
-    }
-  }
-
-  return (
+const AppRoutes = () => (
+  <Suspense fallback={<AppLoadingScreen />}>
     <Routes>
-      <Route element={<AppLayout />}>
-        {appRoutes.map(({ path, element }) => (
+      {/* Bloque de Rutas Públicas */}
+      <Route element={<PublicRoute />}>
+        {publicRoutes.map(({ path, element }) => (
           <Route key={path} path={path} element={element} />
         ))}
       </Route>
+
+      {/* Bloque de Rutas Privadas / Protegidas */}
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppLayout />}>
+          {appRoutes.map(({ path, element }) => (
+            <Route key={path} path={path} element={element} />
+          ))}
+        </Route>
+      </Route>
+
+      {/* Error 404 */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
-  );
-};
+  </Suspense>
+);
 
 function App() {
   return (
     <AppProviders>
-      <AuthenticatedApp />
+      <AppRoutes />
     </AppProviders>
-  )
+  );
 }
 
-export default App
+export default App;
+

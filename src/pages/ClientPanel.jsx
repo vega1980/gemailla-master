@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react';
 import { useCompany } from '@/lib/companyContext';
-import { useQuery } from '@tanstack/react-query';
-import { firebase } from '@/api/firebaseClient';
-import { useAuth } from '@/lib/AuthContext';
+import { useCompanySubscriptions, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,19 +13,8 @@ import MyPlan from '@/components/client/MyPlan';
 
 export default function ClientPanel() {
   const { activeCompany, loading: companyLoading } = useCompany();
-  const { user } = useAuth();
-
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', activeCompany?.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
-
-  const { data: subscriptions = [] } = useQuery({
-    queryKey: ['subscriptions', activeCompany?.id],
-    queryFn: () => firebase.entities.Subscription.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
+  const { data: transactions = [] } = useCompanyTransactions(activeCompany);
+  const { data: subscriptions = [] } = useCompanySubscriptions(activeCompany);
 
   const monthlyData = useMemo(() => {
     const data = [];

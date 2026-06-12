@@ -2,6 +2,7 @@
 
 import { auth, storage } from '@/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
 
 const ALLOWED_UPLOAD_TYPES = new Set([
   'application/pdf',
@@ -30,11 +31,12 @@ function sanitizePathSegment(value, fallback) {
 }
 
 /**
- * @param {{ file?: File, companyId?: string, documentId?: string, folder?: string }} [params]
+ * @param {{ file?: File, companyId?: string, documentId?: string, folder?: string, correlationId?: string }} [params]
  */
-export async function uploadFile({ file, companyId, documentId, folder = 'documents' } = {}) {
+export async function uploadFile({ file, companyId, documentId, folder = 'documents', correlationId: providedCorrelationId } = {}) {
   if (!file) throw new Error('No se recibió ningún archivo para subir.');
 
+  const correlationId = ensureCorrelationId(providedCorrelationId, 'storage');
   const user = getCurrentUser();
   if (!user) throw new Error('Debes iniciar sesión para subir archivos.');
 
@@ -66,13 +68,30 @@ export async function uploadFile({ file, companyId, documentId, folder = 'docume
   const storagePath = `companies/${safeCompanyId}/${safeFolder}/${safeDocumentId}/${safeName}`;
   const storageRef = ref(storage, storagePath);
 
-  await uploadBytes(storageRef, file, { contentType });
+  await uploadBytes(storageRef, file, {
+    contentType,
+    customMetadata: {
+      correlationId,
+      companyId: safeCompanyId,
+      documentId: safeDocumentId,
+      uploadedBy: user.uid || '',
+    },
+  });
+
+  logFrontendEvent('document_storage_uploaded', {
+    correlationId,
+    companyId: safeCompanyId,
+    documentId: safeDocumentId,
+    contentType,
+    fileSize: file.size,
+  });
 
   return {
     storagePath,
     fileName: file.name,
     contentType,
     fileSize: file.size,
+    correlationId,
   };
 }
 

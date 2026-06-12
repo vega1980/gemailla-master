@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyEmployees } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,21 +42,18 @@ export default function EmployeeDirectory({ company }) {
   const [deptFilter, setDeptFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const { data: employees = [], isLoading } = useQuery({
-    queryKey: ['employees', company.id],
-    queryFn: () => firebase.entities.Employee.filter({ companyId: company.id }),
-  });
+  const { data: employees = [], isLoading } = useCompanyEmployees(company);
 
   const save = useMutation({
     mutationFn: (data) => editing
       ? firebase.entities.Employee.update(editing.id, data)
       : firebase.entities.Employee.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries(['employees', company.id]); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Empleado guardado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('employees', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Empleado guardado'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.Employee.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['employees', company.id]); toast.success('Empleado eliminado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('employees', company) }); toast.success('Empleado eliminado'); },
   });
 
   const openNew = () => { setEditing(null); setForm(EMPTY); setOpen(true); };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyKpis } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,11 +35,7 @@ export default function StrategicKPIs({ company }) {
   const [aiInsight, setAiInsight] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  const { data: kpis = [], isLoading } = useQuery({
-    queryKey: ['kpis', company?.id],
-    queryFn: () => company ? firebase.entities.KPI.filter({ companyId: company.id }) : Promise.resolve([]),
-    enabled: !!company,
-  });
+  const { data: kpis = [], isLoading } = useCompanyKpis(company);
 
   const displayKPIs = company ? kpis : [];
 
@@ -48,12 +45,12 @@ export default function StrategicKPIs({ company }) {
       if (editing) return firebase.entities.KPI.update(editing.id, data);
       return firebase.entities.KPI.create({ ...data, companyId: company.id });
     },
-    onSuccess: () => { qc.invalidateQueries(['kpis', company?.id]); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('KPI guardado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('kpis', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('KPI guardado'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.KPI.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['kpis', company?.id]); toast.success('KPI eliminado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('kpis', company) }); toast.success('KPI eliminado'); },
   });
 
   const openEdit = (kpi) => { setEditing(kpi); setForm({ ...kpi }); setOpen(true); };
@@ -66,6 +63,7 @@ export default function StrategicKPIs({ company }) {
     setAiLoading(true);
     setAiInsight(null);
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company?.id,
       prompt: `Eres un consultor estratégico experto en PyMEs mexicanas. Analiza los KPIs de la empresa "${company?.name || 'Empresa sin seleccionar'}" y entrega un diagnóstico ejecutivo.
 
 KPIs:

@@ -45,6 +45,7 @@ export default function TrendsPanel({ transactions, monthlyData, company }) {
     setLoading(true);
     setAiInsight(null);
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un consultor financiero experto en PyMEs mexicanas. Analiza las siguientes tendencias financieras de la empresa "${company.name}" y proporciona recomendaciones estratégicas.
 
 TENDENCIAS (últimos 3 meses vs 3 meses anteriores):

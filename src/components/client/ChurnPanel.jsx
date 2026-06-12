@@ -34,6 +34,7 @@ export default function ChurnPanel({ subscriptions, transactions }) {
     }));
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un experto en retención de clientes y análisis de churn para SaaS/servicios de suscripción.
 
 DATOS DE SUSCRIPCIONES:

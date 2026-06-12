@@ -1,7 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { getSavedActiveCompanyId, saveActiveCompanyId } from '@/features/companies/services/activeCompanyStorage';
-import { getCompanyRole } from '@/features/companies/services/companyRole';
 import { loadCompanyContextData } from '@/features/companies/services/companyMembershipService';
 
 const CompanyContext = createContext(null);
@@ -51,20 +50,14 @@ export function CompanyProvider({ children }) {
     saveActiveCompanyId(company.id);
   }, []);
 
-  const getUserRole = useCallback(() => {
-    if (!activeCompany || !user) return null;
-    return getCompanyRole({ activeCompany, memberships, user });
-  }, [activeCompany, memberships, user]);
-
   const value = useMemo(() => ({
     companies,
     activeCompany,
-    switchCompany,
     loading,
     memberships,
-    getUserRole,
+    switchCompany,
     reloadCompanies: loadCompanies,
-  }), [activeCompany, companies, getUserRole, loadCompanies, loading, memberships, switchCompany]);
+  }), [activeCompany, companies, loadCompanies, loading, memberships, switchCompany]);
 
   return (
     <CompanyContext.Provider value={value}>

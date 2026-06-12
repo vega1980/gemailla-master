@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -19,19 +18,8 @@ const ChartTooltip = ({ active, payload, label }) => {
 };
 
 export default function ClientDashboardShare({ company }) {
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', company.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: company.id }),
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', company.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: company.id }),
-  });
-
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['kpis', company.id],
-    queryFn: () => firebase.entities.KPI.filter({ companyId: company.id }),
+  const { transactions, documents, kpis } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'documents', 'kpis'],
   });
 
   const monthlyData = useMemo(() => {
@@ -59,8 +47,6 @@ export default function ClientDashboardShare({ company }) {
   const lastMonth = format(subMonths(new Date(), 1), 'yyyy-MM');
   const lastIngresos = transactions.filter(t => t.type === 'ingreso' && t.date?.startsWith(lastMonth)).reduce((s, t) => s + (t.amount || 0), 0);
   const ingChange = lastIngresos > 0 ? (((currentIngresos - lastIngresos) / lastIngresos) * 100).toFixed(1) : null;
-
-  const kpisByStatus = kpis.reduce((acc, k) => { acc[k.status] = (acc[k.status] || 0) + 1; return acc; }, {});
 
   return (
     <div className="space-y-6">

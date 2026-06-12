@@ -32,6 +32,7 @@ export default function DemandForecast({ transactions, monthlyData }) {
     const next6 = [1, 2, 3, 4, 5, 6].map(i => format(addMonths(startOfMonth(new Date()), i), 'MMM yy', { locale: es }));
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un experto en forecasting de ventas. Analiza los datos históricos mensuales y genera un pronóstico para los próximos 6 meses.
 
 Datos históricos (${monthlySummary.length} meses):

@@ -145,12 +145,23 @@ export async function seedCompany({ companyId, ownerUid, memberships = [] }) {
   }
 }
 
-export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture' } = {}) {
+function storageMetadataHeaders(metadata = {}) {
+  return Object.fromEntries(
+    Object.entries(metadata).map(([key, value]) => [`x-goog-meta-${key}`, String(value)]),
+  );
+}
+
+export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', metadata = {} } = {}) {
+  const headers = {
+    'Content-Type': contentType,
+    ...storageMetadataHeaders(metadata),
+  };
+
   return fetch(`${storageBase}?name=${encodeURIComponent(path)}`, {
     method: 'POST',
     headers: auth === 'owner'
-      ? ownerHeaders({ 'Content-Type': contentType })
-      : authHeaders(auth, { 'Content-Type': contentType }),
+      ? ownerHeaders(headers)
+      : authHeaders(auth, headers),
     body,
   });
 }
@@ -158,6 +169,14 @@ export async function storageUpload(path, auth, { contentType = 'application/pdf
 export async function storageRead(path, auth) {
   return fetch(`${storageBase}/${encodeURIComponent(path)}?alt=media`, {
     headers: authHeaders(auth),
+  });
+}
+
+export async function storageUpdate(path, auth, { contentType = 'application/pdf', body = 'updated bytes' } = {}) {
+  return fetch(`${storageBase}/${encodeURIComponent(path)}`, {
+    method: 'PATCH',
+    headers: authHeaders(auth, { 'Content-Type': contentType }),
+    body,
   });
 }
 

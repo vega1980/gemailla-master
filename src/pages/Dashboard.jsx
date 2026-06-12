@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
 import { Link } from 'react-router-dom';
 import { Building2, Search, Bell, HelpCircle, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, Zap, FileText, Calculator, Shield, TrendingUp, Users, Briefcase, PieChart as PieChartIcon } from 'lucide-react';
@@ -9,32 +8,37 @@ import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell } from 'recha
 export default function Dashboard() {
   const { activeCompany, loading: companyLoading, companies = [] } = useCompany();
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', activeCompany?.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', activeCompany?.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany
-  });
-
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['kpis', activeCompany?.id],
-    queryFn: () => firebase.entities.KPI.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany
+  const { transactions, documents, kpis } = useCompanyData(activeCompany?.id, {
+    queryNames: ['transactions', 'documents', 'kpis'],
   });
 
 
   const monthlyData = useMemo(() => {
-    const data = [];
-    for (let i = 5; i >= 0; i--) {
-      data.push({ value: Math.random() * 100 });
-    }
-    return data;
-  }, []);
+    const buckets = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - index));
+      return {
+        key: `${date.getFullYear()}-${date.getMonth()}`,
+        value: 0,
+      };
+    });
+
+    const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
+
+    transactions.forEach((transaction) => {
+      const rawDate = transaction.date || transaction.createdAt || transaction.updatedAt;
+      const date = rawDate ? new Date(rawDate) : null;
+      if (!date || Number.isNaN(date.getTime())) return;
+
+      const bucket = bucketByKey.get(`${date.getFullYear()}-${date.getMonth()}`);
+      if (!bucket) return;
+
+      const amount = Number(transaction.amount) || 0;
+      bucket.value += transaction.type === 'gasto' ? -amount : amount;
+    });
+
+    return buckets.map((bucket) => ({ value: Math.max(bucket.value, 0) }));
+  }, [transactions]);
 
   if (companyLoading) {
     return (

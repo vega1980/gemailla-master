@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyAuditLogs } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
@@ -53,11 +52,7 @@ export default function ActivityLog() {
   const [search, setSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
-  const { data: logs = [], isLoading } = useQuery({
-    queryKey: ['audit-logs', activeCompany?.id],
-    queryFn: () => firebase.entities.AuditLog.filter({ companyId: activeCompany.id }, '-createdAt', 200),
-    enabled: !!activeCompany,
-  });
+  const { data: logs = [], isLoading } = useCompanyAuditLogs(activeCompany);
 
   // Unique users from logs
   const uniqueUsers = [...new Set(logs.map(l => l.userEmail).filter(Boolean))];

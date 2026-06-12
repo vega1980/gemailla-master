@@ -20,4 +20,5 @@ export const ENTITY_COLLECTIONS = Object.freeze({
   Project: 'projects',
   ProjectTask: 'projectTasks',
   SupportTicket: 'supportTickets',
+  ObservabilityEvent: 'observabilityEvents',
 });

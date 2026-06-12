@@ -77,8 +77,24 @@ service cloud.firestore {
         || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']);
     }
 
+
+    function auditCreateFieldsAreSafe(data) {
+      return (!hasField(data, 'createdAt') || data.createdAt is string)
+        && (!hasField(data, 'updatedAt') || data.updatedAt is string)
+        && (!hasField(data, 'createdBy') || data.createdBy == currentUid())
+        && (!hasField(data, 'updatedBy') || data.updatedBy == currentUid());
+    }
+
+    function auditUpdateFieldsAreSafe() {
+      return (!hasField(resource.data, 'createdAt') || request.resource.data.createdAt == resource.data.createdAt)
+        && (!hasField(resource.data, 'createdBy') || request.resource.data.createdBy == resource.data.createdBy)
+        && (!hasField(request.resource.data, 'updatedAt') || request.resource.data.updatedAt is string)
+        && (!hasField(request.resource.data, 'updatedBy') || request.resource.data.updatedBy == currentUid());
+    }
+
     function validCompanyCreate() {
       return signedIn()
+        && auditCreateFieldsAreSafe(request.resource.data)
         && request.resource.data.ownerUid == currentUid()
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
@@ -87,6 +103,7 @@ service cloud.firestore {
 
     function canCreateCompanyRecord() {
       return signedIn()
+        && auditCreateFieldsAreSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
         && canWriteCompany(request.resource.data.companyId)
         && ownerUidIsSelfOrMissing(request.resource.data);
@@ -113,6 +130,7 @@ service cloud.firestore {
 
     function canUpdateCompanyRecord() {
       return signedIn()
+        && auditUpdateFieldsAreSafe()
         && companyIdUnchanged()
         && canWriteCompany(resource.data.companyId)
         && ownerUidUnchangedOrSelf();
@@ -120,6 +138,7 @@ service cloud.firestore {
 
     function canCreateOwnedOrCompanyRecord() {
       return signedIn()
+        && auditCreateFieldsAreSafe(request.resource.data)
         && ownerUidIsSelfOrMissing(request.resource.data)
         && (
           (hasCompanyId(request.resource.data) && canWriteCompany(request.resource.data.companyId))
@@ -137,6 +156,7 @@ service cloud.firestore {
 
     function canUpdateOwnedOrCompanyRecord() {
       return signedIn()
+        && auditUpdateFieldsAreSafe()
         && ownerUidUnchangedOrSelf()
         && (
           (hasCompanyId(resource.data) && companyIdUnchanged() && canWriteCompany(resource.data.companyId))
@@ -183,7 +203,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read, create, update: if signedIn() && userId == currentUid();
+      allow read: if signedIn() && userId == currentUid();
+      allow create: if signedIn() && userId == currentUid() && auditCreateFieldsAreSafe(request.resource.data);
+      allow update: if signedIn() && userId == currentUid() && auditUpdateFieldsAreSafe();
       allow delete: if false;
     }
 
@@ -191,12 +213,14 @@ service cloud.firestore {
       allow create: if validCompanyCreate();
       allow read: if canReadCompany(companyId);
       allow update: if canManageCompany(companyId)
+        && auditUpdateFieldsAreSafe()
         && request.resource.data.ownerUid == resource.data.ownerUid;
       allow delete: if false;
     }
 
     match /companyMembers/{memberId} {
       allow create: if signedIn()
+        && auditCreateFieldsAreSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
         && canManageCompany(request.resource.data.companyId)
         && request.resource.data.status in ['active', 'pending', 'archived']
@@ -211,6 +235,7 @@ service cloud.firestore {
         );
 
       allow update: if signedIn()
+        && auditUpdateFieldsAreSafe()
         && hasCompanyId(resource.data)
         && hasCompanyId(request.resource.data)
         && request.resource.data.companyId == resource.data.companyId
@@ -224,6 +249,12 @@ service cloud.firestore {
     match /auditLogs/{logId} {
       allow create: if canCreateCompanyRecord();
       allow read: if canReadCompanyRecord();
+      allow update, delete: if false;
+    }
+
+    match /observabilityEvents/{eventId} {
+      allow create: if canCreateOwnedOrCompanyRecord();
+      allow read: if canReadOwnedOrCompanyRecord();
       allow update, delete: if false;
     }
 

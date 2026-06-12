@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCompany } from '@/lib/companyContext';
-import { useAuth } from '@/lib/AuthContext';
 import {
   LayoutDashboard, FileText, ArrowUpDown, Shield, Brain,
   Building2, Activity, ChevronLeft, ChevronRight, LogOut,
@@ -31,7 +30,6 @@ const navItems = [
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
-  const { user } = useAuth();
   const { companies, activeCompany, switchCompany } = useCompany();
 
   return (
@@ -63,7 +61,11 @@ export default function Sidebar({ collapsed, setCollapsed }) {
       <div className="px-3 py-3 border-b" style={{ borderColor: 'rgba(197,160,89,0.12)' }}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm hover:bg-white/5" style={{ background: 'rgba(197,160,89,0.06)', border: '1px solid rgba(197,160,89,0.2)' }}>
+              <button
+                aria-label={`Empresa activa: ${activeCompany.name}`}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm hover:bg-white/5"
+                style={{ background: 'rgba(197,160,89,0.06)', border: '1px solid rgba(197,160,89,0.2)' }}
+              >
                 <Building2 className="w-4 h-4 shrink-0" style={{ color: '#c5a059' }} />
                 <div className="flex-1 text-left min-w-0">
                   <p className="truncate text-xs font-semibold" style={{ color: '#e8d5a3' }}>{activeCompany.name}</p>
@@ -133,6 +135,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           {!collapsed &&
           <button
             onClick={() => firebase.auth.logout()}
+            aria-label="Cerrar sesión"
             className="p-1.5 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-white/5"
             title="Cerrar sesión">
             

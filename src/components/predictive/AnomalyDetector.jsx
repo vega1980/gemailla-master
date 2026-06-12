@@ -32,6 +32,7 @@ export default function AnomalyDetector({ transactions, monthlyData }) {
     }));
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres un experto en detección de anomalías financieras. Analiza las transacciones y datos mensuales y encuentra desviaciones estadísticas importantes.
 
 Transacciones recientes (muestra):

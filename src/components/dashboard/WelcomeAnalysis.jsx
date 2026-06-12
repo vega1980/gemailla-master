@@ -72,6 +72,7 @@ export default function WelcomeAnalysis({ company, transactions, monthlyData }) 
     const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
 
     const res = await firebase.integrations.Core.InvokeLLM({
+      companyId: company.id,
       prompt: `Eres GEMAILLA, un asistente financiero inteligente para PyMEs mexicanas. 
 Genera un mensaje de bienvenida PERSONALIZADO y CONCISO (máximo 4 secciones cortas) para el cliente de la empresa "${company.name}".
 El nombre del usuario es "${user?.fullName || 'Cliente'}".

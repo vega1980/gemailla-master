@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/ai",
+        "function": "ai"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
@@ -57,6 +61,15 @@
       "enabled": true,
       "port": 4000
     },
-    "singleProjectMode": true
-  }
+    "singleProjectMode": true,
+    "functions": {
+      "port": 5001
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default"
+    }
+  ]
 }

@@ -58,7 +58,6 @@ export default function ConsultorVirtual({ company, transactions, monthlyData })
   // Build context string from company data
   const buildContext = useCallback(() => {
     if (!company) return '';
-    const recent = transactions.slice(0, 30);
     const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
     const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
     const lastMonths = monthlyData.slice(-3).map(m => `${m.month}: Ingresos $${Math.round(m.ingresos).toLocaleString()}, Gastos $${Math.round(m.gastos).toLocaleString()}`).join('; ');
