@@ -24,7 +24,6 @@ firestore.indexes.json: JSON OK
 ## No verificado aquí
 
 ```text
-firebase emulators:start
 firebase deploy
 login real
 subida real a Storage
@@ -32,3 +31,10 @@ lectura real de Firestore
 ```
 
 Motivo: requiere Firebase CLI operativo y sesión del proyecto real.
+
+## Pruebas de reglas Firebase
+
+- `npm run test:rules` ahora hace un preflight de puertos para evitar falsos resultados cuando los emuladores no están levantados.
+- `npm run test:rules:emulators` descarga explícitamente los emuladores de Firestore/Storage antes de ejecutar la suite.
+- En CI se agregó `.github/workflows/firebase-rules.yml` para ejecutar estas pruebas con Java y caché de emuladores.
+- Si el entorno bloquea `storage.googleapis.com/firebase-preview-drop`, la verificación queda bloqueada por descarga de emuladores y debe repetirse en un entorno con acceso a esa URL.
