@@ -1,69 +1,34 @@
 rules_version = '2';
 service firebase.storage {
-  // Todas las reglas aplican al bucket configurado en Firebase Storage.
   match /b/{bucket}/o {
-    // Verifica que la solicitud venga de un usuario autenticado por Firebase Auth.
+
     function signedIn() {
       return request.auth != null;
     }
 
-    // El tenant permitido se obtiene exclusivamente de Custom Claims de Firebase Auth.
-    function belongsToCompany(companyId) {
-      return signedIn()
-        && request.auth.token.companyId == companyId
-        && request.auth.token.membershipStatus == 'active';
+    function hasCompanyToken(companyId) {
+      return signedIn() && request.auth.token.companyId == companyId;
     }
 
-    // Rol operativo del usuario dentro del tenant indicado por sus Custom Claims.
-    function hasWriteRole() {
-      return request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
+    function isValidMetadata(companyId) {
+      return request.resource.metadata != null 
+        && request.resource.metadata.companyId == companyId;
     }
 
-    // Lectura: usuario autenticado con membresía activa del mismo tenant.
-    function canReadCompany(companyId) {
-      return belongsToCompany(companyId);
-    }
-
-    // Escritura: mismo tenant y rol autorizado, sin lecturas a Firestore desde Storage Rules.
-    function canWriteCompany(companyId) {
-      return belongsToCompany(companyId) && hasWriteRole();
-    }
-
-    // Valida archivos documentales: máximo 15 MB y únicamente PDF/XML por MIME declarado.
-    function validDocumentFile() {
-      return request.resource.size <= 15 * 1024 * 1024
-        && (
-          request.resource.contentType == 'application/pdf'
-          || request.resource.contentType == 'text/xml'
-          || request.resource.contentType == 'application/xml'
-        );
-    }
-
-    // La ruta y los metadatos custom del objeto deben apuntar al mismo tenant y documento.
-    function validDocumentMetadata(companyId, documentId) {
-      return request.resource.metadata.companyId == companyId
-        && request.resource.metadata.documentId == documentId;
-    }
-
-    // En lectura se valida el aislamiento multi-tenant contra los metadatos persistidos del objeto.
-    function storedDocumentMetadataMatches(companyId, documentId) {
-      return resource.metadata.companyId == companyId
-        && resource.metadata.documentId == documentId;
-    }
-
-    // Carpeta privada multi-tenant: companies/{companyId}/documents/{documentId}/{fileName}.
     match /companies/{companyId}/documents/{documentId}/{fileName} {
-      // Leer: solo usuarios con claims activos del mismo tenant y metadatos persistidos consistentes.
-      allow read: if canReadCompany(companyId) && storedDocumentMetadataMatches(companyId, documentId);
 
-      // Crear: solo roles autorizados del tenant, con metadatos custom consistentes y PDF/XML <= 15 MB.
-      allow create: if canWriteCompany(companyId) && validDocumentMetadata(companyId, documentId) && validDocumentFile();
+      allow read: if hasCompanyToken(companyId);
 
-      // Modificar o borrar bytes desde clientes queda bloqueado; cualquier remediación debe pasar por backend admin.
+      allow create: if hasCompanyToken(companyId)
+                    && isValidMetadata(companyId)
+                    && request.resource.size < 15 * 1024 * 1024
+                    && (request.resource.contentType == 'application/pdf' 
+                        || request.resource.contentType == 'text/xml' 
+                        || request.resource.contentType == 'application/xml');
+
       allow update, delete: if false;
     }
 
-    // Denegación explícita para cualquier ruta no modelada, evitando buckets públicos accidentales.
     match /{allPaths=**} {
       allow read, write: if false;
     }

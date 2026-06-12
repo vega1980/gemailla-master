@@ -1,0 +1,80 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e6]:
+      - img "GEMAILLA IA" [ref=e7]
+      - generic [ref=e8]:
+        - paragraph [ref=e9]: La Evolución de
+        - paragraph [ref=e10]: la Asesoría Empresaria
+        - text: GEMAILLA IA
+    - navigation [ref=e11]:
+      - link "Dashboard" [ref=e12] [cursor=pointer]:
+        - /url: /
+        - img [ref=e13]
+        - generic [ref=e18]: Dashboard
+      - link "Documentos" [ref=e19] [cursor=pointer]:
+        - /url: /documents
+        - img [ref=e20]
+        - generic [ref=e23]: Documentos
+      - link "ERP" [ref=e24] [cursor=pointer]:
+        - /url: /erp
+        - img [ref=e25]
+        - generic [ref=e28]: ERP
+      - link "Auditoría" [ref=e29] [cursor=pointer]:
+        - /url: /audit
+        - img [ref=e30]
+        - generic [ref=e32]: Auditoría
+      - link "IA Asistente" [ref=e33] [cursor=pointer]:
+        - /url: /ai
+        - img [ref=e34]
+        - generic [ref=e44]: IA Asistente
+      - link "Empresas" [ref=e45] [cursor=pointer]:
+        - /url: /companies
+        - img [ref=e46]
+        - generic [ref=e50]: Empresas
+      - link "Análisis Predictivo" [ref=e51] [cursor=pointer]:
+        - /url: /predictive
+        - img [ref=e52]
+        - generic [ref=e54]: Análisis Predictivo
+      - link "Hub Financiero" [ref=e55] [cursor=pointer]:
+        - /url: /finance
+        - img [ref=e56]
+        - generic [ref=e58]: Hub Financiero
+      - link "Panel Cliente" [ref=e59] [cursor=pointer]:
+        - /url: /client
+        - img [ref=e60]
+        - generic [ref=e65]: Panel Cliente
+      - link "Estrategia & Ops" [ref=e66] [cursor=pointer]:
+        - /url: /operations
+        - img [ref=e67]
+        - generic [ref=e72]: Estrategia & Ops
+      - link "CRM" [ref=e73] [cursor=pointer]:
+        - /url: /crm
+        - img [ref=e74]
+        - generic [ref=e79]: CRM
+      - link "Recursos Humanos" [ref=e80] [cursor=pointer]:
+        - /url: /hr
+        - img [ref=e81]
+        - generic [ref=e93]: Recursos Humanos
+      - link "Log" [ref=e94] [cursor=pointer]:
+        - /url: /activity
+        - img [ref=e95]
+        - generic [ref=e97]: Log
+      - link "Suscripciones" [ref=e98] [cursor=pointer]:
+        - /url: /subscriptions
+        - img [ref=e99]
+        - generic [ref=e101]: Suscripciones
+    - button [ref=e102] [cursor=pointer]:
+      - img [ref=e103]
+    - generic [ref=e106]:
+      - img "GEMAILLA IA" [ref=e107]
+      - button "Cerrar sesión" [ref=e108] [cursor=pointer]:
+        - img [ref=e109]
+  - main [ref=e112]:
+    - generic [ref=e116]:
+      - img [ref=e118]
+      - heading "Selecciona una empresa" [level=3] [ref=e121]
+      - paragraph [ref=e122]: Necesitas una empresa activa para ver documentos.
+```

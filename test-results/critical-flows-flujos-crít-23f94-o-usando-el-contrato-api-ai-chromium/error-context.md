@@ -1,0 +1,271 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e6]:
+      - img "GEMAILLA IA" [ref=e7]
+      - generic [ref=e8]:
+        - paragraph [ref=e9]: La Evolución de
+        - paragraph [ref=e10]: la Asesoría Empresaria
+        - text: GEMAILLA IA
+    - navigation [ref=e11]:
+      - link "Dashboard" [ref=e12] [cursor=pointer]:
+        - /url: /
+        - img [ref=e13]
+        - generic [ref=e18]: Dashboard
+      - link "Documentos" [ref=e19] [cursor=pointer]:
+        - /url: /documents
+        - img [ref=e20]
+        - generic [ref=e23]: Documentos
+      - link "ERP" [ref=e24] [cursor=pointer]:
+        - /url: /erp
+        - img [ref=e25]
+        - generic [ref=e28]: ERP
+      - link "Auditoría" [ref=e29] [cursor=pointer]:
+        - /url: /audit
+        - img [ref=e30]
+        - generic [ref=e32]: Auditoría
+      - link "IA Asistente" [ref=e33] [cursor=pointer]:
+        - /url: /ai
+        - img [ref=e34]
+        - generic [ref=e44]: IA Asistente
+      - link "Empresas" [ref=e45] [cursor=pointer]:
+        - /url: /companies
+        - img [ref=e46]
+        - generic [ref=e50]: Empresas
+      - link "Análisis Predictivo" [ref=e51] [cursor=pointer]:
+        - /url: /predictive
+        - img [ref=e52]
+        - generic [ref=e54]: Análisis Predictivo
+      - link "Hub Financiero" [ref=e55] [cursor=pointer]:
+        - /url: /finance
+        - img [ref=e56]
+        - generic [ref=e58]: Hub Financiero
+      - link "Panel Cliente" [ref=e59] [cursor=pointer]:
+        - /url: /client
+        - img [ref=e60]
+        - generic [ref=e65]: Panel Cliente
+      - link "Estrategia & Ops" [ref=e66] [cursor=pointer]:
+        - /url: /operations
+        - img [ref=e67]
+        - generic [ref=e72]: Estrategia & Ops
+      - link "CRM" [ref=e73] [cursor=pointer]:
+        - /url: /crm
+        - img [ref=e74]
+        - generic [ref=e79]: CRM
+      - link "Recursos Humanos" [ref=e80] [cursor=pointer]:
+        - /url: /hr
+        - img [ref=e81]
+        - generic [ref=e93]: Recursos Humanos
+      - link "Log" [ref=e94] [cursor=pointer]:
+        - /url: /activity
+        - img [ref=e95]
+        - generic [ref=e97]: Log
+      - link "Suscripciones" [ref=e98] [cursor=pointer]:
+        - /url: /subscriptions
+        - img [ref=e99]
+        - generic [ref=e101]: Suscripciones
+    - button [ref=e102] [cursor=pointer]:
+      - img [ref=e103]
+    - generic [ref=e106]:
+      - img "GEMAILLA IA" [ref=e107]
+      - button "Cerrar sesión" [ref=e108] [cursor=pointer]:
+        - img [ref=e109]
+  - main [ref=e112]:
+    - generic [ref=e116]:
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - button "☰" [ref=e120] [cursor=pointer]
+          - generic [ref=e121]:
+            - img [ref=e122]
+            - textbox "Buscar empresas, documentos..." [ref=e125]
+        - generic [ref=e126]:
+          - button [ref=e127] [cursor=pointer]:
+            - img [ref=e128]
+          - button [ref=e132] [cursor=pointer]:
+            - img [ref=e133]
+          - generic [ref=e136]:
+            - generic [ref=e137]: GEMAILLA IA
+            - generic [ref=e138]: ● Conectado
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - heading "ACCESOS DIRECTOS" [level=2] [ref=e142]
+          - generic [ref=e143]:
+            - link "ERP" [ref=e144] [cursor=pointer]:
+              - /url: /erp
+              - generic [ref=e145]:
+                - img [ref=e146]
+                - paragraph [ref=e148]: ERP
+            - link "Auditoría" [ref=e149] [cursor=pointer]:
+              - /url: /audit
+              - generic [ref=e150]:
+                - img [ref=e151]
+                - paragraph [ref=e153]: Auditoría
+            - link "Documentos" [ref=e154] [cursor=pointer]:
+              - /url: /documents
+              - generic [ref=e155]:
+                - img [ref=e156]
+                - paragraph [ref=e159]: Documentos
+            - link "Finanzas" [ref=e160] [cursor=pointer]:
+              - /url: /finance
+              - generic [ref=e161]:
+                - img [ref=e162]
+                - paragraph [ref=e165]: Finanzas
+            - link "CRM" [ref=e166] [cursor=pointer]:
+              - /url: /crm
+              - generic [ref=e167]:
+                - img [ref=e168]
+                - paragraph [ref=e173]: CRM
+            - link "Recursos Humanos" [ref=e174] [cursor=pointer]:
+              - /url: /hr
+              - generic [ref=e175]:
+                - img [ref=e176]
+                - paragraph [ref=e179]: Recursos Humanos
+            - link "Operaciones" [ref=e180] [cursor=pointer]:
+              - /url: /operations
+              - generic [ref=e181]:
+                - img [ref=e182]
+                - paragraph [ref=e184]: Operaciones
+            - link "Análisis Predictivo" [ref=e185] [cursor=pointer]:
+              - /url: /predictive
+              - generic [ref=e186]:
+                - img [ref=e187]
+                - paragraph [ref=e190]: Análisis Predictivo
+        - generic [ref=e191]:
+          - generic [ref=e192]:
+            - generic [ref=e193]:
+              - generic [ref=e194]: EMPRESAS ACTIVAS
+              - img [ref=e195]
+            - paragraph [ref=e199]: "0"
+            - img [ref=e202]
+            - generic [ref=e203]:
+              - generic [ref=e204]: Este mes
+              - generic [ref=e205]: +18%
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - generic [ref=e208]: DOCUMENTOS PROCESADOS
+              - img
+            - paragraph [ref=e210]: "0"
+            - img [ref=e213]
+            - generic [ref=e214]:
+              - generic [ref=e215]: Este mes
+              - generic [ref=e216]: +24%
+          - generic [ref=e217]:
+            - generic [ref=e218]:
+              - generic [ref=e219]: ANÁLISIS IA
+              - img [ref=e220]
+            - paragraph [ref=e222]: "0"
+            - img [ref=e225]
+            - generic [ref=e226]:
+              - generic [ref=e227]: Este mes
+              - generic [ref=e228]: +12%
+          - generic [ref=e229]:
+            - generic [ref=e230]:
+              - generic [ref=e231]: ALERTAS ACTIVAS
+              - img [ref=e232]
+            - paragraph [ref=e234]: "0"
+            - img [ref=e237]
+            - generic [ref=e238]:
+              - generic [ref=e239]: Este mes
+              - generic [ref=e240]: "-5%"
+          - generic [ref=e241]:
+            - generic [ref=e242]:
+              - generic [ref=e243]: TAREAS EN PROCESO
+              - img [ref=e244]
+            - paragraph [ref=e247]: "0"
+            - img [ref=e250]
+            - generic [ref=e251]:
+              - generic [ref=e252]: Este mes
+              - generic [ref=e253]: +7%
+          - generic [ref=e254]:
+            - generic [ref=e255]:
+              - generic [ref=e256]: AHORRO ESTIMADO
+              - img [ref=e257]
+            - paragraph [ref=e259]: $0
+            - img [ref=e262]
+            - generic [ref=e263]:
+              - generic [ref=e264]: Este mes
+              - generic [ref=e265]: +32%
+        - generic [ref=e266]:
+          - generic [ref=e267]:
+            - generic [ref=e268]:
+              - heading "EMPRESAS" [level=3] [ref=e269]
+              - generic [ref=e270]:
+                - link "Ver todas" [ref=e271] [cursor=pointer]:
+                  - /url: /companies
+                - link "+ Nueva" [ref=e272] [cursor=pointer]:
+                  - /url: /companies
+            - table [ref=e274]:
+              - rowgroup [ref=e275]:
+                - row "EMPRESA SECTOR ESTADO RIESGO ÚLTIMO ANÁLISIS" [ref=e276]:
+                  - cell "EMPRESA" [ref=e277]
+                  - cell "SECTOR" [ref=e278]
+                  - cell "ESTADO" [ref=e279]
+                  - cell "RIESGO" [ref=e280]
+                  - cell "ÚLTIMO ANÁLISIS" [ref=e281]
+              - rowgroup
+          - generic [ref=e282]:
+            - generic [ref=e283]:
+              - heading "ANÁLISIS EN TIEMPO REAL" [level=3] [ref=e284]
+              - generic [ref=e285]:
+                - img [ref=e288]:
+                  - generic [ref=e290]:
+                    - img [ref=e292]
+                    - img [ref=e294]
+                - paragraph [ref=e295]: 92%
+                - paragraph [ref=e296]: "Tiempo: 00:21:24"
+              - generic [ref=e297]:
+                - generic [ref=e298]:
+                  - img [ref=e299]
+                  - generic [ref=e302]: Saturación de datos
+                - generic [ref=e303]:
+                  - img [ref=e304]
+                  - generic [ref=e307]: Validación documentaria
+                - generic [ref=e308]:
+                  - img [ref=e309]
+                  - generic [ref=e312]: Análisis financiero
+            - generic [ref=e313]:
+              - generic [ref=e314]:
+                - heading "ALERTAS ACTIVAS" [level=3] [ref=e315]
+                - link "Ver todas" [ref=e316] [cursor=pointer]:
+                  - /url: /audit
+              - generic [ref=e317]:
+                - generic [ref=e318]:
+                  - img [ref=e319]
+                  - generic [ref=e321]:
+                    - paragraph [ref=e322]: Riesgo Tributario Alto
+                    - paragraph [ref=e323]: Declaración IVA
+                - generic [ref=e324]:
+                  - img [ref=e325]
+                  - generic [ref=e327]:
+                    - paragraph [ref=e328]: Inconsistencia detectada
+                    - paragraph [ref=e329]: Logística Andina S.A.C.
+        - generic [ref=e330]:
+          - generic [ref=e331]:
+            - heading "ACTIVIDAD RECIENTE" [level=3] [ref=e332]
+            - link "Ver todas" [ref=e333] [cursor=pointer]:
+              - /url: /activity
+          - generic [ref=e334]:
+            - generic [ref=e335]:
+              - img [ref=e336]
+              - paragraph [ref=e339]: Análisis completados
+              - paragraph [ref=e340]: 15 hoy
+            - generic [ref=e341]:
+              - img [ref=e342]
+              - paragraph [ref=e345]: Documentos cargados
+              - paragraph [ref=e346]: Estudios Q1.pdf
+            - generic [ref=e347]:
+              - img [ref=e348]
+              - paragraph [ref=e350]: Alerta emitida
+              - paragraph [ref=e351]: Riesgo Tributario
+            - generic [ref=e352]:
+              - img [ref=e353]
+              - paragraph [ref=e355]: Reporte generado
+              - paragraph [ref=e356]: Resumen Mayo 2025
+      - generic [ref=e357]:
+        - paragraph [ref=e358]: GEMAILLA IA © 2025
+        - generic [ref=e359]:
+          - generic [ref=e360]: "Última sync: Hoy, 03:15 AM"
+          - generic [ref=e361]: Soporte 24/7
+```
