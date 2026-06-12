@@ -108,7 +108,7 @@ Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint
 
 ## Regla de estabilización
 
-Antes de añadir nuevos módulos al roadmap, la próxima iteración debe dedicarse exclusivamente a estabilización: reglas Firestore/Storage, Emulator Suite, deploy de staging, Lighthouse móvil, Playwright E2E para Auth/Multiempresa/Documentos/IA, monitoreo/alertas y revisión de costos. Ver `docs/ITERACION_ESTABILIZACION.md`.
+Antes de añadir nuevos módulos al roadmap, la próxima iteración debe dedicarse exclusivamente a estabilización: reglas Firestore/Storage, Emulator Suite, deploy de staging, Lighthouse móvil, Playwright E2E para Auth/Multiempresa/Documentos/IA, monitoreo/alertas y revisión de costos. Ver `docs/ITERACION_ESTABILIZACION.md`. La base bloqueante de reglas y CI está documentada en `docs/SEGURIDAD_BASE_PRUEBAS.md`.
 
 ## Pruebas E2E críticas
 
