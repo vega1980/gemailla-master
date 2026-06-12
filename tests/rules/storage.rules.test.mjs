@@ -19,12 +19,25 @@ const director = { uid: 'storage-director-uid', claims: { email: 'storage-direct
 const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true } };
 const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true } };
 const runId = `${Date.now()}-${process.pid}`;
+const STORAGE_DOCUMENT_ROUTE = 'companies/{companyId}/documents/{documentId}/{fileName}';
 const STORAGE_DOCUMENT_MATCH = /^companies\/[^/]+\/documents\/[^/]+\/[^/]+$/;
 
 function documentStoragePath(pathCompanyId, pathDocumentId, fileName) {
   const path = `companies/${pathCompanyId}/documents/${pathDocumentId}/${fileName}`;
-  assert.match(path, STORAGE_DOCUMENT_MATCH, 'test fixture path must match storage.rules document object route');
+  assert.match(path, STORAGE_DOCUMENT_MATCH, `test fixture path must match storage.rules route ${STORAGE_DOCUMENT_ROUTE}`);
   return path;
+}
+
+async function seedUploadingDocument({ id, documentCompanyId, ownerAuth, title }) {
+  await assertAllowed(firestoreSet(`documents/${id}`, {
+    companyId: documentCompanyId,
+    ownerUid: ownerAuth.uid,
+    title,
+    contentType: 'application/pdf',
+    fileSize: 100,
+    fileType: 'pdf',
+    status: 'uploading',
+  }, ownerAuth), `uploading document metadata create for ${id}`);
 }
 
 let testNumber = 0;
@@ -57,25 +70,19 @@ async function seedStorageAcl() {
   });
   await seedCompany({ companyId: otherCompanyId, ownerUid: 'other-storage-owner-uid' });
 
-  await assertAllowed(firestoreSet(`documents/${documentId}`, {
-    companyId,
-    ownerUid: owner.uid,
+  await seedUploadingDocument({
+    id: documentId,
+    documentCompanyId: companyId,
+    ownerAuth: owner,
     title: 'Documento listo para Storage',
-    contentType: 'application/pdf',
-    fileSize: 100,
-    fileType: 'pdf',
-    status: 'uploading',
-  }), 'admin storage document seed');
+  });
 
-  await assertAllowed(firestoreSet(`documents/${otherCompanyDocumentId}`, {
-    companyId: otherCompanyId,
-    ownerUid: otherOwner.uid,
+  await seedUploadingDocument({
+    id: otherCompanyDocumentId,
+    documentCompanyId: otherCompanyId,
+    ownerAuth: otherOwner,
     title: 'Documento de otra empresa',
-    contentType: 'application/pdf',
-    fileSize: 100,
-    fileType: 'pdf',
-    status: 'uploading',
-  }), 'admin other company storage document seed');
+  });
 }
 
 describe('Cloud Storage security rules', () => {
