@@ -13,6 +13,8 @@ service firebase.storage {
       return companyId + '_' + currentUid();
     }
 
+    // Cloud Storage rules do not expose Firestore's database wildcard;
+    // cross-service checks must use the literal default database path.
     function companyExists(companyId) {
       return firestore.exists(/databases/(default)/documents/companies/$(companyId));
     }
