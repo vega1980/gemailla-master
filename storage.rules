@@ -1,30 +1,35 @@
 rules_version = '2';
 service firebase.storage {
+  // Todas las reglas aplican al bucket configurado en Firebase Storage.
   match /b/{bucket}/o {
+    // Verifica que la solicitud venga de un usuario autenticado por Firebase Auth.
     function signedIn() {
       return request.auth != null;
     }
 
+    // Devuelve el uid autenticado para construir claves de membresía y comparar propietarios.
     function currentUid() {
       return request.auth.uid;
     }
 
+    // Normaliza el id del documento companyMembers: {companyId}_{uid}.
     function membershipId(companyId) {
       return companyId + '_' + currentUid();
     }
 
-    // Cloud Storage rules do not expose Firestore's database wildcard;
-    // cross-service checks must use the literal default database path.
+    // Cloud Storage rules no exponen comodines de base de datos; por eso se usa la ruta literal (default).
     function companyExists(companyId) {
       return firestore.exists(/databases/(default)/documents/companies/$(companyId));
     }
 
+    // Un owner válido debe estar autenticado, la empresa debe existir y ownerUid debe coincidir con su uid.
     function isCompanyOwner(companyId) {
       return signedIn()
         && companyExists(companyId)
         && firestore.get(/databases/(default)/documents/companies/$(companyId)).data.ownerUid == currentUid();
     }
 
+    // Una membresía activa permite acceso de lectura y, según rol, acceso de escritura.
     function hasActiveMembership(companyId) {
       let memberId = membershipId(companyId);
       return signedIn()
@@ -32,20 +37,24 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.status == 'active';
     }
 
+    // Lee el rol de la membresía activa del usuario dentro de la empresa solicitada.
     function memberRole(companyId) {
       let memberId = membershipId(companyId);
       return firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.role;
     }
 
+    // Lectura: owner de la empresa o miembro activo de esa misma empresa.
     function canReadCompany(companyId) {
       return isCompanyOwner(companyId) || hasActiveMembership(companyId);
     }
 
+    // Escritura: owner o miembro activo con rol operativo autorizado.
     function canWriteCompany(companyId) {
       return isCompanyOwner(companyId)
         || (hasActiveMembership(companyId) && memberRole(companyId) in ['owner', 'director', 'admin', 'editor']);
     }
 
+    // Valida archivos documentales: máximo 15 MB y únicamente PDF/XML por MIME declarado.
     function validDocumentFile() {
       return request.resource.size <= 15 * 1024 * 1024
         && (
@@ -55,25 +64,39 @@ service firebase.storage {
         );
     }
 
+    // Ruta canónica de metadatos en Firestore para enlazar Storage con el registro documental.
     function documentRecordPath(documentId) {
       return /databases/(default)/documents/documents/$(documentId);
     }
 
+    // El objeto solo es accesible si existe un registro Firestore de documento para la misma empresa.
     function documentRecordExists(companyId, documentId) {
       return firestore.exists(documentRecordPath(documentId))
         && firestore.get(documentRecordPath(documentId)).data.companyId == companyId
         && firestore.get(documentRecordPath(documentId)).data.status in ['uploading', 'pending', 'uploaded', 'processing', 'analyzed', 'error', 'ai_disabled'];
     }
 
+    // La creación física del archivo solo se permite durante el estado transaccional "uploading".
     function documentAcceptsUpload(companyId, documentId) {
       return documentRecordExists(companyId, documentId)
         && firestore.get(documentRecordPath(documentId)).data.status == 'uploading';
     }
 
+    // Carpeta privada multi-tenant: companies/{companyId}/documents/{documentId}/{fileName}.
     match /companies/{companyId}/documents/{documentId}/{fileName} {
+      // Leer: solo owner o miembros activos cuando el registro Firestore existe y pertenece a la empresa.
       allow read: if canReadCompany(companyId) && documentRecordExists(companyId, documentId);
+
+      // Crear: solo roles autorizados, con documento en estado uploading y archivo PDF/XML <= 15 MB.
       allow create: if canWriteCompany(companyId) && documentAcceptsUpload(companyId, documentId) && validDocumentFile();
+
+      // Modificar o borrar bytes desde clientes queda bloqueado; cualquier remediación debe pasar por backend admin.
       allow update, delete: if false;
+    }
+
+    // Denegación explícita para cualquier ruta no modelada, evitando buckets públicos accidentales.
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
