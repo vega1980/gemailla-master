@@ -21,6 +21,9 @@ on:
       - 'package.json'
       - '.github/workflows/firebase-rules.yml'
 
+permissions:
+  contents: read
+
 jobs:
   rules:
     runs-on: ubuntu-latest
