@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import path from 'node:path';
+import { clearFirebaseEmulators } from './support/emulatorCleanup.js';
 import {
   TEST_PASSWORD,
   addCompanyMember,
@@ -42,6 +43,10 @@ async function signInOwnerWithCompanies(page) {
 }
 
 test.describe('flujos críticos multi-capa', () => {
+  test.beforeEach(async ({ request }) => {
+    await clearFirebaseEmulators(request);
+  });
+
   test('login y cambio de empresa activa', async ({ page }) => {
     const { runId } = await signInOwnerWithCompanies(page);
 

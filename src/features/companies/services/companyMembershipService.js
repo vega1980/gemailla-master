@@ -2,12 +2,18 @@
 
 import firebase from '@/api/firebaseClient';
 
+function compareMembershipsByCreation(a, b) {
+  return String(a?.createdAt || '').localeCompare(String(b?.createdAt || ''))
+    || String(a?.companyId || '').localeCompare(String(b?.companyId || ''))
+    || String(a?.id || '').localeCompare(String(b?.id || ''));
+}
+
 function uniqueById(records) {
   const recordsById = new Map();
   records.forEach((record) => {
     if (record?.id) recordsById.set(record.id, record);
   });
-  return Array.from(recordsById.values());
+  return Array.from(recordsById.values()).sort(compareMembershipsByCreation);
 }
 
 export async function loadCompanyMemberships(user) {

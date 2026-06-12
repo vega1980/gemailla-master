@@ -12,7 +12,7 @@ import {
   limit,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 
 /**
@@ -21,7 +21,10 @@ import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutatio
  */
 export const createRepository = (collectionName) => {
   const collectionRef = collection(db, collectionName);
-  const auditMiddleware = createAuditMutationMiddleware();
+  const auditMiddleware = createAuditMutationMiddleware({
+    getCurrentUserUid: () => auth.currentUser?.uid || null,
+    nowIso: () => new Date().toISOString(),
+  });
 
   const serializeSnapshot = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 
