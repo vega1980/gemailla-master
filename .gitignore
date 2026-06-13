@@ -29,3 +29,4 @@ dist-ssr
 .env.*.local
 # Runtime config generated per environment
 public/app-config.js
+test-results/
