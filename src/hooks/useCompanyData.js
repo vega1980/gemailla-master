@@ -1,68 +1,44 @@
 import { useQueries } from '@tanstack/react-query';
-import { buildCompanyEntityQuery } from '@/lib/companyEntityQueries';
+import {
+  COMPANY_ENTITY_QUERY_NAMES,
+  companyEntityQueryKey,
+  fetchCompanyEntity,
+} from '@/lib/companyEntityQueries';
 
-export const COMPANY_DATA_QUERY_NAMES = Object.freeze([
-  'transactions',
-  'documents',
-  'kpis',
-  'projects',
-  'projectTasks',
-  'subscriptions',
-  'supportTickets',
-  'crmClients',
-  'crmDeals',
-  'crmInteractions',
-  'employees',
-  'performanceReviews',
-  'payrolls',
-  'auditLogs',
-  'aiConversations',
-]);
+const EMPTY_RESULT = Object.freeze({});
 
-export const useCompanyData = (companyOrId, options = {}) => {
-  const queryNames = options.queryNames ?? COMPANY_DATA_QUERY_NAMES;
-  const queryOptionsByName = options.queries ?? {};
-  const sharedOptions = {
-    enabled: options.enabled,
-    staleTime: options.staleTime,
-    gcTime: options.gcTime,
-  };
+export function useCompanyData(companyId, options = {}) {
   const {
-    enabled: queryEnabled,
-    queryKey: _queryKey,
-    queryFn: _queryFn,
-    ...reactQueryOptions
-  } = options.query ?? {};
+    queryNames = COMPANY_ENTITY_QUERY_NAMES,
+    enabled = true,
+    limit = 50,
+  } = options;
 
-  const results = useQueries({
-    queries: queryNames.map((queryName) => {
-      const queryOptions = buildCompanyEntityQuery(
-        queryName,
-        companyOrId,
-        {
-          ...sharedOptions,
-          ...(queryOptionsByName[queryName] ?? {}),
-        },
-      );
+  const safeCompanyId = typeof companyId === 'string' ? companyId : companyId?.id;
+  const safeQueryNames = Array.isArray(queryNames) ? queryNames : [];
 
-      return {
-        ...queryOptions,
-        ...reactQueryOptions,
-        enabled: queryOptions.enabled && (queryEnabled ?? true),
-      };
-    }),
+  const queries = useQueries({
+    queries: safeQueryNames.map((queryName) => ({
+      queryKey: companyEntityQueryKey(queryName, safeCompanyId, { limit }),
+      queryFn: () =>
+        fetchCompanyEntity(queryName, safeCompanyId, {
+          limit,
+        }),
+      enabled: Boolean(enabled && safeCompanyId && queryName),
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+    })),
   });
 
-  return queryNames.reduce((acc, queryName, index) => {
-    const result = results[index];
-    acc[queryName] = result?.data ?? [];
-    acc[`${queryName}Query`] = result;
-    acc.isLoading = acc.isLoading || result?.isLoading || false;
-    acc.isFetching = acc.isFetching || result?.isFetching || false;
-    acc.isError = acc.isError || result?.isError || false;
-    acc.error = acc.error || result?.error || null;
-    return acc;
-  }, { isLoading: false, isFetching: false, isError: false, error: null });
-};
+  return safeQueryNames.reduce((accumulator, queryName, index) => {
+    const queryResult = queries[index];
+
+    accumulator[queryName] = queryResult?.data || [];
+    accumulator[`${queryName}Query`] = queryResult;
+
+    return accumulator;
+  }, { ...EMPTY_RESULT });
+}
 
 export default useCompanyData;
