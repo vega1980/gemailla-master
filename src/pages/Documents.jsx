@@ -17,6 +17,7 @@ import ReportGenerator from '@/components/reports/ReportGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadDocumentFlow } from '@/features/documents/services/uploadDocumentFlow';
 import { analyzeDocumentFlow } from '@/features/documents/services/analyzeDocumentFlow';
+import { useDebouncedValue, useFilteredDocuments } from '@/features/documents/hooks/useFilteredDocuments';
 
 const statusColors = {
   [DOCUMENT_STATUSES.UPLOADED]: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
@@ -162,11 +163,8 @@ export default function Documents() {
     }
   };
 
-  const filtered = documents.filter(d => {
-    const matchSearch = d.title?.toLowerCase().includes(search.toLowerCase()) || d.rfc_emisor?.toLowerCase().includes(search.toLowerCase());
-    const matchType = filterType === 'all' || d.docType === filterType;
-    return matchSearch && matchType;
-  });
+  const debouncedSearch = useDebouncedValue(search);
+  const filtered = useFilteredDocuments(documents, debouncedSearch, filterType);
 
   if (!activeCompany) return <EmptyState icon={FileText} title="Selecciona una empresa" description="Necesitas una empresa activa para ver documentos." />;
 
