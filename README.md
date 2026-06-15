@@ -70,7 +70,7 @@ Los módulos internos deben migrarse de forma gradual y reexportarse desde las f
 El flujo documental está diseñado para evitar archivos huérfanos y URLs públicas persistidas:
 
 1. La app crea primero la metadata en `documents/{documentId}` con estado `uploading`.
-2. Storage solo acepta archivos bajo `companies/{companyId}/documents/{documentId}/{fileName}` si existe la metadata Firestore de ese documento y pertenece a la misma empresa.
+2. Storage solo acepta archivos bajo `companies/{companyId}/documents/{documentId}/{fileName}` cuando el token tiene `companyId`, `membershipStatus: active` y un rol de escritura permitido, y la metadata personalizada del objeto incluye `companyId` y `documentId` iguales a la ruta.
 3. El archivo se sube a Firebase Storage con límite de 15 MB y solo MIME PDF/XML.
 4. La metadata se actualiza a `pending` con `storagePath`, `contentType`, `fileSize` y `uploadCompletedAt`.
 5. Los archivos en Storage son inmutables desde cliente: se permite `create`, pero no `update` ni `delete`.
