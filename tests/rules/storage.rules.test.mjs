@@ -16,6 +16,8 @@ const otherCompanyId = 'company-storage-other';
 const owner = { uid: 'storage-owner-uid', claims: { email: 'storage-owner@gemailla.test', email_verified: true, companyId, companyRole: 'owner', membershipStatus: 'active' } };
 const director = { uid: 'storage-director-uid', claims: { email: 'storage-director@gemailla.test', email_verified: true, companyId, companyRole: 'director', membershipStatus: 'active' } };
 const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true, companyId: 'company-outsider', companyRole: 'viewer', membershipStatus: 'active' } };
+const viewer = { uid: 'storage-viewer-uid', claims: { email: 'storage-viewer@gemailla.test', email_verified: true, companyId, companyRole: 'viewer', membershipStatus: 'active' } };
+const inactiveOwner = { uid: 'storage-inactive-owner-uid', claims: { email: 'storage-inactive-owner@gemailla.test', email_verified: true, companyId, companyRole: 'owner', membershipStatus: 'inactive' } };
 const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true, companyId: otherCompanyId, companyRole: 'owner', membershipStatus: 'active' } };
 
 const documentId = 'doc-1';
@@ -31,6 +33,7 @@ async function seedStorageAcl() {
     ownerUid: owner.uid,
     memberships: [
       { userUid: director.uid, userEmail: director.claims.email, role: 'director', status: 'active' },
+      { userUid: viewer.uid, userEmail: viewer.claims.email, role: 'viewer', status: 'active' },
     ],
   });
   await seedCompany({ companyId: otherCompanyId, ownerUid: 'other-storage-owner-uid' });
@@ -90,6 +93,9 @@ describe('Cloud Storage security rules', () => {
       storageUpload(missingDocumentPdfPath, owner),
       'upload without required Storage custom metadata',
     );
+    await assertAllowed(storageUpload(missingDocumentPdfPath, owner, {
+      metadata: { companyId, documentId: missingDocumentId },
+    }), 'upload with matching claims and metadata does not require Firestore document lookup');
   });
 
   it('rejects invalid MIME types and files larger than 15 MB', async () => {
@@ -104,7 +110,7 @@ describe('Cloud Storage security rules', () => {
     }), 'oversized PDF upload');
   });
 
-  it('rejects uploads when required custom metadata is missing or belongs to another company', async () => {
+  it('rejects uploads when required custom metadata is missing, mismatched or token is not an active writer', async () => {
     await assertDenied(
       storageUpload(missingDocumentPdfPath, owner),
       'upload without required Storage custom metadata',
@@ -116,6 +122,14 @@ describe('Cloud Storage security rules', () => {
       }),
       'upload path company differs from Storage custom metadata',
     );
+    await assertDenied(
+      storageUpload(validPdfPath, viewer, { metadata: { companyId, documentId } }),
+      'active viewer cannot upload documents',
+    );
+    await assertDenied(
+      storageUpload(validPdfPath, inactiveOwner, { metadata: { companyId, documentId } }),
+      'inactive owner cannot upload documents',
+    );
   });
 
   it('allows reads only with valid company permissions', async () => {
@@ -123,6 +137,8 @@ describe('Cloud Storage security rules', () => {
 
     await assertAllowed(storageRead(validPdfPath, owner), 'owner read');
     await assertAllowed(storageRead(validPdfPath, director), 'active director read');
+    await assertAllowed(storageRead(validPdfPath, viewer), 'active viewer read');
+    await assertDenied(storageRead(validPdfPath, inactiveOwner), 'inactive owner read');
     await assertDenied(storageRead(validPdfPath, outsider), 'outsider read');
   });
 
