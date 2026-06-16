@@ -14,15 +14,15 @@ describe('Cloud Storage rules static invariants', () => {
     assert.doesNotMatch(source, /\{database\}/);
   });
 
-  it('enforces tenant isolation through custom claims and object metadata', async () => {
+  it('enforces tenant isolation through the company custom claim and upload metadata', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
     assert.match(source, /request\.auth\.token\.companyId == companyId/);
-    assert.match(source, /request\.auth\.token\.membershipStatus == 'active'/);
-    assert.match(source, /request\.auth\.token\.companyRole in \['owner', 'director', 'admin', 'editor'\]/);
     assert.match(source, /request\.resource\.metadata\.companyId == companyId/);
-    assert.match(source, /request\.resource\.metadata\.documentId == documentId/);
-    assert.match(source, /resource\.metadata\.companyId == companyId/);
-    assert.match(source, /resource\.metadata\.documentId == documentId/);
+    assert.match(source, /allow create: if hasCompanyToken\(companyId\)/);
+    assert.match(source, /&& isValidMetadata\(companyId\)/);
+    assert.doesNotMatch(source, /request\.auth\.token\.companyRole/);
+    assert.doesNotMatch(source, /request\.resource\.metadata\.documentId == documentId/);
+    assert.match(source, /allow update, delete: if false/);
   });
 });

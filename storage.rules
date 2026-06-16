@@ -13,22 +13,9 @@ service firebase.storage {
         && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
-    function hasValidObjectMetadata(companyId, documentId) {
-      return resource.metadata != null
-        && resource.metadata.companyId == companyId
-        && resource.metadata.documentId == documentId;
-    }
-
-    function hasValidUploadMetadata(companyId, documentId) {
+    function isValidMetadata(companyId) {
       return request.resource.metadata != null
-        && request.resource.metadata.companyId == companyId
-        && request.resource.metadata.documentId == documentId;
-    }
-
-    function isAllowedDocumentContentType() {
-      return request.resource.contentType == 'application/pdf'
-        || request.resource.contentType == 'text/xml'
-        || request.resource.contentType == 'application/xml';
+        && request.resource.metadata.companyId == companyId;
     }
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
@@ -39,7 +26,9 @@ service firebase.storage {
       allow create: if hasCompanyToken(companyId)
                     && hasValidUploadMetadata(companyId, documentId)
                     && request.resource.size < 15 * 1024 * 1024
-                    && isAllowedDocumentContentType();
+                    && (request.resource.contentType == 'application/pdf'
+                        || request.resource.contentType == 'text/xml'
+                        || request.resource.contentType == 'application/xml');
 
       allow update, delete: if false;
     }

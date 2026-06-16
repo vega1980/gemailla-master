@@ -147,23 +147,17 @@ export async function seedCompany({ companyId, ownerUid, memberships = [] }) {
   }
 }
 
-function storageEmulatorHostAndPort() {
-  const separatorIndex = STORAGE_HOST.lastIndexOf(':');
-  assert.ok(separatorIndex > 0, `Expected Storage emulator host to include a port, got ${STORAGE_HOST}`);
-
-  return {
-    host: STORAGE_HOST.slice(0, separatorIndex),
-    port: Number(STORAGE_HOST.slice(separatorIndex + 1)),
-  };
+function storageCustomMetadataHeaders(customMetadata = {}) {
+  return Object.fromEntries(
+    Object.entries(customMetadata).map(([key, value]) => [`x-goog-meta-${key}`, String(value)]),
+  );
 }
 
-function storageUploadResponse(status, message = '') {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    async text() {
-      return message;
-    },
+export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', customMetadata = {} } = {}) {
+  const headers = {
+    'Content-Type': contentType,
+    // The Firebase Storage SDK sends `customMetadata` as x-goog-meta-* headers to the emulator.
+    ...storageCustomMetadataHeaders(customMetadata),
   };
 }
 
