@@ -99,7 +99,7 @@ function createFirestore(store) {
   };
 }
 
-async function loadAiEndpoint({ store, verifyIdToken, fetchImpl }) {
+async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'aiHandler' }) {
   const source = await readFile(MODULE_PATH, 'utf8');
   const firestore = createFirestore(store);
   const admin = {
@@ -126,13 +126,14 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl }) {
     },
   };
   vm.runInNewContext(source, sandbox, { filename: 'functions/index.js' });
-  return module.exports._test.aiHandler;
+  return module.exports._test[exportName];
 }
 
-function createReq({ token = 'valid-token', body = {}, method = 'POST' } = {}) {
+function createReq({ token = 'valid-token', body = {}, method = 'POST', origin = '' } = {}) {
   const headers = new Map();
   if (token) headers.set('authorization', `Bearer ${token}`);
   headers.set('x-correlation-id', 'test-correlation');
+  if (origin) headers.set('origin', origin);
 
   return {
     method,
@@ -215,6 +216,38 @@ describe('endpoint IA', () => {
 
   afterEach(() => {
     process.env = { ...ORIGINAL_ENV };
+  });
+
+  it('usa orígenes CORS de producción por defecto', async () => {
+    delete process.env.ALLOWED_ORIGINS;
+    const getAllowedOrigins = await loadAiEndpoint({
+      store: seedBase(),
+      verifyIdToken: async () => ({ uid: 'owner-uid' }),
+      fetchImpl: async () => ({ ok: true, status: 200, async json() { return { output_text: 'ok' }; } }),
+      exportName: 'getAllowedOrigins',
+    });
+
+    assert.deepEqual(Array.from(getAllowedOrigins()), [
+      'https://gemailla-enterprise.firebaseapp.com',
+      'https://gemailla-enterprise.web.app',
+    ]);
+  });
+
+  it('responde 403 para origen CORS no permitido antes de llamar a OpenAI', async () => {
+    process.env.ALLOWED_ORIGINS = 'https://allowed.example';
+    const handler = await loadAiEndpoint({
+      store: seedBase(),
+      verifyIdToken: async () => ({ uid: 'owner-uid' }),
+      fetchImpl: async () => {
+        throw new Error('OpenAI no debe llamarse');
+      },
+    });
+    const res = createRes();
+
+    await handler(createReq({ origin: 'https://evil.example', body: { companyId: 'validCompany', prompt: 'Hola' } }), res);
+
+    assert.equal(res.statusCode, 403);
+    assert.match(res.payload.error, /CORS no permitido/);
   });
 
   it('responde 401 sin token', async () => {

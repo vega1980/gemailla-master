@@ -26,6 +26,10 @@ const DEFAULT_DAILY_TOKEN_LIMIT = 50000;
 const DEFAULT_DAILY_BUDGET_USD = 5;
 const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
 const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
+const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
+  'https://gemailla-enterprise.firebaseapp.com',
+  'https://gemailla-enterprise.web.app',
+]);
 const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const TOKEN_PATTERN = /(bearer\s+|token['"\s:=]+|api[_-]?key['"\s:=]+|secret['"\s:=]+)[A-Za-z0-9._~+/=-]{12,}/gi;
 const SENSITIVE_KEY_PATTERN = /(authorization|api[_-]?key|secret|token|password|prompt|content|document(Content|Text)?|raw(Document)?|file(Name)?|storagePath|downloadUrl|url|query|response|rfc|email)$/i;
@@ -206,23 +210,33 @@ function structuredLog(severity, eventName, payload = {}) {
 }
 
 function getAllowedOrigins() {
-  return (process.env.ALLOWED_ORIGINS || '')
+  const configuredOrigins = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  return configuredOrigins.length > 0 ? configuredOrigins : [...DEFAULT_ALLOWED_ORIGINS];
 }
 
 function applyCors(req, res) {
   const allowedOrigins = getAllowedOrigins();
   const requestOrigin = req.get('origin');
-  const allowedOrigin = allowedOrigins.includes(requestOrigin)
-    ? requestOrigin
-    : allowedOrigins[0] || requestOrigin || '*';
+  const allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
 
   res.set('Access-Control-Allow-Origin', allowedOrigin);
   res.set('Vary', 'Origin');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+}
+
+function enforceAllowedOrigin(req) {
+  const requestOrigin = req.get('origin');
+  if (!requestOrigin) return;
+
+  const allowedOrigins = getAllowedOrigins();
+  if (!allowedOrigins.includes(requestOrigin)) {
+    fail(403, 'CORS no permitido para este origen.');
+  }
 }
 
 function getBearerToken(req) {
@@ -463,7 +477,18 @@ async function aiHandler(req, res) {
   res.set('X-Deploy-Env', RELEASE_METADATA.deployEnv);
 
   if (req.method === 'OPTIONS') {
-    res.status(204).send('');
+    try {
+      enforceAllowedOrigin(req);
+      res.status(204).send('');
+    } catch (error) {
+      const status = Number(error.status) || 403;
+      structuredLog('WARNING', 'ai_cors_preflight_rejected', {
+        correlationId,
+        origin: req.get('origin') || 'none',
+        status,
+      });
+      res.status(status).json({ error: error.message || 'CORS no permitido.', correlationId, release: RELEASE_METADATA });
+    }
     return;
   }
 
@@ -476,6 +501,8 @@ async function aiHandler(req, res) {
   let authorization = null;
 
   try {
+    enforceAllowedOrigin(req);
+
     const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
     if (!apiKey) {
       structuredLog('ERROR', 'ai_backend_not_configured', { correlationId, status: 503 });
@@ -545,4 +572,6 @@ exports._test = {
   enforceAiLimits,
   estimateTokenCount,
   getAiLimitConfig,
+  getAllowedOrigins,
+  enforceAllowedOrigin,
 };
