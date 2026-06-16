@@ -50,6 +50,8 @@ npm run deploy:hosting
 npm run rules:deploy
 ```
 
+> Nota de entorno: si `npm run test:rules:emulators` falla antes de ejecutar las pruebas con `download failed, status 403: Forbidden` al descargar el JAR del emulador (`cloud-firestore-emulator`), trátalo como un bloqueo de red/autenticación del entorno de Firebase CLI, no como un fallo de reglas. Reintenta en un entorno con acceso a la descarga del emulador o con el artefacto cacheado.
+
 
 ## Estructura incremental
 

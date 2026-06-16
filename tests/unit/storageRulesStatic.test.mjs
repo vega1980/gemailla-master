@@ -5,13 +5,11 @@ import { describe, it } from 'node:test';
 const STORAGE_RULES_PATH = new URL('../../storage.rules', import.meta.url);
 
 describe('Cloud Storage rules static invariants', () => {
-  it('does not perform Firestore reads from Storage rules', async () => {
+  it('verifies the Firestore document before accepting uploads', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
-    assert.doesNotMatch(source, /firestore\.(exists|get)\(/);
-    assert.doesNotMatch(source, /\/databases\//);
-    assert.doesNotMatch(source, /\$\(database\)/);
-    assert.doesNotMatch(source, /\{database\}/);
+    assert.match(source, /firestore\.exists\(\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\)/);
+    assert.match(source, /firestore\.get\(\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\)\.data\.companyId == companyId/);
   });
 
   it('enforces tenant isolation through custom claims and object metadata', async () => {
