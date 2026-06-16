@@ -152,6 +152,14 @@ function storageBodyBytes(body) {
   return Buffer.from(String(body));
 }
 
+function storageUploadResponse(status, errorMessage = '') {
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    text: async () => errorMessage,
+  };
+}
+
 export async function storageUpload(path, auth, {
   contentType = 'application/pdf',
   body = 'PDF fixture',
