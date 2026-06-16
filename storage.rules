@@ -1,30 +1,76 @@
 rules_version = '2';
+
 service firebase.storage {
   match /b/{bucket}/o {
 
     function signedIn() {
-      return request.auth != null;
+      return request.auth != null && request.auth.uid != null;
     }
 
-    function hasCompanyToken(companyId) {
-      return signedIn() && request.auth.token.companyId == companyId;
+    function hasCompanyClaim(companyId) {
+      return signedIn()
+        && request.auth.token.companyId == companyId
+        && request.auth.token.membershipStatus == 'active';
     }
 
-    function isValidMetadata(companyId) {
-      return request.resource.metadata != null 
-        && request.resource.metadata.companyId == companyId;
+    function hasReadRole() {
+      return request.auth.token.companyRole in [
+        'owner',
+        'admin',
+        'editor',
+        'viewer',
+        'director'
+      ];
     }
 
-    match /companies/{companyId}/documents/{documentId}/{fileName} {
+    function hasWriteRole() {
+      return request.auth.token.companyRole in [
+        'owner',
+        'admin',
+        'editor'
+      ];
+    }
 
-      allow read: if hasCompanyToken(companyId);
+    function hasAllowedContentType() {
+      return request.resource.contentType in [
+        'application/pdf',
+        'application/xml',
+        'text/xml'
+      ];
+    }
 
-      allow create: if hasCompanyToken(companyId)
-                    && isValidMetadata(companyId)
-                    && request.resource.size < 15 * 1024 * 1024
-                    && (request.resource.contentType == 'application/pdf' 
-                        || request.resource.contentType == 'text/xml' 
-                        || request.resource.contentType == 'application/xml');
+    function hasAllowedSize() {
+      return request.resource.size < 15 * 1024 * 1024;
+    }
+
+    function hasRequiredCreateMetadata(companyId, documentId) {
+      return request.resource.metadata.keys().hasAll([
+          'companyId',
+          'documentId'
+        ])
+        && request.resource.metadata.companyId == companyId
+        && request.resource.metadata.documentId == documentId;
+    }
+
+    function hasRequiredExistingMetadata(companyId, documentId) {
+      return resource.metadata.keys().hasAll([
+          'companyId',
+          'documentId'
+        ])
+        && resource.metadata.companyId == companyId
+        && resource.metadata.documentId == documentId;
+    }
+
+    match /companies/{companyId}/documents/{documentId}/{fileName=**} {
+      allow read: if hasCompanyClaim(companyId)
+        && hasReadRole()
+        && hasRequiredExistingMetadata(companyId, documentId);
+
+      allow create: if hasCompanyClaim(companyId)
+        && hasWriteRole()
+        && hasAllowedContentType()
+        && hasAllowedSize()
+        && hasRequiredCreateMetadata(companyId, documentId);
 
       allow update, delete: if false;
     }
