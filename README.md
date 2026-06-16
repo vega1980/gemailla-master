@@ -50,6 +50,8 @@ npm run deploy:hosting
 npm run rules:deploy
 ```
 
+> Nota de entorno: si `npm run test:rules:emulators` falla antes de ejecutar las pruebas con `download failed, status 403: Forbidden` al descargar el JAR del emulador (`cloud-firestore-emulator`), trátalo como un bloqueo de red/autenticación del entorno de Firebase CLI, no como un fallo de reglas. Reintenta en un entorno con acceso a la descarga del emulador o con el artefacto cacheado.
+
 
 ## Estructura incremental
 
@@ -94,8 +96,16 @@ firebase deploy --only functions,hosting
 Variables opcionales para Functions:
 
 - `OPENAI_MODEL`: modelo a usar; por defecto `gpt-4o-mini`.
-- `ALLOWED_ORIGINS`: lista separada por comas para CORS cuando se llama desde otro origen.
+- `ALLOWED_ORIGINS`: lista separada por comas para CORS. Si no se configura, solo se permiten `https://gemailla-enterprise.firebaseapp.com` y `https://gemailla-enterprise.web.app`; cualquier otro `Origin` recibe `403`.
+- `AI_RATE_LIMIT_WINDOW_MS`: ventana móvil por usuario/empresa para limitar frecuencia; por defecto `60000`.
+- `AI_RATE_LIMIT_MAX_REQUESTS`: máximo de solicitudes por usuario/empresa en la ventana; por defecto `30`.
+- `AI_DAILY_TOKEN_LIMIT`: tokens reservados diarios por empresa en Firestore (`aiUsage/{YYYY-MM-DD_companyId}`); por defecto `50000`.
+- `AI_DAILY_BUDGET_USD`: presupuesto diario estimado por empresa; por defecto `5`.
+- `AI_RESERVED_OUTPUT_TOKENS`: reserva de tokens de salida por solicitud; por defecto `1200`.
+- `AI_COST_PER_1K_TOKENS_USD`: coste estimado usado para presupuesto diario; por defecto `0.002`.
 - `ALLOW_UNAUTHENTICATED_AI=true`: solo para emuladores/desarrollo local sin sesión Firebase.
+
+La función `ai` valida CORS antes de procesar la solicitud, exige un token Firebase Auth `Bearer`, valida acceso a `companyId` y documentos, y registra límites en Firestore por usuario/empresa (`aiRateLimits`) y por empresa/día (`aiUsage`).
 
 Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint HTTPS propio que acepte `POST { prompt }` y devuelva `{ response }`.
 
