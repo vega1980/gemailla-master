@@ -24,6 +24,12 @@ service firebase.storage {
         && resource.metadata.documentId == documentId;
     }
 
+    function documentExists(companyId, documentId) {
+      return firestore.exists(
+        /databases/(default)/documents/companies/$(companyId)/documents/$(documentId)
+      );
+    }
+
     function hasRequiredUploadMetadata() {
       return request.resource.metadata != null
         && request.resource.metadata.keys().hasAll(['companyId', 'documentId']);
@@ -31,8 +37,14 @@ service firebase.storage {
 
     function isValidMetadata(companyId, documentId) {
       return hasRequiredUploadMetadata()
-        && request.resource.metadata.companyId == companyId
-        && request.resource.metadata.documentId == documentId;
+        && (
+          request.resource.metadata.companyId == companyId
+          || request.resource.metadata.get('companyId', null) == companyId
+        )
+        && (
+          request.resource.metadata.documentId == documentId
+          || request.resource.metadata.get('documentId', null) == documentId
+        );
     }
 
     function hasAllowedDocumentContentType() {
@@ -47,6 +59,7 @@ service firebase.storage {
                   && hasExistingObjectMetadata(companyId, documentId);
 
       allow create: if canWriteCompanyDocuments(companyId)
+                    && documentExists(companyId, documentId)
                     && isValidMetadata(companyId, documentId)
                     && request.resource.size < 15 * 1024 * 1024
                     && hasAllowedDocumentContentType();

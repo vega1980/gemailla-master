@@ -68,6 +68,26 @@ async function seedStorageAcl() {
     fileType: 'pdf',
     status: 'uploading',
   }), 'admin other company storage document seed');
+
+  await assertAllowed(firestoreSet(`companies/${companyId}/documents/${documentId}`, {
+    companyId,
+    ownerUid: owner.uid,
+    title: 'Documento listo para Storage',
+    contentType: 'application/pdf',
+    fileSize: 100,
+    fileType: 'pdf',
+    status: 'uploading',
+  }), 'admin nested storage document seed');
+
+  await assertAllowed(firestoreSet(`companies/${otherCompanyId}/documents/doc-1-other-company`, {
+    companyId: otherCompanyId,
+    ownerUid: otherOwner.uid,
+    title: 'Documento de otra empresa',
+    contentType: 'application/pdf',
+    fileSize: 100,
+    fileType: 'pdf',
+    status: 'uploading',
+  }), 'admin nested other company storage document seed');
 }
 
 describe('Cloud Storage security rules', () => {
@@ -106,9 +126,6 @@ describe('Cloud Storage security rules', () => {
       storageUpload(missingDocumentPdfPath, owner, { metadata: { companyId, documentId: missingDocumentId } }),
       'upload with metadata for missing Firestore document',
     );
-    await assertAllowed(storageUpload(missingDocumentPdfPath, owner, {
-      metadata: { companyId, documentId: missingDocumentId },
-    }), 'upload with matching claims and metadata does not require Firestore document lookup');
   });
 
   it('rejects invalid MIME types and files larger than 15 MB', async () => {
