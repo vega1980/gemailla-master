@@ -70,7 +70,7 @@ Los módulos internos deben migrarse de forma gradual y reexportarse desde las f
 El flujo documental está diseñado para evitar archivos huérfanos y URLs públicas persistidas:
 
 1. La app crea primero la metadata en `documents/{documentId}` con estado `uploading`.
-2. Storage solo acepta archivos bajo `companies/{companyId}/documents/{documentId}/{fileName}` si existe la metadata Firestore de ese documento y pertenece a la misma empresa.
+2. La app sube el archivo bajo `companies/{companyId}/documents/{documentId}/{fileName}` y Storage exige usuario autenticado, claim de empresa activo, permisos/rol válidos, MIME/tamaño permitido y metadata `companyId`/`documentId` coincidente con la ruta.
 3. El archivo se sube a Firebase Storage con límite de 15 MB y solo MIME PDF/XML.
 4. La metadata se actualiza a `pending` con `storagePath`, `contentType`, `fileSize` y `uploadCompletedAt`.
 5. Los archivos en Storage son inmutables desde cliente: se permite `create`, pero no `update` ni `delete`.
@@ -102,7 +102,7 @@ Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint
 ## Reglas de seguridad
 
 - Firestore controla acceso por `ownerUid`, membresía activa y rol.
-- Storage valida empresa, membresía, documento Firestore existente, tamaño y tipo de archivo.
+- Storage valida usuario autenticado, empresa activa por claims, permisos/rol válidos, metadata `companyId`/`documentId` coincidente, tamaño y tipo de archivo.
 - El borrado físico desde cliente está bloqueado en Firestore y Storage.
 - El borrado funcional debe hacerse como borrado lógico con `status: "archived"`.
 
