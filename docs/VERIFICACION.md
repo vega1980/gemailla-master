@@ -6,7 +6,7 @@
 package.json: JSON OK
 firebase.json: JSON OK
 firestore.indexes.json: JSON OK
-.firebaserc: apunta a gemailla-enterprise
+.firebaserc.example: contiene solo placeholder; .firebaserc real queda fuera de Git
 ```
 
 ## Correcciones aplicadas
@@ -14,7 +14,7 @@ firestore.indexes.json: JSON OK
 ```text
 1. Se importó connectStorageEmulator desde firebase-storage.js.
 2. Se corrigió la detección de emuladores para true/false booleano y texto.
-3. README actualizado sin placeholder TU_PROJECT_ID.
+3. README actualizado con guía para mantener .firebaserc y app-config.js fuera de Git.
 4. package.json incluye scripts de lint, typecheck, build y pruebas de reglas.
 5. Firestore rules endurecidas por campos permitidos.
 6. Storage rules exige empresa y documento Firestore existente antes de subir archivos.

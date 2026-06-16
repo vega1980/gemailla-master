@@ -34,7 +34,10 @@ cp public/app-config.example.js public/app-config.js
 
 3. Edita `public/app-config.js` con los valores del proyecto Firebase de desarrollo si no usarás variables `VITE_FIREBASE_*`. Este archivo no debe versionarse; cada entorno puede generar su propia configuración. Si falta, la app arranca con defaults seguros y usa las variables de entorno disponibles.
 
+4. Si necesitas usar Firebase CLI con un alias local, copia `.firebaserc.example` a `.firebaserc` y reemplaza `your-firebase-project-id` por el proyecto de tu entorno. `.firebaserc` está ignorado para evitar publicar identificadores de proyectos reales; en CI/CD usa `firebase ... --project "$FIREBASE_PROJECT_ID"` o configura el proyecto desde secretos del pipeline.
+
 > Las variables `VITE_FIREBASE_*` tienen prioridad sobre `window.GEMAILLA_FIREBASE_CONFIG`.
+> La configuración web de Firebase (`apiKey`, `authDomain`, `projectId`, etc.) se entrega al navegador por diseño; no debe tratarse como secreto. La protección real debe venir de reglas Firestore/Storage, dominios autorizados, App Check y aislamiento por entorno.
 
 ## Comandos principales
 
@@ -50,6 +53,29 @@ npm run deploy:hosting
 npm run rules:deploy
 ```
 
+## Verificación de seguridad Firebase
+
+Antes de abrir o mergear un PR, ejecuta:
+
+```bash
+npm run ci:verify
+```
+
+Este comando valida que no se hayan versionado IDs reales de Firebase ni Web API keys (`npm run security:firebase-config`), ejecuta lint, typecheck y compila la app. El mismo flujo se ejecuta en GitHub Actions para `pull_request` y pushes a `main`/`master`.
+
+Para confirmar manualmente que `.firebaserc` no está versionado:
+
+```bash
+git ls-files .firebaserc
+```
+
+El comando debe devolver salida vacía. La plantilla segura versionada es `.firebaserc.example`; crea tu copia local con:
+
+```bash
+cp .firebaserc.example .firebaserc
+```
+
+Mantén las reglas de Firestore y Storage actualizadas y ejecútalas con emuladores antes de desplegar. Firebase Auth debe restringir proveedores/dominios autorizados desde la consola del proyecto.
 
 ## Estructura incremental
 
