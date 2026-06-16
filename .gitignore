@@ -27,9 +27,13 @@ dist-ssr
 .firebaserc
 
 # Environment variables
+# Keep real secrets out of git; .env.example is intentionally tracked as documentation.
 .env
 .env.local
 .env.*.local
+functions/.env
+functions/.env.local
+functions/.env.*.local
 # Runtime config generated per environment
 public/app-config.js
 test-results/

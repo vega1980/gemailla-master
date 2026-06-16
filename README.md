@@ -96,7 +96,7 @@ Los módulos internos deben migrarse de forma gradual y reexportarse desde las f
 El flujo documental está diseñado para evitar archivos huérfanos y URLs públicas persistidas:
 
 1. La app crea primero la metadata en `documents/{documentId}` con estado `uploading`.
-2. Storage solo acepta archivos bajo `companies/{companyId}/documents/{documentId}/{fileName}` si existe la metadata Firestore de ese documento y pertenece a la misma empresa.
+2. Storage solo acepta archivos bajo `companies/{companyId}/documents/{documentId}/{fileName}` cuando el token tiene `companyId`, `membershipStatus: active` y un rol de escritura permitido, y la metadata personalizada del objeto incluye `companyId` y `documentId` iguales a la ruta.
 3. El archivo se sube a Firebase Storage con límite de 15 MB y solo MIME PDF/XML.
 4. La metadata se actualiza a `pending` con `storagePath`, `contentType`, `fileSize` y `uploadCompletedAt`.
 5. Los archivos en Storage son inmutables desde cliente: se permite `create`, pero no `update` ni `delete`.
@@ -120,8 +120,16 @@ firebase deploy --only functions,hosting
 Variables opcionales para Functions:
 
 - `OPENAI_MODEL`: modelo a usar; por defecto `gpt-4o-mini`.
-- `ALLOWED_ORIGINS`: lista separada por comas para CORS cuando se llama desde otro origen.
+- `ALLOWED_ORIGINS`: lista separada por comas para CORS. Si no se configura, solo se permiten `https://gemailla-enterprise.firebaseapp.com` y `https://gemailla-enterprise.web.app`; cualquier otro `Origin` recibe `403`.
+- `AI_RATE_LIMIT_WINDOW_MS`: ventana móvil por usuario/empresa para limitar frecuencia; por defecto `60000`.
+- `AI_RATE_LIMIT_MAX_REQUESTS`: máximo de solicitudes por usuario/empresa en la ventana; por defecto `30`.
+- `AI_DAILY_TOKEN_LIMIT`: tokens reservados diarios por empresa en Firestore (`aiUsage/{YYYY-MM-DD_companyId}`); por defecto `50000`.
+- `AI_DAILY_BUDGET_USD`: presupuesto diario estimado por empresa; por defecto `5`.
+- `AI_RESERVED_OUTPUT_TOKENS`: reserva de tokens de salida por solicitud; por defecto `1200`.
+- `AI_COST_PER_1K_TOKENS_USD`: coste estimado usado para presupuesto diario; por defecto `0.002`.
 - `ALLOW_UNAUTHENTICATED_AI=true`: solo para emuladores/desarrollo local sin sesión Firebase.
+
+La función `ai` valida CORS antes de procesar la solicitud, exige un token Firebase Auth `Bearer`, valida acceso a `companyId` y documentos, y registra límites en Firestore por usuario/empresa (`aiRateLimits`) y por empresa/día (`aiUsage`).
 
 Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint HTTPS propio que acepte `POST { prompt }` y devuelva `{ response }`.
 
