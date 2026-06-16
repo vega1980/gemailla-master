@@ -109,7 +109,7 @@ Condiciones principales:
 
 - usuario autenticado;
 - permiso de lectura/escritura sobre la empresa;
-- documento Firestore existente y asociado a la misma empresa;
+- metadata `companyId`/`documentId` coincidente con la ruta y claim de empresa activo;
 - archivo PDF/XML;
 - tamaño máximo 15 MB;
 - archivo inmutable después de creado.

@@ -14,9 +14,9 @@ Base Firebase pura corregida para prueba local y siguiente validación en Fireba
 - [PROS]: Reduce modificación maliciosa desde navegador.
 - [CONTRAS]: Cambios futuros de campos requieren actualizar reglas.
 
-- [PROPUESTA]: Storage exige documento Firestore existente.
-- [PROS]: Reduce archivos huérfanos.
-- [CONTRAS]: El flujo debe crear primero el documento y luego subir archivo.
+- [PROPUESTA]: Storage exige usuario autenticado, claim de empresa activo, permisos/rol válidos y metadata `companyId`/`documentId` coincidente.
+- [PROS]: Refuerza aislamiento por empresa y reduce subidas con metadata/ruta inconsistente.
+- [CONTRAS]: La existencia del documento Firestore se conserva como contrato del flujo de aplicación/tests, no como lectura `get()`/`exists()` desde `storage.rules`.
 
 - [PROPUESTA]: Mantener IA en modo limitado sin OpenAI en navegador.
 - [PROS]: No expone claves privadas.
