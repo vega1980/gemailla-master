@@ -12,23 +12,24 @@ service firebase.storage {
         && request.auth.token.membershipStatus == 'active';
     }
 
-    function hasWritableCompanyRole() {
-      return request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
+    function canWriteCompanyDocuments(companyId) {
+      return hasActiveCompanyToken(companyId)
+        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
-    function isValidRequestMetadata(companyId, documentId) {
-      return request.resource.metadata != null
-        && request.resource.metadata.companyId == companyId
-        && request.resource.metadata.documentId == documentId;
-    }
-
-    function isValidExistingMetadata(companyId, documentId) {
+    function hasExistingObjectMetadata(companyId, documentId) {
       return resource.metadata != null
         && resource.metadata.companyId == companyId
         && resource.metadata.documentId == documentId;
     }
 
-    function isAllowedDocumentContentType() {
+    function hasNewObjectMetadata(companyId, documentId) {
+      return request.resource.metadata != null
+        && request.resource.metadata.companyId == companyId
+        && request.resource.metadata.documentId == documentId;
+    }
+
+    function hasAllowedDocumentContentType() {
       return request.resource.contentType == 'application/pdf'
         || request.resource.contentType == 'text/xml'
         || request.resource.contentType == 'application/xml';
@@ -37,13 +38,12 @@ service firebase.storage {
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
       allow read: if hasActiveCompanyToken(companyId)
-                  && isValidExistingMetadata(companyId, documentId);
+                  && hasExistingObjectMetadata(companyId, documentId);
 
-      allow create: if hasActiveCompanyToken(companyId)
-                    && hasWritableCompanyRole()
-                    && isValidRequestMetadata(companyId, documentId)
+      allow create: if canWriteCompanyDocuments(companyId)
+                    && hasNewObjectMetadata(companyId, documentId)
                     && request.resource.size < 15 * 1024 * 1024
-                    && isAllowedDocumentContentType();
+                    && hasAllowedDocumentContentType();
 
       allow update, delete: if false;
     }
