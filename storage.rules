@@ -11,7 +11,7 @@ service firebase.storage {
     }
 
     function isValidMetadata(companyId) {
-      return request.resource.metadata != null 
+      return request.resource.metadata != null
         && request.resource.metadata.companyId == companyId;
     }
 
@@ -22,8 +22,8 @@ service firebase.storage {
       allow create: if hasCompanyToken(companyId)
                     && isValidMetadata(companyId)
                     && request.resource.size < 15 * 1024 * 1024
-                    && (request.resource.contentType == 'application/pdf' 
-                        || request.resource.contentType == 'text/xml' 
+                    && (request.resource.contentType == 'application/pdf'
+                        || request.resource.contentType == 'text/xml'
                         || request.resource.contentType == 'application/xml');
 
       allow update, delete: if false;
