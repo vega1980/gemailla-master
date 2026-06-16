@@ -147,25 +147,25 @@ export async function seedCompany({ companyId, ownerUid, memberships = [] }) {
   }
 }
 
+function storageEmulatorHostAndPort() {
+  const [host, port = '9199'] = STORAGE_HOST.split(':');
+  return { host, port: Number(port) };
+}
+
+function storageUploadResponse(status, message = '') {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => message,
+  };
+}
+
 function storageBodyBytes(body) {
   if (body instanceof Uint8Array || body instanceof ArrayBuffer) return body;
   return Buffer.from(String(body));
 }
 
-function storageUploadResponse(status, errorMessage = '') {
-  return {
-    status,
-    ok: status >= 200 && status < 300,
-    text: async () => errorMessage,
-  };
-}
-
-export async function storageUpload(path, auth, {
-  contentType = 'application/pdf',
-  body = 'PDF fixture',
-  customMetadata,
-  metadata = customMetadata || {},
-} = {}) {
+export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', customMetadata, metadata = customMetadata || {} } = {}) {
   const token = typeof auth === 'string' ? authToken(auth) : auth?.token || authToken(auth?.uid, auth?.claims);
   const app = initializeApp({
     projectId: PROJECT_ID,
