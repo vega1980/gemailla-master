@@ -1,30 +1,72 @@
 rules_version = '2';
+
 service firebase.storage {
   match /b/{bucket}/o {
 
     function signedIn() {
-      return request.auth != null;
+      return request.auth != null && request.auth.uid != null;
     }
 
-    function hasCompanyToken(companyId) {
-      return signedIn() && request.auth.token.companyId == companyId;
+    function hasActiveCompanyToken(companyId) {
+      return signedIn()
+        && request.auth.token.companyId == companyId
+        && request.auth.token.membershipStatus == 'active';
     }
 
-    function isValidMetadata(companyId) {
-      return request.resource.metadata != null 
-        && request.resource.metadata.companyId == companyId;
+    function hasReadRole() {
+      return request.auth.token.companyRole in [
+        'owner',
+        'admin',
+        'editor',
+        'viewer',
+        'director'
+      ];
+    }
+
+    function hasCreateRole() {
+      return request.auth.token.companyRole in [
+        'owner',
+        'admin',
+        'editor',
+        'director'
+      ];
+    }
+
+    function hasAllowedContentType() {
+      return request.resource.contentType in [
+        'application/pdf',
+        'application/xml',
+        'text/xml'
+      ];
+    }
+
+    function hasAllowedSize() {
+      return request.resource.size < 15 * 1024 * 1024;
+    }
+
+    function hasValidCreateMetadata(companyId, documentId) {
+      return request.resource.metadata != null
+        && request.resource.metadata.companyId == companyId
+        && request.resource.metadata.documentId == documentId;
+    }
+
+    function hasValidExistingMetadata(companyId, documentId) {
+      return resource != null
+        && resource.metadata != null
+        && resource.metadata.companyId == companyId
+        && resource.metadata.documentId == documentId;
     }
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
+      allow read: if hasActiveCompanyToken(companyId)
+        && hasReadRole()
+        && hasValidExistingMetadata(companyId, documentId);
 
-      allow read: if hasCompanyToken(companyId);
-
-      allow create: if hasCompanyToken(companyId)
-                    && isValidMetadata(companyId)
-                    && request.resource.size < 15 * 1024 * 1024
-                    && (request.resource.contentType == 'application/pdf' 
-                        || request.resource.contentType == 'text/xml' 
-                        || request.resource.contentType == 'application/xml');
+      allow create: if hasActiveCompanyToken(companyId)
+        && hasCreateRole()
+        && hasAllowedContentType()
+        && hasAllowedSize()
+        && hasValidCreateMetadata(companyId, documentId);
 
       allow update, delete: if false;
     }
