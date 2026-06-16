@@ -26,4 +26,13 @@ describe('Cloud Storage rules static invariants', () => {
     assert.match(source, /hasAllowedDocumentContentType\(\)/);
     assert.match(source, /allow update, delete: if false/);
   });
+
+  it('keeps uploads limited to PDF or XML files up to 15 MB', async () => {
+    const source = await readFile(STORAGE_RULES_PATH, 'utf8');
+
+    assert.match(source, /request\.resource\.contentType == 'application\/pdf'/);
+    assert.match(source, /request\.resource\.contentType == 'text\/xml'/);
+    assert.match(source, /request\.resource\.contentType == 'application\/xml'/);
+    assert.match(source, /request\.resource\.size < 15 \* 1024 \* 1024/);
+  });
 });
