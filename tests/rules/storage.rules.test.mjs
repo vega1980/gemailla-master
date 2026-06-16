@@ -20,6 +20,7 @@ const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-sto
 
 const documentId = 'doc-1';
 const missingDocumentId = 'doc-missing';
+const sameCompanyOtherDocumentId = 'doc-2-same-company';
 const validPdfPath = `companies/${companyId}/documents/${documentId}/file.pdf`;
 const validXmlPath = `companies/${companyId}/documents/${documentId}/file.xml`;
 const missingDocumentPdfPath = `companies/${companyId}/documents/${missingDocumentId}/file.pdf`;
@@ -45,6 +46,16 @@ async function seedStorageAcl() {
     status: 'uploading',
   }), 'admin storage document seed');
 
+  await assertAllowed(firestoreSet(`documents/${sameCompanyOtherDocumentId}`, {
+    companyId,
+    ownerUid: owner.uid,
+    title: 'Otro documento de la misma empresa',
+    contentType: 'application/pdf',
+    fileSize: 100,
+    fileType: 'pdf',
+    status: 'uploading',
+  }), 'admin same company alternate document seed');
+
   await assertAllowed(firestoreSet('documents/doc-1-other-company', {
     companyId: otherCompanyId,
     ownerUid: otherOwner.uid,
@@ -62,7 +73,7 @@ describe('Cloud Storage security rules', () => {
     await seedStorageAcl();
   });
 
-  it('allows PDF and XML uploads only with matching tenant claims and custom metadata', async () => {
+  it('allows valid PDF and XML uploads with matching tenant claims, path and custom metadata', async () => {
     await assertAllowed(storageUpload(validPdfPath, owner, {
       contentType: 'application/pdf',
       body: '%PDF-1.7 fixture',
@@ -73,7 +84,9 @@ describe('Cloud Storage security rules', () => {
       body: '<invoice id="fixture" />',
       customMetadata: { companyId, documentId },
     }), 'director upload XML with matching tenant metadata');
+  });
 
+  it('rejects uploads outside the canonical document path or without a backing document', async () => {
     await assertDenied(
       storageUpload(`companies/${companyId}/documents/file.pdf`, owner),
       'upload missing documentId path segment',
@@ -87,8 +100,8 @@ describe('Cloud Storage security rules', () => {
       'upload outside companies root',
     );
     await assertDenied(
-      storageUpload(missingDocumentPdfPath, owner),
-      'upload without required Storage custom metadata',
+      storageUpload(missingDocumentPdfPath, owner, { metadata: { companyId, documentId: missingDocumentId } }),
+      'upload with metadata for missing Firestore document',
     );
   });
 
@@ -104,10 +117,25 @@ describe('Cloud Storage security rules', () => {
     }), 'oversized PDF upload');
   });
 
-  it('rejects uploads when required custom metadata is missing or belongs to another company', async () => {
+  it('rejects uploads when required custom metadata is missing or inconsistent', async () => {
     await assertDenied(
-      storageUpload(missingDocumentPdfPath, owner),
+      storageUpload(validPdfPath, owner),
       'upload without required Storage custom metadata',
+    );
+
+    await assertDenied(
+      storageUpload(validPdfPath, owner, { metadata: { documentId } }),
+      'upload without Storage companyId metadata',
+    );
+
+    await assertDenied(
+      storageUpload(validPdfPath, owner, { metadata: { companyId } }),
+      'upload without Storage documentId metadata',
+    );
+
+    await assertDenied(
+      storageUpload(validPdfPath, owner, { metadata: { companyId, documentId: sameCompanyOtherDocumentId } }),
+      'upload path document differs from existing same-company Storage custom metadata',
     );
 
     await assertDenied(
@@ -136,6 +164,13 @@ describe('Cloud Storage security rules', () => {
   });
 
   it('denies access to another company', async () => {
+    await assertDenied(
+      storageUpload(validPdfPath, outsider, {
+        metadata: { companyId, documentId },
+      }),
+      'upload when token companyId differs from path company',
+    );
+
     await assertDenied(
       storageUpload(`companies/${otherCompanyId}/documents/doc-2/file.pdf`, owner, {
         customMetadata: { companyId: otherCompanyId, documentId: 'doc-2' },

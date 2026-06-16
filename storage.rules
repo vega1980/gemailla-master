@@ -13,19 +13,36 @@ service firebase.storage {
         && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
-    function isValidMetadata(companyId) {
+    function documentExists(documentId) {
+      return firestore.exists(/databases/(default)/documents/documents/$(documentId));
+    }
+
+    function documentBelongsToCompany(companyId, documentId) {
+      return documentExists(documentId)
+        && firestore.get(/databases/(default)/documents/documents/$(documentId)).data.companyId == companyId;
+    }
+
+    function isValidCreateMetadata(companyId, documentId) {
       return request.resource.metadata != null
-        && request.resource.metadata.companyId == companyId;
+        && request.resource.metadata.companyId == companyId
+        && request.resource.metadata.documentId == documentId;
+    }
+
+    function isValidExistingMetadata(companyId, documentId) {
+      return resource.metadata != null
+        && resource.metadata.companyId == companyId
+        && resource.metadata.documentId == documentId;
     }
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
       allow read: if hasCompanyToken(companyId)
-                  && hasValidObjectMetadata(companyId, documentId);
+                    && isValidExistingMetadata(companyId, documentId);
 
       allow create: if hasCompanyToken(companyId)
-                    && hasValidUploadMetadata(companyId, documentId)
-                    && request.resource.size < 15 * 1024 * 1024
+                    && isValidCreateMetadata(companyId, documentId)
+                    && documentBelongsToCompany(companyId, documentId)
+                    && request.resource.size <= 15 * 1024 * 1024
                     && (request.resource.contentType == 'application/pdf'
                         || request.resource.contentType == 'text/xml'
                         || request.resource.contentType == 'application/xml');
