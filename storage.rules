@@ -6,23 +6,17 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function hasCompanyToken(companyId) {
+    function hasActiveCompanyToken(companyId) {
       return signedIn()
         && request.auth.token.companyId == companyId
-        && request.auth.token.membershipStatus == 'active'
-        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
+        && request.auth.token.membershipStatus == 'active';
     }
 
-    function documentExists(documentId) {
-      return firestore.exists(/databases/(default)/documents/documents/$(documentId));
+    function hasWritableCompanyRole() {
+      return request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
-    function documentBelongsToCompany(companyId, documentId) {
-      return documentExists(documentId)
-        && firestore.get(/databases/(default)/documents/documents/$(documentId)).data.companyId == companyId;
-    }
-
-    function isValidCreateMetadata(companyId, documentId) {
+    function isValidRequestMetadata(companyId, documentId) {
       return request.resource.metadata != null
         && request.resource.metadata.companyId == companyId
         && request.resource.metadata.documentId == documentId;
@@ -34,18 +28,22 @@ service firebase.storage {
         && resource.metadata.documentId == documentId;
     }
 
+    function isAllowedDocumentContentType() {
+      return request.resource.contentType == 'application/pdf'
+        || request.resource.contentType == 'text/xml'
+        || request.resource.contentType == 'application/xml';
+    }
+
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
-      allow read: if hasCompanyToken(companyId)
-                    && isValidExistingMetadata(companyId, documentId);
+      allow read: if hasActiveCompanyToken(companyId)
+                  && isValidExistingMetadata(companyId, documentId);
 
-      allow create: if hasCompanyToken(companyId)
-                    && isValidCreateMetadata(companyId, documentId)
-                    && documentBelongsToCompany(companyId, documentId)
-                    && request.resource.size <= 15 * 1024 * 1024
-                    && (request.resource.contentType == 'application/pdf'
-                        || request.resource.contentType == 'text/xml'
-                        || request.resource.contentType == 'application/xml');
+      allow create: if hasActiveCompanyToken(companyId)
+                    && hasWritableCompanyRole()
+                    && isValidRequestMetadata(companyId, documentId)
+                    && request.resource.size < 15 * 1024 * 1024
+                    && isAllowedDocumentContentType();
 
       allow update, delete: if false;
     }

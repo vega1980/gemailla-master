@@ -16,6 +16,8 @@ const otherCompanyId = 'company-storage-other';
 const owner = { uid: 'storage-owner-uid', claims: { email: 'storage-owner@gemailla.test', email_verified: true, companyId, companyRole: 'owner', membershipStatus: 'active' } };
 const director = { uid: 'storage-director-uid', claims: { email: 'storage-director@gemailla.test', email_verified: true, companyId, companyRole: 'director', membershipStatus: 'active' } };
 const outsider = { uid: 'storage-outsider-uid', claims: { email: 'storage-outsider@gemailla.test', email_verified: true, companyId: 'company-outsider', companyRole: 'viewer', membershipStatus: 'active' } };
+const inactiveOwner = { uid: 'storage-inactive-owner-uid', claims: { email: 'storage-inactive-owner@gemailla.test', email_verified: true, companyId, companyRole: 'owner', membershipStatus: 'inactive' } };
+const viewer = { uid: 'storage-viewer-uid', claims: { email: 'storage-viewer@gemailla.test', email_verified: true, companyId, companyRole: 'viewer', membershipStatus: 'active' } };
 const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-storage-owner@gemailla.test', email_verified: true, companyId: otherCompanyId, companyRole: 'owner', membershipStatus: 'active' } };
 
 const documentId = 'doc-1';
@@ -32,6 +34,8 @@ async function seedStorageAcl() {
     ownerUid: owner.uid,
     memberships: [
       { userUid: director.uid, userEmail: director.claims.email, role: 'director', status: 'active' },
+      { userUid: viewer.uid, userEmail: viewer.claims.email, role: 'viewer', status: 'active' },
+      { userUid: inactiveOwner.uid, userEmail: inactiveOwner.claims.email, role: 'owner', status: 'inactive' },
     ],
   });
   await seedCompany({ companyId: otherCompanyId, ownerUid: 'other-storage-owner-uid' });
@@ -103,6 +107,12 @@ describe('Cloud Storage security rules', () => {
       storageUpload(missingDocumentPdfPath, owner, { metadata: { companyId, documentId: missingDocumentId } }),
       'upload with metadata for missing Firestore document',
     );
+    await assertDenied(storageUpload(validPdfPath, inactiveOwner, {
+      metadata: { companyId, documentId },
+    }), 'inactive membership cannot upload');
+    await assertDenied(storageUpload(validPdfPath, viewer, {
+      metadata: { companyId, documentId },
+    }), 'viewer role cannot upload');
   });
 
   it('rejects invalid MIME types and files larger than 15 MB', async () => {
@@ -144,6 +154,13 @@ describe('Cloud Storage security rules', () => {
       }),
       'upload path company differs from Storage custom metadata',
     );
+
+    await assertDenied(
+      storageUpload(validPdfPath, owner, {
+        metadata: { companyId, documentId: 'different-doc-id' },
+      }),
+      'upload path document differs from Storage custom metadata',
+    );
   });
 
   it('allows reads only with valid company permissions', async () => {
@@ -151,6 +168,7 @@ describe('Cloud Storage security rules', () => {
 
     await assertAllowed(storageRead(validPdfPath, owner), 'owner read');
     await assertAllowed(storageRead(validPdfPath, director), 'active director read');
+    await assertDenied(storageRead(validPdfPath, inactiveOwner), 'inactive membership cannot read');
     await assertDenied(storageRead(validPdfPath, outsider), 'outsider read');
   });
 

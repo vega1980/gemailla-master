@@ -61,13 +61,13 @@ sequenceDiagram
 
   UI->>FS: create documents/{documentId} status=uploading
   UI->>ST: upload companies/{companyId}/documents/{documentId}/{fileName}
-  ST->>FS: rules verifican que documents/{documentId} existe y pertenece a companyId
+  ST->>ST: rules validan claims activos, rol permitido y metadata companyId/documentId
   UI->>FS: update document status=pending + storagePath
 ```
 
 Decisiones:
 
-- Firestore se crea antes de Storage para que las reglas puedan verificar metadata existente.
+- Firestore se crea antes de Storage para mantener el contrato de negocio; Storage no lee Firestore y valida aislamiento con claims activos y metadata personalizada `companyId`/`documentId`.
 - Storage acepta solo `create`; no acepta `update` ni `delete` desde cliente.
 - La app guarda `storagePath`, no URLs públicas persistidas.
 - Si falla la subida, la metadata queda marcada con `status: "error"` y `errorMessage`.
