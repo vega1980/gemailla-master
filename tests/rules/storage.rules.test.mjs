@@ -77,12 +77,12 @@ describe('Cloud Storage security rules', () => {
     await assertAllowed(storageUpload(validPdfPath, owner, {
       contentType: 'application/pdf',
       body: '%PDF-1.7 fixture',
-      metadata: { companyId, documentId },
+      customMetadata: { companyId, documentId },
     }), 'owner upload PDF with matching tenant metadata');
     await assertAllowed(storageUpload(validXmlPath, director, {
       contentType: 'application/xml',
       body: '<invoice id="fixture" />',
-      metadata: { companyId, documentId },
+      customMetadata: { companyId, documentId },
     }), 'director upload XML with matching tenant metadata');
   });
 
@@ -140,14 +140,14 @@ describe('Cloud Storage security rules', () => {
 
     await assertDenied(
       storageUpload(`companies/${companyId}/documents/doc-1-other-company/file.pdf`, owner, {
-        metadata: { companyId: otherCompanyId, documentId: 'doc-1-other-company' },
+        customMetadata: { companyId: otherCompanyId, documentId: 'doc-1-other-company' },
       }),
       'upload path company differs from Storage custom metadata',
     );
   });
 
   it('allows reads only with valid company permissions', async () => {
-    await assertAllowed(storageUpload(validPdfPath, owner, { metadata: { companyId, documentId } }), 'owner fixture upload');
+    await assertAllowed(storageUpload(validPdfPath, owner, { customMetadata: { companyId, documentId } }), 'owner fixture upload');
 
     await assertAllowed(storageRead(validPdfPath, owner), 'owner read');
     await assertAllowed(storageRead(validPdfPath, director), 'active director read');
@@ -155,7 +155,7 @@ describe('Cloud Storage security rules', () => {
   });
 
   it('blocks client updates and physical deletes even for permitted company users', async () => {
-    await assertAllowed(storageUpload(validPdfPath, owner, { metadata: { companyId, documentId } }), 'owner fixture upload before update/delete');
+    await assertAllowed(storageUpload(validPdfPath, owner, { customMetadata: { companyId, documentId } }), 'owner fixture upload before update/delete');
 
     await assertDenied(storageUpdate(validPdfPath, owner), 'owner physical update');
     await assertDenied(storageUpdate(validPdfPath, director), 'director physical update');
@@ -173,13 +173,13 @@ describe('Cloud Storage security rules', () => {
 
     await assertDenied(
       storageUpload(`companies/${otherCompanyId}/documents/doc-2/file.pdf`, owner, {
-        metadata: { companyId: otherCompanyId, documentId: 'doc-2' },
+        customMetadata: { companyId: otherCompanyId, documentId: 'doc-2' },
       }),
       'owner upload to another company',
     );
 
     await assertAllowed(storageUpload(otherCompanyPdfPath, otherOwner, {
-      metadata: { companyId: otherCompanyId, documentId: 'doc-1-other-company' },
+      customMetadata: { companyId: otherCompanyId, documentId: 'doc-1-other-company' },
     }), 'other company owner fixture upload');
     await assertDenied(storageRead(otherCompanyPdfPath, owner), 'owner read from another company');
   });
