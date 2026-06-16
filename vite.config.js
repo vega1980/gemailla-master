@@ -18,7 +18,11 @@ function getBuildId() {
 
 const vendorChunkGroups = [
   { name: 'react-vendor', packages: ['react', 'react-dom', 'react-router-dom'] },
-  { name: 'firebase-vendor', packages: ['firebase', '@firebase'] },
+  { name: 'firebase-app-vendor', packages: ['firebase/app', '@firebase/app'] },
+  { name: 'firebase-auth-vendor', packages: ['firebase/auth', '@firebase/auth'] },
+  { name: 'firebase-firestore-vendor', packages: ['firebase/firestore', '@firebase/firestore'] },
+  { name: 'firebase-storage-vendor', packages: ['firebase/storage', '@firebase/storage'] },
+  { name: 'firebase-util-vendor', packages: ['@firebase/component', '@firebase/logger', '@firebase/util'] },
   { name: 'query-vendor', packages: ['@tanstack'] },
   { name: 'motion-vendor', packages: ['framer-motion'] },
   { name: 'charts-vendor', packages: ['recharts', 'd3-'] },
