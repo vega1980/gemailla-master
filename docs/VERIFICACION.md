@@ -17,7 +17,7 @@ firestore.indexes.json: JSON OK
 3. README actualizado sin placeholder TU_PROJECT_ID.
 4. package.json incluye scripts de lint, typecheck, build y pruebas de reglas.
 5. Firestore rules endurecidas por campos permitidos.
-6. Storage rules exige empresa y documento Firestore existente antes de subir archivos.
+6. Storage rules exige coincidencia de empresa entre custom claim y metadatos antes de subir archivos.
 7. Storage mantiene límite de 15 MB, solo PDF/XML y archivos inmutables desde cliente.
 ```
 

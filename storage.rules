@@ -7,35 +7,20 @@ service firebase.storage {
     }
 
     function hasCompanyToken(companyId) {
-      return signedIn()
-        && request.auth.token.companyId == companyId
-        && request.auth.token.membershipStatus == 'active';
+      return signedIn() && request.auth.token.companyId == companyId;
     }
 
-    function canManageCompanyFiles(companyId) {
-      return hasCompanyToken(companyId)
-        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
-    }
-
-    function hasResourceMetadata(companyId, documentId) {
-      return resource.metadata != null
-        && resource.metadata.companyId == companyId
-        && resource.metadata.documentId == documentId;
-    }
-
-    function isValidMetadata(companyId, documentId) {
+    function isValidMetadata(companyId) {
       return request.resource.metadata != null
-        && request.resource.metadata.companyId == companyId
-        && request.resource.metadata.documentId == documentId;
+        && request.resource.metadata.companyId == companyId;
     }
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
-      allow read: if hasCompanyToken(companyId)
-                  && hasResourceMetadata(companyId, documentId);
+      allow read: if hasCompanyToken(companyId);
 
-      allow create: if canManageCompanyFiles(companyId)
-                    && isValidMetadata(companyId, documentId)
+      allow create: if hasCompanyToken(companyId)
+                    && isValidMetadata(companyId)
                     && request.resource.size < 15 * 1024 * 1024
                     && (request.resource.contentType == 'application/pdf'
                         || request.resource.contentType == 'text/xml'
