@@ -8,13 +8,13 @@ service firebase.storage {
 
     function hasCompanyToken(companyId) {
       return signedIn()
-        && request.auth.token.companyId == companyId
-        && request.auth.token.membershipStatus == 'active';
+        && request.auth.token.get('companyId', null) == companyId
+        && request.auth.token.get('membershipStatus', null) == 'active';
     }
 
     function canWriteCompanyDocuments(companyId) {
       return hasCompanyToken(companyId)
-        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
+        && request.auth.token.get('companyRole', null) in ['owner', 'director', 'admin', 'editor'];
     }
 
     function hasExistingObjectMetadata(companyId, documentId) {

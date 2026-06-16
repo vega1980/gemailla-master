@@ -51,12 +51,12 @@ service cloud.firestore {
       let memberId = membershipId(companyId);
       return signedIn()
         && exists(/databases/$(database)/documents/companyMembers/$(memberId))
-        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.status == 'active';
+        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.get('status', null) == 'active';
     }
 
     function memberRole(companyId) {
       let memberId = membershipId(companyId);
-      return get(/databases/$(database)/documents/companyMembers/$(memberId)).data.role;
+      return get(/databases/$(database)/documents/companyMembers/$(memberId)).data.get('role', null);
     }
 
     function hasAnyCompanyRole(companyId, roles) {
@@ -180,7 +180,7 @@ service cloud.firestore {
         && data.contentType is string
         && data.title is string
         && data.title.size() > 0
-        && data.status in ['active', 'uploading', 'pending', 'uploaded', 'processing', 'analyzed', 'error', 'archived', 'ai_disabled']
+        && data.get('status', null) in ['active', 'uploading', 'pending', 'uploaded', 'processing', 'analyzed', 'error', 'archived', 'ai_disabled']
         && hasNoPublicDocumentUrls(data);
     }
 
@@ -188,7 +188,7 @@ service cloud.firestore {
       return canCreateCompanyRecord()
         && validDocumentEnvelope(request.resource.data)
         && (
-          request.resource.data.status == 'uploading'
+          request.resource.data.get('status', null) == 'uploading'
           || request.resource.data.storagePath is string
         );
     }
@@ -197,7 +197,7 @@ service cloud.firestore {
       return canUpdateCompanyRecord()
         && validDocumentEnvelope(request.resource.data)
         && (
-          request.resource.data.status in ['uploading', 'error']
+          request.resource.data.get('status', null) in ['uploading', 'error']
           || request.resource.data.storagePath is string
         );
     }
@@ -223,8 +223,8 @@ service cloud.firestore {
         && auditCreateFieldsAreSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
         && canManageCompany(request.resource.data.companyId)
-        && request.resource.data.status in ['active', 'pending', 'archived']
-        && request.resource.data.role in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado'];
+        && request.resource.data.get('status', null) in ['active', 'pending', 'archived']
+        && request.resource.data.get('role', null) in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado'];
 
       allow read: if signedIn()
         && hasCompanyId(resource.data)
@@ -240,8 +240,8 @@ service cloud.firestore {
         && hasCompanyId(request.resource.data)
         && request.resource.data.companyId == resource.data.companyId
         && canManageCompany(resource.data.companyId)
-        && request.resource.data.role in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado']
-        && request.resource.data.status in ['active', 'pending', 'archived'];
+        && request.resource.data.get('role', null) in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado']
+        && request.resource.data.get('status', null) in ['active', 'pending', 'archived'];
 
       allow delete: if false;
     }
