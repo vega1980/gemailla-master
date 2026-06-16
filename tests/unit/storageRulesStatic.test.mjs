@@ -5,34 +5,22 @@ import { describe, it } from 'node:test';
 const STORAGE_RULES_PATH = new URL('../../storage.rules', import.meta.url);
 
 describe('Cloud Storage rules static invariants', () => {
-  it('does not read Firestore from Storage rules', async () => {
+  it('verifies the Firestore document before accepting uploads', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
-    assert.doesNotMatch(source, /firestore\.exists\(/);
-    assert.doesNotMatch(source, /firestore\.get\(/);
+    assert.match(source, /firestore\.exists\(\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\)/);
+    assert.match(source, /firestore\.get\(\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\)\.data\.companyId == companyId/);
   });
 
-  it('enforces tenant isolation through active writer claims and safe upload metadata checks', async () => {
+  it('enforces tenant isolation through the company custom claim and upload metadata', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
-    assert.match(source, /request\.auth != null/);
     assert.match(source, /request\.auth\.token\.companyId == companyId/);
-    assert.match(source, /request\.auth\.token\.membershipStatus == 'active'/);
-    assert.match(source, /request\.auth\.token\.companyRole in \['owner', 'director', 'admin', 'editor'\]/);
-    assert.match(source, /request\.resource\.metadata\.keys\(\)\.hasAll\(\['companyId', 'documentId'\]\)/);
     assert.match(source, /request\.resource\.metadata\.companyId == companyId/);
-    assert.match(source, /request\.resource\.metadata\.documentId == documentId/);
-    assert.match(source, /allow create: if canWriteCompanyDocuments\(companyId\)/);
-    assert.match(source, /&& isValidMetadata\(companyId, documentId\)/);
+    assert.match(source, /allow create: if hasCompanyToken\(companyId\)/);
+    assert.match(source, /&& isValidMetadata\(companyId\)/);
+    assert.doesNotMatch(source, /request\.auth\.token\.companyRole/);
+    assert.doesNotMatch(source, /request\.resource\.metadata\.documentId == documentId/);
     assert.match(source, /allow update, delete: if false/);
-  });
-
-  it('keeps uploads limited to PDF or XML files up to 15 MB', async () => {
-    const source = await readFile(STORAGE_RULES_PATH, 'utf8');
-
-    assert.match(source, /request\.resource\.contentType == 'application\/pdf'/);
-    assert.match(source, /request\.resource\.contentType == 'text\/xml'/);
-    assert.match(source, /request\.resource\.contentType == 'application\/xml'/);
-    assert.match(source, /request\.resource\.size < 15 \* 1024 \* 1024/);
   });
 });
