@@ -5,22 +5,25 @@ import { describe, it } from 'node:test';
 const STORAGE_RULES_PATH = new URL('../../storage.rules', import.meta.url);
 
 describe('Cloud Storage rules static invariants', () => {
-  it('verifies the Firestore document before accepting uploads', async () => {
+  it('requires an active tenant token before granting company object access', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
-    assert.match(source, /firestore\.exists\(\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\)/);
-    assert.match(source, /firestore\.get\(\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\)\.data\.companyId == companyId/);
+    assert.match(source, /function hasCompanyToken\(companyId\) \{/);
+    assert.match(source, /request\.auth\.token\.companyId == companyId/);
+    assert.match(source, /request\.auth\.token\.membershipStatus == 'active'/);
+    assert.match(source, /allow read: if hasCompanyToken\(companyId\)/);
   });
 
-  it('enforces tenant isolation through the company custom claim and upload metadata', async () => {
+  it('restricts uploads to active writer roles with matching custom metadata', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
-    assert.match(source, /request\.auth\.token\.companyId == companyId/);
+    assert.match(source, /function canWriteCompanyDocuments\(companyId\) \{/);
+    assert.match(source, /request\.auth\.token\.companyRole in \['owner', 'director', 'admin', 'editor'\]/);
+    assert.match(source, /allow create: if canWriteCompanyDocuments\(companyId\)/);
     assert.match(source, /request\.resource\.metadata\.companyId == companyId/);
-    assert.match(source, /allow create: if hasCompanyToken\(companyId\)/);
-    assert.match(source, /&& isValidMetadata\(companyId\)/);
-    assert.doesNotMatch(source, /request\.auth\.token\.companyRole/);
-    assert.doesNotMatch(source, /request\.resource\.metadata\.documentId == documentId/);
+    assert.match(source, /request\.resource\.metadata\.documentId == documentId/);
+    assert.match(source, /request\.resource\.size < 15 \* 1024 \* 1024/);
+    assert.match(source, /hasAllowedDocumentContentType\(\)/);
     assert.match(source, /allow update, delete: if false/);
   });
 });

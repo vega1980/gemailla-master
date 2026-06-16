@@ -6,14 +6,14 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function hasActiveCompanyToken(companyId) {
+    function hasCompanyToken(companyId) {
       return signedIn()
         && request.auth.token.companyId == companyId
         && request.auth.token.membershipStatus == 'active';
     }
 
     function canWriteCompanyDocuments(companyId) {
-      return hasActiveCompanyToken(companyId)
+      return hasCompanyToken(companyId)
         && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
@@ -37,7 +37,7 @@ service firebase.storage {
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
-      allow read: if hasActiveCompanyToken(companyId)
+      allow read: if hasCompanyToken(companyId)
                   && hasExistingObjectMetadata(companyId, documentId);
 
       allow create: if canWriteCompanyDocuments(companyId)

@@ -147,17 +147,16 @@ export async function seedCompany({ companyId, ownerUid, memberships = [] }) {
   }
 }
 
-function storageCustomMetadataHeaders(customMetadata = {}) {
-  return Object.fromEntries(
-    Object.entries(customMetadata).map(([key, value]) => [`x-goog-meta-${key}`, String(value)]),
-  );
+function storageEmulatorHostAndPort() {
+  const [host, port = '9199'] = STORAGE_HOST.split(':');
+  return { host, port: Number(port) };
 }
 
-export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', customMetadata = {} } = {}) {
-  const headers = {
-    'Content-Type': contentType,
-    // The Firebase Storage SDK sends `customMetadata` as x-goog-meta-* headers to the emulator.
-    ...storageCustomMetadataHeaders(customMetadata),
+function storageUploadResponse(status, message = '') {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => message,
   };
 }
 
@@ -166,7 +165,7 @@ function storageBodyBytes(body) {
   return Buffer.from(String(body));
 }
 
-export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', metadata = {} } = {}) {
+export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', customMetadata, metadata = customMetadata || {} } = {}) {
   const token = typeof auth === 'string' ? authToken(auth) : auth?.token || authToken(auth?.uid, auth?.claims);
   const app = initializeApp({
     projectId: PROJECT_ID,
