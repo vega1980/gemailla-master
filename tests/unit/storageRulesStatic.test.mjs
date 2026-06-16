@@ -20,6 +20,9 @@ describe('Cloud Storage rules static invariants', () => {
     assert.match(source, /function canWriteCompanyDocuments\(companyId\) \{/);
     assert.match(source, /request\.auth\.token\.companyRole in \['owner', 'director', 'admin', 'editor'\]/);
     assert.match(source, /allow create: if canWriteCompanyDocuments\(companyId\)/);
+    assert.match(source, /function documentExists\(companyId, documentId\) \{/);
+    assert.match(source, /firestore\.exists\(\s*\/databases\/\(default\)\/documents\/companies\/\$\(companyId\)\/documents\/\$\(documentId\)\s*\)/);
+    assert.match(source, /&& documentExists\(companyId, documentId\)/);
     assert.match(source, /request\.resource\.metadata\.companyId == companyId/);
     assert.match(source, /request\.resource\.metadata\.documentId == documentId/);
     assert.match(source, /request\.resource\.size < 15 \* 1024 \* 1024/);
