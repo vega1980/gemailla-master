@@ -19,12 +19,18 @@ service firebase.storage {
 
     function hasExistingObjectMetadata(companyId, documentId) {
       return resource.metadata != null
+        && resource.metadata.keys().hasAll(['companyId', 'documentId'])
         && resource.metadata.companyId == companyId
         && resource.metadata.documentId == documentId;
     }
 
-    function hasNewObjectMetadata(companyId, documentId) {
+    function hasRequiredUploadMetadata() {
       return request.resource.metadata != null
+        && request.resource.metadata.keys().hasAll(['companyId', 'documentId']);
+    }
+
+    function isValidMetadata(companyId, documentId) {
+      return hasRequiredUploadMetadata()
         && request.resource.metadata.companyId == companyId
         && request.resource.metadata.documentId == documentId;
     }
@@ -41,7 +47,7 @@ service firebase.storage {
                   && hasExistingObjectMetadata(companyId, documentId);
 
       allow create: if canWriteCompanyDocuments(companyId)
-                    && hasNewObjectMetadata(companyId, documentId)
+                    && isValidMetadata(companyId, documentId)
                     && request.resource.size < 15 * 1024 * 1024
                     && hasAllowedDocumentContentType();
 
