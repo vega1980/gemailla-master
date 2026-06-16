@@ -1,24 +1,74 @@
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
   getDocs,
-  setDoc,
-  addDoc,
-  updateDoc,
-  query,
-  where,
+  limit as firestoreLimit,
   orderBy,
-  limit,
-  writeBatch
+  query,
+  setDoc,
+  startAfter,
+  updateDoc,
+  where,
+  writeBatch,
 } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 
-/**
- * Generador de repositorio CRUD genérico y agnóstico al dominio.
- * @param {string} collectionName
- */
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
+const MAX_BATCH_SIZE = 450;
+
+function normalizeLimit(value) {
+  const parsed = Number(value || DEFAULT_PAGE_SIZE);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_PAGE_SIZE;
+  return Math.min(parsed, MAX_PAGE_SIZE);
+}
+
+function chunkArray(items, size) {
+  const chunks = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+function serializeDocSnapshot(snapshot) {
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  };
+}
+
+function serializeQuerySnapshot(snapshot) {
+  return snapshot.docs.map(serializeDocSnapshot);
+}
+
+function buildQuery(collectionRef, options = {}) {
+  const constraints = [];
+
+  if (Array.isArray(options.where)) {
+    for (const condition of options.where) {
+      constraints.push(where(condition.field, condition.operator, condition.value));
+    }
+  }
+
+  if (options.orderBy) {
+    constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
+  }
+
+  if (options.cursor) {
+    constraints.push(startAfter(options.cursor));
+  }
+
+  constraints.push(firestoreLimit(normalizeLimit(options.limit)));
+
+  return query(collectionRef, ...constraints);
+}
+
 export const createRepository = (collectionName) => {
   const collectionRef = collection(db, collectionName);
   const auditMiddleware = createAuditMutationMiddleware({
@@ -26,96 +76,136 @@ export const createRepository = (collectionName) => {
     nowIso: () => new Date().toISOString(),
   });
 
-  const serializeSnapshot = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-
   const newId = () => doc(collectionRef).id;
 
+  const getById = async (id) => {
+    const snapshot = await getDoc(doc(db, collectionName, id));
+
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    return serializeDocSnapshot(snapshot);
+  };
+
+  const list = async (options) => {
+    if (!options || Object.keys(options).length === 0) {
+      const snapshot = await getDocs(collectionRef);
+      return serializeQuerySnapshot(snapshot);
+    }
+
+    const snapshot = await getDocs(buildQuery(collectionRef, options));
+    const pageSize = normalizeLimit(options.limit);
+
+    return {
+      items: serializeQuerySnapshot(snapshot),
+      lastCursor: snapshot.docs.at(-1) || null,
+      hasMore: snapshot.docs.length === pageSize,
+    };
+  };
+
+  const filter = async (field, operator, value) => {
+    if (field && typeof field === 'object' && !Array.isArray(field)) {
+      const constraints = Object.entries(field)
+        .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all')
+        .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
+
+      if (operator) {
+        const direction = String(operator).startsWith('-') ? 'desc' : 'asc';
+        constraints.push(orderBy(String(operator).replace(/^-/, ''), direction));
+      }
+
+      if (value) constraints.push(firestoreLimit(value));
+
+      const snapshot = await getDocs(constraints.length ? query(collectionRef, ...constraints) : collectionRef);
+      return serializeQuerySnapshot(snapshot);
+    }
+
+    const q = query(collectionRef, where(field, operator, value));
+    const snapshot = await getDocs(q);
+    return serializeQuerySnapshot(snapshot);
+  };
+
+  const create = async (data, id = null) => {
+    const dataWithAudit = auditMiddleware.withCreateAuditFields(data);
+
+    if (id) {
+      const documentRef = doc(db, collectionName, id);
+      await setDoc(documentRef, dataWithAudit);
+
+      return {
+        id,
+        ...dataWithAudit,
+      };
+    }
+
+    const documentRef = await addDoc(collectionRef, dataWithAudit);
+
+    return {
+      id: documentRef.id,
+      ...dataWithAudit,
+    };
+  };
+
+  const createWithId = (id, data) => create(data, id);
+
+  const update = async (id, data) => {
+    const documentRef = doc(db, collectionName, id);
+    const dataWithAudit = auditMiddleware.withUpdateAuditFields(data);
+    await updateDoc(documentRef, dataWithAudit);
+
+    return {
+      id,
+      ...dataWithAudit,
+    };
+  };
+
+  const bulkCreate = async (items = []) => {
+    if (!Array.isArray(items)) {
+      throw new TypeError('bulkCreate espera un arreglo');
+    }
+
+    if (items.length === 0) return [];
+
+    const created = [];
+
+    for (const chunk of chunkArray(items, MAX_BATCH_SIZE)) {
+      const batch = writeBatch(db);
+
+      for (const item of chunk) {
+        const documentRef = doc(collectionRef);
+        const dataWithAudit = auditMiddleware.withCreateAuditFields(item);
+        batch.set(documentRef, dataWithAudit);
+        created.push({ id: documentRef.id, ...dataWithAudit });
+      }
+
+      await batch.commit();
+    }
+
+    return created;
+  };
+
   const softDelete = async (id) => {
-    const docRef = doc(db, collectionName, id);
     const deleteData = auditMiddleware.withUpdateAuditFields({
       deleted: true,
-      deletedAt: new Date().toISOString()
+      deletedAt: new Date().toISOString(),
     });
-    await updateDoc(docRef, deleteData);
+
+    await updateDoc(doc(db, collectionName, id), deleteData);
     return { id, ...deleteData };
   };
 
   return {
-    get: async (id) => {
-      const docRef = doc(db, collectionName, id);
-      const docSnap = await getDoc(docRef);
-      return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
-    },
-
-    list: async () => {
-      const snapshot = await getDocs(collectionRef);
-      return serializeSnapshot(snapshot);
-    },
-
-    filter: async (field, operator, value) => {
-      if (field && typeof field === 'object' && !Array.isArray(field)) {
-        /** @type {import('firebase/firestore').QueryConstraint[]} */
-        const constraints = Object.entries(field)
-          .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all')
-          .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
-
-        if (operator) {
-          const direction = String(operator).startsWith('-') ? 'desc' : 'asc';
-          constraints.push(orderBy(String(operator).replace(/^-/, ''), direction));
-        }
-
-        if (value) constraints.push(limit(value));
-
-        const snapshot = await getDocs(constraints.length ? query(collectionRef, ...constraints) : collectionRef);
-        return serializeSnapshot(snapshot);
-      }
-
-      const q = query(collectionRef, where(field, operator, value));
-      const snapshot = await getDocs(q);
-      return serializeSnapshot(snapshot);
-    },
-
-    create: async (data) => {
-      const dataWithAudit = auditMiddleware.withCreateAuditFields(data);
-      const docRef = await addDoc(collectionRef, dataWithAudit);
-      return { id: docRef.id, ...dataWithAudit };
-    },
-
-    createWithId: async (id, data) => {
-      const docRef = doc(db, collectionName, id);
-      const dataWithAudit = auditMiddleware.withCreateAuditFields(data);
-      await setDoc(docRef, dataWithAudit);
-      return { id, ...dataWithAudit };
-    },
-
-    bulkCreate: async (items = []) => {
-      if (!Array.isArray(items) || items.length === 0) return [];
-
-      const batch = writeBatch(db);
-      const created = items.map((item) => {
-        const docRef = doc(collectionRef);
-        const dataWithAudit = auditMiddleware.withCreateAuditFields(item);
-        batch.set(docRef, dataWithAudit);
-        return { id: docRef.id, ...dataWithAudit };
-      });
-
-      await batch.commit();
-      return created;
-    },
-
-    update: async (id, data) => {
-      const docRef = doc(db, collectionName, id);
-      const dataWithAudit = auditMiddleware.withUpdateAuditFields(data);
-      await updateDoc(docRef, dataWithAudit);
-      return { id, ...dataWithAudit };
-    },
-
+    get: getById,
+    getById,
+    list,
+    filter,
+    create,
+    createWithId,
+    bulkCreate,
+    update,
     softDelete,
-
     newId,
-
-    // Alias legacy explícito: las reglas de Firebase bloquean borrado físico,
-    // así que `delete` conserva el contrato anterior delegando en softDelete.
-    delete: softDelete
+    delete: softDelete,
   };
 };

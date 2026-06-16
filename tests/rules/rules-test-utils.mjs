@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { deleteApp, initializeApp } from 'firebase/app';
+import { connectStorageEmulator, getStorage, ref, uploadBytes } from 'firebase/storage';
 
 export const PROJECT_ID = process.env.FIREBASE_RULES_TEST_PROJECT_ID || 'demo-gemailla-test';
 export const FIRESTORE_HOST = process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080';
@@ -157,14 +159,39 @@ export async function storageUpload(path, auth, { contentType = 'application/pdf
     // The Firebase Storage SDK sends `customMetadata` as x-goog-meta-* headers to the emulator.
     ...storageCustomMetadataHeaders(customMetadata),
   };
+}
 
-  return fetch(`${storageBase}?name=${encodeURIComponent(path)}`, {
-    method: 'POST',
-    headers: auth === 'owner'
-      ? ownerHeaders(headers)
-      : authHeaders(auth, headers),
-    body,
-  });
+function storageBodyBytes(body) {
+  if (body instanceof Uint8Array || body instanceof ArrayBuffer) return body;
+  return Buffer.from(String(body));
+}
+
+export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', metadata = {} } = {}) {
+  const token = typeof auth === 'string' ? authToken(auth) : auth?.token || authToken(auth?.uid, auth?.claims);
+  const app = initializeApp({
+    projectId: PROJECT_ID,
+    storageBucket: STORAGE_BUCKET,
+  }, `storage-rules-test-${Date.now()}-${Math.random()}`);
+
+  try {
+    const { host, port } = storageEmulatorHostAndPort();
+    const storage = getStorage(app);
+    connectStorageEmulator(storage, host, port, token ? { mockUserToken: token } : undefined);
+
+    await uploadBytes(ref(storage, path), storageBodyBytes(body), {
+      contentType,
+      customMetadata: Object.fromEntries(
+        Object.entries(metadata).map(([key, value]) => [key, String(value)]),
+      ),
+    });
+
+    return storageUploadResponse(200);
+  } catch (error) {
+    const status = error?.code === 'storage/unauthorized' ? 403 : 500;
+    return storageUploadResponse(status, error?.message || String(error));
+  } finally {
+    await deleteApp(app);
+  }
 }
 
 export async function storageRead(path, auth) {

@@ -7,7 +7,10 @@ service firebase.storage {
     }
 
     function hasCompanyToken(companyId) {
-      return signedIn() && request.auth.token.companyId == companyId;
+      return signedIn()
+        && request.auth.token.companyId == companyId
+        && request.auth.token.membershipStatus == 'active'
+        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
     function isValidMetadata(companyId) {
@@ -17,10 +20,11 @@ service firebase.storage {
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
-      allow read: if hasCompanyToken(companyId);
+      allow read: if hasCompanyToken(companyId)
+                  && hasValidObjectMetadata(companyId, documentId);
 
       allow create: if hasCompanyToken(companyId)
-                    && isValidMetadata(companyId)
+                    && hasValidUploadMetadata(companyId, documentId)
                     && request.resource.size < 15 * 1024 * 1024
                     && (request.resource.contentType == 'application/pdf'
                         || request.resource.contentType == 'text/xml'
