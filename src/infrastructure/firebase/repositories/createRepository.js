@@ -48,6 +48,7 @@ function serializeQuerySnapshot(snapshot) {
 }
 
 function buildQuery(collectionRef, options = {}) {
+  /** @type {import('firebase/firestore').QueryConstraint[]} */
   const constraints = [];
 
   if (Array.isArray(options.where)) {
@@ -106,6 +107,7 @@ export const createRepository = (collectionName) => {
 
   const filter = async (field, operator, value) => {
     if (field && typeof field === 'object' && !Array.isArray(field)) {
+      /** @type {import('firebase/firestore').QueryConstraint[]} */
       const constraints = Object.entries(field)
         .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all')
         .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
