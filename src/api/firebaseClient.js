@@ -76,12 +76,6 @@ async function invokeLLM(params = {}) {
   const companyId = typeof params.companyId === 'string' ? params.companyId.trim() : '';
   if (!companyId) throw new Error('companyId es obligatorio para usar IA.');
   const endpoint = import.meta.env.VITE_LLM_ENDPOINT || '/api/ai';
-  const frontendOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY;
-
-  if (frontendOpenAiKey) {
-    return aiDisabledPayload('IA no configurada: no se permite exponer claves privadas directamente en el navegador. Usa un backend seguro.', correlationId);
-  }
-
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {

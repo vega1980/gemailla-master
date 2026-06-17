@@ -36,6 +36,18 @@ cp public/app-config.example.js public/app-config.js
 
 > Las variables `VITE_FIREBASE_*` tienen prioridad sobre `window.GEMAILLA_FIREBASE_CONFIG`.
 
+### Validación automática de variables
+
+Para CI, entornos empresariales locales o pipelines sin intervención humana, valida la configuración antes de compilar o ejecutar pruebas con el script Node incluido. El script falla con código `1` si falta alguna variable obligatoria, si conserva placeholders como `TU_*` o si se intenta exponer `VITE_OPENAI_API_KEY` en el frontend; no muestra prompts interactivos.
+
+```bash
+npm run validate:env          # frontend: VITE_FIREBASE_*
+npm run validate:env:functions # backend IA: OPENAI_API_KEY
+npm run validate:env:all      # frontend + backend
+```
+
+El script lee variables del entorno, `.env` y `.env.local`, por lo que puede usarse como paso previo en CI, por ejemplo `npm run validate:env && npm run build`. En workflows de pull request usa un valor dummy como `OPENAI_API_KEY=sk-test`; reserva el secreto real `OPENAI_API_KEY` para deploys protegidos de backend/Functions.
+
 ## Comandos principales
 
 ```bash
@@ -80,7 +92,7 @@ El flujo documental está diseñado para evitar archivos huérfanos y URLs públ
 
 ## IA
 
-No configures claves privadas de OpenAI/LLM en el frontend. Si aparece `VITE_OPENAI_API_KEY`, la app desactiva la IA para evitar exponer secretos.
+No configures claves privadas de OpenAI/LLM en el frontend. `OPENAI_API_KEY` solo debe existir en backend/Firebase Functions; no declares variantes con prefijo `VITE_` porque Vite puede exponerlas al navegador. El validador falla si detecta `VITE_OPENAI_API_KEY`.
 
 El repositorio incluye un backend real en `functions/` con Firebase Cloud Functions. La app llama por defecto a `/api/ai`, ruta que Firebase Hosting reescribe a la función `ai`. La función valida un token Firebase Auth, limita el tamaño del prompt y llama a OpenAI desde servidor.
 
