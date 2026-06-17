@@ -7,7 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID?: string;
   readonly VITE_LLM_ENDPOINT?: string;
   readonly VITE_FUNCTIONS_ENDPOINT?: string;
-  readonly VITE_OPENAI_API_KEY?: string;
   readonly VITE_APP_VERSION?: string;
   readonly VITE_BUILD_ID?: string;
   readonly VITE_GIT_SHA?: string;
