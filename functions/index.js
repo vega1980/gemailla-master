@@ -27,6 +27,8 @@ const DEFAULT_DAILY_BUDGET_USD = 5;
 const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
 const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
+  'https://gemailla.com',
+  'https://www.gemailla.com',
   'https://gemailla-enterprise.firebaseapp.com',
   'https://gemailla-enterprise.web.app',
 ]);
@@ -400,7 +402,13 @@ function extractOutputText(payload = {}) {
 
 async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }) {
   const startedAt = Date.now();
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  const timeoutMs = Number(process.env.OPENAI_TIMEOUT_MS || 45000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response;
+  try {
+    response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -430,7 +438,15 @@ async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }
         deploy_env: RELEASE_METADATA.deployEnv,
       },
     }),
+    signal: controller.signal,
   });
+  } catch (error) {
+    const wrappedError = new Error(error.name === 'AbortError' ? 'OpenAI excedió el tiempo máximo de respuesta.' : 'No se pudo conectar con OpenAI.');
+    wrappedError.status = 502;
+    throw wrappedError;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const latencyMs = Date.now() - startedAt;
   const payload = await response.json().catch(() => ({}));

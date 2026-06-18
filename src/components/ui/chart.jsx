@@ -10,6 +10,17 @@ const THEMES = {
   dark: ".dark"
 }
 
+const SAFE_CSS_KEY_PATTERN = /^[a-zA-Z0-9_-]+$/;
+const SAFE_CSS_COLOR_PATTERN = /^(#[0-9a-fA-F]{3,8}|rgb\(|rgba\(|hsl\(|hsla\(|var\(--[a-zA-Z0-9_-]+\)$)/;
+
+function getSafeCssVariable(key, color) {
+  if (!SAFE_CSS_KEY_PATTERN.test(String(key))) return null;
+  if (typeof color !== "string") return null;
+  const value = color.trim();
+  if (!SAFE_CSS_COLOR_PATTERN.test(value)) return null;
+  return `  --color-${key}: ${value};`;
+}
+
 const ChartContext = React.createContext(null)
 
 function useChart() {
@@ -67,7 +78,7 @@ ${colorConfig
 const color =
   itemConfig.theme?.[theme] ||
   itemConfig.color
-return color ? `  --color-${key}: ${color};` : null
+return getSafeCssVariable(key, color)
 })
 .join("\n")}
 }

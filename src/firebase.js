@@ -24,10 +24,15 @@ function getConfigValue(envValue, runtimeValue) {
 }
 
 function shouldUseFirebaseEmulators() {
+  const envSetting = import.meta.env.VITE_USE_FIREBASE_EMULATORS;
+  if (envSetting === true || envSetting === 'true') return true;
+  if (envSetting === false || envSetting === 'false') return false;
+
   if (typeof window === 'undefined') return false;
-  const setting = window.GEMAILLA_USE_FIREBASE_EMULATORS;
-  if (setting === true || setting === 'true') return true;
-  if (setting === false || setting === 'false') return false;
+  const runtimeSetting = window.GEMAILLA_USE_FIREBASE_EMULATORS;
+  if (runtimeSetting === true || runtimeSetting === 'true') return true;
+  if (runtimeSetting === false || runtimeSetting === 'false') return false;
+
   return ['localhost', '127.0.0.1'].includes(window.location.hostname);
 }
 
@@ -44,6 +49,14 @@ const firebaseConfig = {
 
 if (useFirebaseEmulators && !firebaseConfig.projectId) {
   firebaseConfig.projectId = 'demo-gemailla-local';
+}
+
+if (useFirebaseEmulators) {
+  firebaseConfig.apiKey ||= 'demo-api-key';
+  firebaseConfig.authDomain ||= `${firebaseConfig.projectId}.firebaseapp.com`;
+  firebaseConfig.storageBucket ||= `${firebaseConfig.projectId}.appspot.com`;
+  firebaseConfig.messagingSenderId ||= '000000000000';
+  firebaseConfig.appId ||= `1:000000000000:web:${firebaseConfig.projectId}`;
 }
 
 const requiredConfigKeys = useFirebaseEmulators
