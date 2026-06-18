@@ -272,6 +272,20 @@ describe('Firestore security rules', () => {
     await assertDenied(firestoreGet('transactions/protected-tx', legacyEmailUser), 'legacy email-only user transaction read');
   });
 
+  it('allows UID-based member reads when the auth token has no email claim', async () => {
+    const noEmailViewer = { uid: viewer.uid, claims: { email_verified: true } };
+
+    await assertAllowed(
+      firestoreGet(`companyMembers/${companyId}_${viewer.uid}`, noEmailViewer),
+      'uid member can read their membership without email claim',
+    );
+    await assertAllowed(firestoreGet('documents/protected-doc', noEmailViewer), 'uid member can read document without email claim');
+    await assertDenied(
+      firestoreGet(`companyMembers/${companyId}_legacy_email_only`, noEmailViewer),
+      'uid member without email claim cannot read unrelated email-only membership',
+    );
+  });
+
   it('allows subscriptions only to permitted users or company members', async () => {
     await assertAllowed(firestoreGet('subscriptions/company-subscription', owner), 'owner company subscription read');
     await assertAllowed(firestoreGet('subscriptions/company-subscription', director), 'director company subscription read');
