@@ -10,6 +10,19 @@ const THEMES = {
   dark: ".dark"
 }
 
+const CSS_IDENTIFIER_PATTERN = /^-?[_a-zA-Z]+[_a-zA-Z0-9-]*$/
+const CSS_COLOR_PATTERN = /^(#[0-9a-fA-F]{3,8}|(?:rgb|hsl)a?\([0-9%.,\s+-]+\)|(?:var\(--[_a-zA-Z]+[_a-zA-Z0-9-]*\))|[a-zA-Z]+)$/
+
+function getSafeCssIdentifier(value) {
+  const identifier = String(value || "")
+  return CSS_IDENTIFIER_PATTERN.test(identifier) ? identifier : null
+}
+
+function getSafeCssColor(value) {
+  const color = String(value || "").trim()
+  return CSS_COLOR_PATTERN.test(color) ? color : null
+}
+
 const ChartContext = React.createContext(null)
 
 function useChart() {
@@ -50,9 +63,12 @@ const ChartStyle = ({
   id,
   config
 }) => {
-  const colorConfig = Object.entries(config).filter(([, config]) => config.theme || config.color)
+  const safeId = getSafeCssIdentifier(id)
+  const colorConfig = Object.entries(config)
+    .map(([key, itemConfig]) => [getSafeCssIdentifier(key), itemConfig])
+    .filter(([key, itemConfig]) => key && (itemConfig.theme || itemConfig.color))
 
-  if (!colorConfig.length) {
+  if (!safeId || !colorConfig.length) {
     return null
   }
 
@@ -61,14 +77,16 @@ const ChartStyle = ({
       dangerouslySetInnerHTML={{
         __html: Object.entries(THEMES)
           .map(([theme, prefix]) => `
-${prefix} [data-chart=${id}] {
+${prefix} [data-chart=${safeId}] {
 ${colorConfig
 .map(([key, itemConfig]) => {
-const color =
+const color = getSafeCssColor(
   itemConfig.theme?.[theme] ||
   itemConfig.color
+)
 return color ? `  --color-${key}: ${color};` : null
 })
+.filter(Boolean)
 .join("\n")}
 }
 `)
