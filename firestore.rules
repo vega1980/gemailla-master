@@ -10,7 +10,7 @@ service cloud.firestore {
     }
 
     function currentEmail() {
-      return request.auth.token.email;
+      return request.auth.token.get('email', '');
     }
 
     function hasField(data, field) {
