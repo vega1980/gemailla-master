@@ -17,6 +17,13 @@ import ReactMarkdown from 'react-markdown';
 import PlanGate from '@/components/subscription/PlanGate';
 import { useSubscription } from '@/lib/subscriptionContext';
 
+
+const HIGH_COST_APPROVAL_THRESHOLD_USD = 0.25;
+
+function estimateRequestCostUsd(prompt, context) {
+  return ((String(prompt || '').length + String(context || '').length) / 1000) * 0.01;
+}
+
 const suggestedQueries = [
   '¿Cuál es el total de gastos en nómina este año?',
   '¿Qué facturas tengo pendientes de analizar?',
@@ -134,7 +141,7 @@ export default function AIAssistant() {
       )));
     };
 
-    const saveConversation = async ({ response, status = 'completed', errorMessage = null }) => {
+    const saveConversation = async ({ response, status = 'completed', errorMessage = null, estimatedCostUsd = 0 }) => {
       await firebase.entities.AIConversation.create({
         companyId: activeCompany.id,
         userEmail: user?.email || '',
@@ -143,6 +150,8 @@ export default function AIAssistant() {
         context_documents: docIds,
         filters_used: { docType: filterDocType },
         status,
+        estimatedCostUsd,
+        requiresSupervisorApproval: status === 'pendingApproval',
         errorMessage,
         documentIds: docIds,
         correlationId,
@@ -160,9 +169,7 @@ export default function AIAssistant() {
         num_transactions: transactions.length,
       };
 
-      const aiResponse = await firebase.integrations.Core.InvokeLLM({
-        companyId: activeCompany.id,
-        prompt: `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
+      const requestPrompt = `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
 
 Empresa: ${activeCompany.name}
 RFC: ${activeCompany.rfc || 'N/A'}
@@ -179,14 +186,26 @@ RESUMEN FINANCIERO:
 PREGUNTA DEL USUARIO:
 ${userQuery}
 
-Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`,
+Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`;
+      const estimatedCostUsd = estimateRequestCostUsd(requestPrompt, docContext);
+
+      if (estimatedCostUsd > HIGH_COST_APPROVAL_THRESHOLD_USD) {
+        const approvalMessage = 'Solicitud pendiente de aprobación: el costo estimado supera $0.25 USD y requiere autorización de un supervisor.';
+        updateConversation(approvalMessage);
+        await saveConversation({ response: approvalMessage, status: 'pendingApproval', estimatedCostUsd });
+        return;
+      }
+
+      const aiResponse = await firebase.integrations.Core.InvokeLLM({
+        companyId: activeCompany.id,
+        prompt: requestPrompt,
         documentIds: docIds,
         correlationId,
       });
       const response = normalizeAIResponse(aiResponse);
       updateConversation(response);
 
-      await saveConversation({ response });
+      await saveConversation({ response, estimatedCostUsd });
 
       await logAction({
         companyId: activeCompany.id, userEmail: user?.email, userName: user?.fullName,
