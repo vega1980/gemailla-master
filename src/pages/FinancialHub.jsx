@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useCompany } from '@/lib/companyContext';
-import { useCompanyTransactions } from '@/lib/companyEntityQueries';
+import { useAuth } from '@/lib/AuthContext';
+import { useCompanyAiConversations, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,9 +14,11 @@ import BudgetPlanner from '@/components/finance/BudgetPlanner';
 import ReportDownloader from '@/components/finance/ReportDownloader';
 
 export default function FinancialHub() {
-  const { activeCompany, loading: companyLoading } = useCompany();
+  const { activeCompany, memberships, loading: companyLoading } = useCompany();
+  const { user } = useAuth();
 
   const { data: transactions = [] } = useCompanyTransactions(activeCompany);
+  const { data: aiConversations = [] } = useCompanyAiConversations(activeCompany, { limit: 200 });
 
   const monthlyData = useMemo(() => {
     const buckets = Array.from({ length: 12 }, (_, index) => {
@@ -97,7 +100,7 @@ export default function FinancialHub() {
         </TabsContent>
 
         <TabsContent value="risks">
-          <RiskManagement transactions={transactions} monthlyData={monthlyData} company={activeCompany} />
+          <RiskManagement transactions={transactions} monthlyData={monthlyData} company={activeCompany} memberships={memberships} currentUser={user} aiConversations={aiConversations} />
         </TabsContent>
 
         <TabsContent value="budget">
