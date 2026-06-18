@@ -9,8 +9,21 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
-    function currentEmail() {
-      return request.auth.token.email;
+    function currentCompanyId() {
+      return request.auth.token.get('companyId', '');
+    }
+
+    function sameCompany(companyId) {
+      return signedIn()
+        && companyId is string
+        && companyId.size() > 0
+        && currentCompanyId() == companyId;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && (request.auth.token.get('role', null) in ['owner', 'director', 'admin']
+          || request.auth.token.get('companyRole', null) in ['owner', 'director', 'admin']);
     }
 
     function hasField(data, field) {
@@ -64,17 +77,20 @@ service cloud.firestore {
     }
 
     function canReadCompany(companyId) {
-      return isCompanyOwner(companyId) || hasActiveMembership(companyId);
+      return sameCompany(companyId)
+        && (isCompanyOwner(companyId) || hasActiveMembership(companyId));
     }
 
     function canWriteCompany(companyId) {
-      return isCompanyOwner(companyId)
-        || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']);
+      return sameCompany(companyId)
+        && (isCompanyOwner(companyId)
+          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']));
     }
 
     function canManageCompany(companyId) {
-      return isCompanyOwner(companyId)
-        || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']);
+      return sameCompany(companyId)
+        && (isCompanyOwner(companyId)
+          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']));
     }
 
 
@@ -90,6 +106,17 @@ service cloud.firestore {
         && (!hasField(resource.data, 'createdBy') || request.resource.data.createdBy == resource.data.createdBy)
         && (!hasField(request.resource.data, 'updatedAt') || request.resource.data.updatedAt is string)
         && (!hasField(request.resource.data, 'updatedBy') || request.resource.data.updatedBy == currentUid());
+    }
+
+    function hasNoRoleFields(data) {
+      return !hasField(data, 'role') && !hasField(data, 'companyRole');
+    }
+
+    function roleFieldsUnchanged() {
+      return (!hasField(resource.data, 'role') || request.resource.data.role == resource.data.role)
+        && (hasField(resource.data, 'role') || !hasField(request.resource.data, 'role'))
+        && (!hasField(resource.data, 'companyRole') || request.resource.data.companyRole == resource.data.companyRole)
+        && (hasField(resource.data, 'companyRole') || !hasField(request.resource.data, 'companyRole'));
     }
 
     function validCompanyCreate() {
@@ -202,10 +229,30 @@ service cloud.firestore {
         );
     }
 
+    function canCreateAiBudget() {
+      return isAdmin()
+        && hasCompanyId(request.resource.data)
+        && sameCompany(request.resource.data.companyId);
+    }
+
+    function canUpdateAiBudget() {
+      return isAdmin()
+        && hasCompanyId(resource.data)
+        && hasCompanyId(request.resource.data)
+        && request.resource.data.companyId == resource.data.companyId
+        && sameCompany(resource.data.companyId);
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && userId == currentUid();
-      allow create: if signedIn() && userId == currentUid() && auditCreateFieldsAreSafe(request.resource.data);
-      allow update: if signedIn() && userId == currentUid() && auditUpdateFieldsAreSafe();
+      allow create: if signedIn()
+        && userId == currentUid()
+        && auditCreateFieldsAreSafe(request.resource.data)
+        && hasNoRoleFields(request.resource.data);
+      allow update: if signedIn()
+        && userId == currentUid()
+        && auditUpdateFieldsAreSafe()
+        && roleFieldsUnchanged();
       allow delete: if false;
     }
 
@@ -229,8 +276,7 @@ service cloud.firestore {
       allow read: if signedIn()
         && hasCompanyId(resource.data)
         && (
-          (hasField(resource.data, 'userUid') && resource.data.userUid == currentUid())
-          || (hasField(resource.data, 'userEmail') && resource.data.userEmail == currentEmail())
+          (sameCompany(resource.data.companyId) && hasField(resource.data, 'userUid') && resource.data.userUid == currentUid())
           || canManageCompany(resource.data.companyId)
         );
 
@@ -247,9 +293,20 @@ service cloud.firestore {
     }
 
     match /auditLogs/{logId} {
-      allow create: if canCreateCompanyRecord();
-      allow read: if canReadCompanyRecord();
-      allow update, delete: if false;
+      allow read: if isAdmin() && hasCompanyId(resource.data) && sameCompany(resource.data.companyId);
+      allow write: if false;
+    }
+
+    match /aiUsage/{id} {
+      allow read: if signedIn();
+      allow create, update, delete: if false;
+    }
+
+    match /aiBudgets/{id} {
+      allow read: if signedIn();
+      allow create: if canCreateAiBudget();
+      allow update: if canUpdateAiBudget();
+      allow delete: if false;
     }
 
     match /observabilityEvents/{eventId} {

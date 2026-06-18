@@ -12,14 +12,14 @@ import {
 
 const companyId = 'company-firestore';
 const otherCompanyId = 'company-other';
-const owner = { uid: 'owner-uid', claims: { email: 'owner@gemailla.test', email_verified: true } };
-const director = { uid: 'director-uid', claims: { email: 'director@gemailla.test', email_verified: true } };
-const admin = { uid: 'admin-uid', claims: { email: 'admin@gemailla.test', email_verified: true } };
-const editor = { uid: 'editor-uid', claims: { email: 'editor@gemailla.test', email_verified: true } };
-const viewer = { uid: 'viewer-uid', claims: { email: 'viewer@gemailla.test', email_verified: true } };
-const inactive = { uid: 'inactive-uid', claims: { email: 'inactive@gemailla.test', email_verified: true } };
-const outsider = { uid: 'outsider-uid', claims: { email: 'outsider@gemailla.test', email_verified: true } };
-const legacyEmailUser = { uid: 'legacy-new-uid', claims: { email: 'legacy@gemailla.test', email_verified: true } };
+const owner = { uid: 'owner-uid', claims: { email: 'owner@gemailla.test', email_verified: true, companyId, companyRole: 'owner' } };
+const director = { uid: 'director-uid', claims: { email: 'director@gemailla.test', email_verified: true, companyId, companyRole: 'director' } };
+const admin = { uid: 'admin-uid', claims: { email: 'admin@gemailla.test', email_verified: true, companyId, companyRole: 'admin' } };
+const editor = { uid: 'editor-uid', claims: { email: 'editor@gemailla.test', email_verified: true, companyId, companyRole: 'editor' } };
+const viewer = { uid: 'viewer-uid', claims: { email: 'viewer@gemailla.test', email_verified: true, companyId, companyRole: 'viewer' } };
+const inactive = { uid: 'inactive-uid', claims: { email: 'inactive@gemailla.test', email_verified: true, companyId, companyRole: 'editor' } };
+const outsider = { uid: 'outsider-uid', claims: { email: 'outsider@gemailla.test', email_verified: true, companyId: otherCompanyId, companyRole: 'admin' } };
+const legacyEmailUser = { uid: 'legacy-new-uid', claims: { email: 'legacy@gemailla.test', email_verified: true, companyId, companyRole: 'director' } };
 
 async function seedFirestoreAcl() {
   await seedCompany({
@@ -264,12 +264,81 @@ describe('Firestore security rules', () => {
   });
 
   it('does not allow legacy email-only users to access protected data without a consolidated UID membership', async () => {
-    await assertAllowed(
+    await assertDenied(
       firestoreGet(`companyMembers/${companyId}_legacy_email_only`, legacyEmailUser),
-      'legacy email-only user can read their pending/consolidation membership record',
+      'legacy email-only user cannot read an email-only membership record',
     );
     await assertDenied(firestoreGet('documents/protected-doc', legacyEmailUser), 'legacy email-only user document read');
     await assertDenied(firestoreGet('transactions/protected-tx', legacyEmailUser), 'legacy email-only user transaction read');
+  });
+
+  it('allows UID-based member reads when the auth token has no email claim', async () => {
+    const noEmailViewer = { uid: viewer.uid, claims: { email_verified: true, companyId, companyRole: 'viewer' } };
+
+    await assertAllowed(
+      firestoreGet(`companyMembers/${companyId}_${viewer.uid}`, noEmailViewer),
+      'uid member can read their membership without email claim',
+    );
+    await assertAllowed(firestoreGet('documents/protected-doc', noEmailViewer), 'uid member can read document without email claim');
+    await assertDenied(
+      firestoreGet(`companyMembers/${companyId}_legacy_email_only`, noEmailViewer),
+      'uid member without email claim cannot read unrelated email-only membership',
+    );
+  });
+
+  it('denies company records when the auth companyId claim does not match the document tenant', async () => {
+    const mismatchedEditor = {
+      uid: editor.uid,
+      claims: { email: editor.claims.email, email_verified: true, companyId: otherCompanyId, companyRole: 'editor' },
+    };
+
+    await assertDenied(firestoreGet('documents/protected-doc', mismatchedEditor), 'mismatched claim document read');
+    await assertDenied(firestorePatch('transactions/protected-tx', {
+      companyId,
+      ownerUid: owner.uid,
+      status: 'active',
+      type: 'ingreso',
+      amount: 400,
+    }, mismatchedEditor), 'mismatched claim transaction update');
+  });
+
+  it('blocks user profile role escalation and keeps AI/audit writes backend-only', async () => {
+    await assertAllowed(firestoreSet(`users/${viewer.uid}`, {
+      displayName: 'Viewer seguro',
+      createdBy: viewer.uid,
+    }, viewer), 'viewer user profile create without role');
+
+    await assertDenied(firestoreSet(`users/${editor.uid}`, {
+      displayName: 'Editor admin falso',
+      role: 'admin',
+      createdBy: editor.uid,
+    }, editor), 'user profile create with role');
+
+    await assertDenied(firestorePatch(`users/${viewer.uid}`, {
+      displayName: 'Viewer escalado',
+      role: 'admin',
+      updatedBy: viewer.uid,
+    }, viewer), 'user profile role escalation update');
+
+    await assertDenied(firestoreSet('auditLogs/client-created-log', {
+      companyId,
+      action: 'client-write',
+      createdBy: admin.uid,
+    }, admin), 'client audit log write');
+
+    await assertDenied(firestoreSet('aiUsage/client-created-usage', {
+      companyId,
+      tokens: 100,
+    }, admin), 'client ai usage write');
+
+    await assertAllowed(firestoreSet('aiBudgets/company-budget', {
+      companyId,
+      dailyLimitUsd: 25,
+    }, admin), 'admin ai budget write');
+    await assertDenied(firestoreSet('aiBudgets/viewer-budget', {
+      companyId,
+      dailyLimitUsd: 999,
+    }, viewer), 'viewer ai budget write');
   });
 
   it('allows subscriptions only to permitted users or company members', async () => {
