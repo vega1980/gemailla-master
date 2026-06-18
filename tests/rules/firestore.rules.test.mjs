@@ -92,6 +92,36 @@ describe('Firestore security rules', () => {
     await assertDenied(firestoreDelete(`companies/${companyId}`, owner), 'owner physical company delete');
   });
 
+  it('allows a fresh company owner to create their initial membership before companyId claims exist', async () => {
+    const freshOwner = { uid: 'fresh-owner-uid', claims: { email: 'fresh-owner@gemailla.test', email_verified: true } };
+    const freshCompanyId = 'company-fresh-owner';
+
+    await assertAllowed(firestoreSet(`companies/${freshCompanyId}`, {
+      name: 'Empresa nueva sin claim inicial',
+      ownerUid: freshOwner.uid,
+      status: 'active',
+      createdBy: freshOwner.uid,
+    }, freshOwner), 'fresh owner company create without companyId claim');
+
+    await assertAllowed(firestoreSet(`companyMembers/${freshCompanyId}_${freshOwner.uid}`, {
+      companyId: freshCompanyId,
+      userUid: freshOwner.uid,
+      userEmail: freshOwner.claims.email,
+      role: 'director',
+      status: 'active',
+      createdBy: freshOwner.uid,
+    }, freshOwner), 'fresh owner initial membership create without companyId claim');
+
+    await assertDenied(firestoreSet(`companyMembers/${freshCompanyId}_other`, {
+      companyId: freshCompanyId,
+      userUid: 'other-initial-member-uid',
+      userEmail: 'other-initial-member@gemailla.test',
+      role: 'director',
+      status: 'active',
+      createdBy: freshOwner.uid,
+    }, freshOwner), 'fresh owner cannot use initial-membership exception for another user');
+  });
+
   it('allows an active admin to manage permitted resources', async () => {
     await assertAllowed(firestoreSet(`companyMembers/${companyId}_new_viewer`, {
       companyId,
@@ -339,6 +369,33 @@ describe('Firestore security rules', () => {
       companyId,
       dailyLimitUsd: 999,
     }, viewer), 'viewer ai budget write');
+  });
+
+  it('scopes AI usage and budget reads to the requester tenant', async () => {
+    await assertAllowed(firestoreSet('aiUsage/company-usage', {
+      companyId,
+      tokensReserved: 100,
+      requestCount: 2,
+    }), 'admin ai usage seed');
+    await assertAllowed(firestoreSet('aiUsage/other-company-usage', {
+      companyId: otherCompanyId,
+      tokensReserved: 500,
+      requestCount: 10,
+    }), 'admin other ai usage seed');
+    await assertAllowed(firestoreSet('aiBudgets/company-budget-readable', {
+      companyId,
+      dailyLimitUsd: 25,
+    }), 'admin ai budget seed');
+    await assertAllowed(firestoreSet('aiBudgets/other-company-budget', {
+      companyId: otherCompanyId,
+      dailyLimitUsd: 100,
+    }), 'admin other ai budget seed');
+
+    await assertAllowed(firestoreGet('aiUsage/company-usage', viewer), 'same-company viewer ai usage read');
+    await assertDenied(firestoreGet('aiUsage/other-company-usage', viewer), 'cross-company viewer ai usage read');
+    await assertAllowed(firestoreGet('aiBudgets/company-budget-readable', viewer), 'same-company viewer ai budget read');
+    await assertDenied(firestoreGet('aiBudgets/other-company-budget', viewer), 'cross-company viewer ai budget read');
+    await assertDenied(firestoreGet('aiBudgets/company-budget-readable', null), 'anonymous ai budget read');
   });
 
   it('allows subscriptions only to permitted users or company members', async () => {

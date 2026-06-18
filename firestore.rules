@@ -243,6 +243,22 @@ service cloud.firestore {
         && sameCompany(resource.data.companyId);
     }
 
+    function canReadTenantResource() {
+      return signedIn()
+        && hasCompanyId(resource.data)
+        && sameCompany(resource.data.companyId);
+    }
+
+    function canCreateInitialOwnerMembership() {
+      return signedIn()
+        && hasCompanyId(request.resource.data)
+        && companyExists(request.resource.data.companyId)
+        && isCompanyOwner(request.resource.data.companyId)
+        && request.resource.data.get('userUid', null) == currentUid()
+        && request.resource.data.get('status', null) == 'active'
+        && request.resource.data.get('role', null) in ['owner', 'director', 'admin'];
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && userId == currentUid();
       allow create: if signedIn()
@@ -269,7 +285,10 @@ service cloud.firestore {
       allow create: if signedIn()
         && auditCreateFieldsAreSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
-        && canManageCompany(request.resource.data.companyId)
+        && (
+          canManageCompany(request.resource.data.companyId)
+          || canCreateInitialOwnerMembership()
+        )
         && request.resource.data.get('status', null) in ['active', 'pending', 'archived']
         && request.resource.data.get('role', null) in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado'];
 
@@ -298,12 +317,12 @@ service cloud.firestore {
     }
 
     match /aiUsage/{id} {
-      allow read: if signedIn();
+      allow read: if canReadTenantResource();
       allow create, update, delete: if false;
     }
 
     match /aiBudgets/{id} {
-      allow read: if signedIn();
+      allow read: if canReadTenantResource();
       allow create: if canCreateAiBudget();
       allow update: if canUpdateAiBudget();
       allow delete: if false;
