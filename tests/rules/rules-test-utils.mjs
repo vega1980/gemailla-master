@@ -92,6 +92,25 @@ export async function firestoreSet(path, data, auth = 'owner') {
   return response;
 }
 
+export async function firestoreCommitSet(writes, auth = 'owner') {
+  const response = await fetch(`${firestoreBase}:commit`, {
+    method: 'POST',
+    headers: auth === 'owner'
+      ? ownerHeaders({ 'Content-Type': 'application/json' })
+      : authHeaders(auth, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      writes: writes.map(({ path, data }) => ({
+        update: {
+          name: `projects/${PROJECT_ID}/databases/(default)/documents/${path}`,
+          fields: firestoreFields(data),
+        },
+      })),
+    }),
+  });
+
+  return response;
+}
+
 export async function firestoreGet(path, auth) {
   return fetch(`${firestoreBase}/${path}`, {
     headers: authHeaders(auth),

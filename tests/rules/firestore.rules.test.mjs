@@ -3,6 +3,7 @@ import {
   assertAllowed,
   assertDenied,
   clearFirestore,
+  firestoreCommitSet,
   firestoreDelete,
   firestoreGet,
   firestorePatch,
@@ -80,6 +81,34 @@ describe('Firestore security rules', () => {
   beforeEach(async () => {
     await clearFirestore();
     await seedFirestoreAcl();
+  });
+
+  it('allows a signed-in user without company claims to create a company with their initial owner membership atomically', async () => {
+    const newOwner = { uid: 'new-owner-uid', claims: { email: 'new-owner@gemailla.test', email_verified: true } };
+    const newCompanyId = 'new-company-bootstrap';
+
+    await assertAllowed(firestoreCommitSet([
+      {
+        path: `companies/${newCompanyId}`,
+        data: {
+          name: 'Empresa bootstrap',
+          ownerUid: newOwner.uid,
+          status: 'active',
+          createdBy: newOwner.uid,
+        },
+      },
+      {
+        path: `companyMembers/${newCompanyId}_${newOwner.uid}`,
+        data: {
+          companyId: newCompanyId,
+          userUid: newOwner.uid,
+          userEmail: newOwner.claims.email,
+          role: 'director',
+          status: 'active',
+          createdBy: newOwner.uid,
+        },
+      },
+    ], newOwner), 'initial company and owner membership bootstrap');
   });
 
   it('allows the active owner to read and write their company without changing ownerUid', async () => {

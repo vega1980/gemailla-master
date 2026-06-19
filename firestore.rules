@@ -93,6 +93,18 @@ service cloud.firestore {
           || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']));
     }
 
+    function canCreateInitialOwnerMembership(memberId) {
+      let companyId = request.resource.data.companyId;
+      return signedIn()
+        && hasCompanyId(request.resource.data)
+        && memberId == membershipId(companyId)
+        && request.resource.data.get('userUid', null) == currentUid()
+        && request.resource.data.get('status', null) == 'active'
+        && request.resource.data.get('role', null) in ['owner', 'director']
+        && existsAfter(/databases/$(database)/documents/companies/$(companyId))
+        && getAfter(/databases/$(database)/documents/companies/$(companyId)).data.ownerUid == currentUid();
+    }
+
 
     function auditCreateFieldsAreSafe(data) {
       return (!hasField(data, 'createdAt') || data.createdAt is string)
@@ -269,7 +281,7 @@ service cloud.firestore {
       allow create: if signedIn()
         && auditCreateFieldsAreSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
-        && canManageCompany(request.resource.data.companyId)
+        && (canManageCompany(request.resource.data.companyId) || canCreateInitialOwnerMembership(memberId))
         && request.resource.data.get('status', null) in ['active', 'pending', 'archived']
         && request.resource.data.get('role', null) in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado'];
 
