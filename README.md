@@ -185,6 +185,25 @@ datos %>%
 
 Reserva `%>%` para casos en los que necesites semánticas propias de `magrittr`, como placeholders avanzados o compatibilidad con código heredado que ya dependa de ese paquete.
 
+### Crear errores informativos en R
+
+Cuando un script de R deba detenerse por una condición inválida, evita mensajes genéricos como `stop("error")`. Usa `cli::cli_abort()` con un mensaje principal claro y viñetas informativas para explicar cómo corregir el problema.
+
+```r
+# Evita
+stop("error")
+
+# Prefiere
+cli::cli_abort(
+  c(
+    "El archivo no existe.",
+    "i" = "Verifique la ruta proporcionada."
+  )
+)
+```
+
+Este formato hace que los errores sean accionables: la primera línea describe qué falló y las líneas con prefijos de `cli` (`"i"`, `"x"`, `"!"` o `"*"`) añaden contexto, causa probable o siguiente paso.
+
 ### Evitar variables globales en R
 
 No cargues datos en variables globales que luego sean usadas implícitamente por varias funciones. Cada función debe recibir de forma explícita los datos que necesita mediante argumentos, para que el análisis sea testeable, reproducible y fácil de reutilizar con otros conjuntos de datos.
