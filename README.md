@@ -132,6 +132,24 @@ Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint
 
 Antes de añadir nuevos módulos al roadmap, la próxima iteración debe dedicarse exclusivamente a estabilización: reglas Firestore/Storage, Emulator Suite, deploy de staging, Lighthouse móvil, Playwright E2E para Auth/Multiempresa/Documentos/IA, monitoreo/alertas y revisión de costos. Ver `docs/ITERACION_ESTABILIZACION.md`.
 
+## Estilo de nombres
+
+Evita nombres ambiguos para variables, parámetros y resultados intermedios. Nombres como `x`, `y`, `tmp`, `data` o `df2` obligan a leer el contexto completo para entender qué representan y dificultan revisar cambios, depurar errores y reutilizar funciones.
+
+Prefiere nombres descriptivos del dominio y de la intención del dato:
+
+```js
+// Evita
+const data = calcularResumen(transacciones);
+const tmp = filtrarActivos(data);
+
+// Prefiere
+const resumenFinanciero = calcularResumen(transacciones);
+const clientesActivos = filtrarActivos(resumenFinanciero);
+```
+
+En análisis o reportes, usa nombres como `ventasMensuales`, `clientesActivos`, `predicciones`, `transaccionesFiltradas` o `resumenPorCategoria`. El linter emite advertencias cuando detecta identificadores ambiguos comunes para reforzar esta convención sin bloquear correcciones heredadas.
+
 ## Pruebas E2E críticas
 
 La suite Playwright cubre los flujos integrados de mayor riesgo: Auth, cambio de empresa, reglas Firebase, Storage, contrato `/api/ai`, restricciones por rol y cierre de sesión. Ver `docs/E2E_PLAYWRIGHT.md`.
