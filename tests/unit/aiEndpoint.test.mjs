@@ -431,6 +431,8 @@ describe('endpoint IA', () => {
     assert.equal(usageDocs[0].reservedTokens, 0);
     assert.equal(usageDocs[0].reservedBudgetUsd, 0);
     assert.equal(usageDocs[0].failedRequestCount, 1);
+    assert.equal(usageDocs[0].tokensUsed, 0);
+    assert.equal(usageDocs[0].budgetUsedUsd, 0);
   });
 
   it('incrementa failedRequestCount cuando el proveedor colapsa después de reservar', async () => {
@@ -452,6 +454,33 @@ describe('endpoint IA', () => {
     assert.equal(usageDocs[0].reservedTokens, 0);
     assert.equal(usageDocs[0].reservedBudgetUsd, 0);
     assert.equal(usageDocs[0].failedRequestCount, 1);
+    assert.equal(usageDocs[0].tokensUsed, 0);
+    assert.equal(usageDocs[0].budgetUsedUsd, 0);
+  });
+
+  it('devuelve una reserva extendida antes de llamar al proveedor', async () => {
+    const store = seedBase();
+    const enforceAiLimits = await loadAiEndpoint({
+      store,
+      verifyIdToken: async () => ({ uid: 'owner-uid' }),
+      fetchImpl: async () => ({ ok: true, status: 200, async json() { return { output_text: 'ok' }; } }),
+      exportName: 'enforceAiLimits',
+    });
+
+    const reservation = await enforceAiLimits({
+      user: { uid: 'owner-uid' },
+      authorization: { companyId: 'validCompany' },
+      prompt: 'Hola',
+      correlationId: 'reservation-contract',
+      now: new Date('2026-06-19T00:00:00.000Z'),
+    });
+
+    assert.equal(reservation.usageDocId, '2026-06-19_validCompany');
+    assert.equal(reservation.rateDocId, 'validCompany_owner-uid');
+    assert.equal(reservation.estimatedTokens, 1201);
+    assert.equal(reservation.estimatedCostUsd, 0.002402);
+    assert.equal(reservation.reservedAtMs, 1781827200000);
+    assert.equal(reservation.reservationStatus, 'reserved');
   });
 
   it('bloquea por rate limiting antes de llamar a OpenAI', async () => {

@@ -213,8 +213,8 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, now
     transaction.set(usageRef, {
       companyId: authorization.companyId,
       dateKey: getUtcDateKey(now),
-      reservedTokens: nextTokens,
-      reservedBudgetUsd: Number(nextBudgetUsd.toFixed(8)),
+      reservedTokens: Math.max(0, toCounterNumber(usageData.reservedTokens) + estimatedTokens),
+      reservedBudgetUsd: Number(Math.max(0, toCounterNumber(usageData.reservedBudgetUsd) + estimatedCostUsd).toFixed(8)),
       requestCount: toCounterNumber(usageData.requestCount) + 1,
       updatedAtMs: nowMs,
     }, { merge: true });
