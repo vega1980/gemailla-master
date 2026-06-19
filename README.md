@@ -167,6 +167,35 @@ datos %>%
 
 Reserva `%>%` para casos en los que necesites semánticas propias de `magrittr`, como placeholders avanzados o compatibilidad con código heredado que ya dependa de ese paquete.
 
+### Evitar variables globales en R
+
+No cargues datos en variables globales que luego sean usadas implícitamente por varias funciones. Cada función debe recibir de forma explícita los datos que necesita mediante argumentos, para que el análisis sea testeable, reproducible y fácil de reutilizar con otros conjuntos de datos.
+
+Evita este patrón:
+
+```r
+clientes <- readr::read_csv(here::here("data", "clientes.csv"))
+
+analizar_clientes <- function() {
+  clientes |>
+    dplyr::filter(activo)
+}
+```
+
+Prefiere pasar los datos como parámetro:
+
+```r
+analizar_clientes <- function(clientes) {
+  clientes |>
+    dplyr::filter(activo)
+}
+
+clientes <- readr::read_csv(here::here("data", "clientes.csv"))
+resultado <- analizar_clientes(clientes)
+```
+
+Si un script necesita leer archivos, separa la importación de la transformación: una función puede encargarse de cargar datos y otra de analizarlos, pero las funciones de análisis no deben depender de objetos definidos fuera de su firma.
+
 ### Organización de scripts R
 
 Aplica el criterio **un archivo = una responsabilidad** para que cada script tenga un propósito claro y sea fácil de mantener. Usa nombres descriptivos que indiquen la etapa del flujo de análisis o el resultado que produce.
