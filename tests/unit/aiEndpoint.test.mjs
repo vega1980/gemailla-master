@@ -325,6 +325,13 @@ describe('endpoint IA', () => {
     assert.equal(res.payload.tokens, 18);
     assert.equal(res.payload.costo, 0.000036);
 
+    const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
+    assert.equal(usageDocs.length, 1);
+    assert.equal(usageDocs[0].tokensUsed, 18);
+    assert.equal(usageDocs[0].completedRequestCount, 1);
+    assert.equal(usageDocs[0].reservedTokens, 0);
+    assert.equal(usageDocs[0].reservedBudgetUsd, 0);
+
     const costLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiCostLogs/')).map(([, value]) => value);
     assert.equal(costLogs.length, 1);
     assert.equal(costLogs[0].tokens, 18);
@@ -332,6 +339,53 @@ describe('endpoint IA', () => {
     assert.equal(costLogs[0].costo, 0.000036);
     assert.equal(costLogs[0].integration, 'ellmer');
     assert.match(costLogs[0].timestamp, /^\d{4}-\d{2}-\d{2}T/);
+  });
+
+
+  it('revierte la reserva cuando OpenAI devuelve 502', async () => {
+    const store = seedBase();
+
+    const res = await exercise({
+      store,
+      body: { companyId: 'validCompany', prompt: 'Hola' },
+      fetchImpl: async () => ({
+        ok: false,
+        status: 502,
+        async json() {
+          return { error: { message: 'Bad gateway upstream' } };
+        },
+      }),
+    });
+
+    assert.equal(res.statusCode, 502);
+    assert.match(res.payload.error, /Bad gateway upstream/);
+
+    const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
+    assert.equal(usageDocs.length, 1);
+    assert.equal(usageDocs[0].reservedTokens, 0);
+    assert.equal(usageDocs[0].reservedBudgetUsd, 0);
+    assert.equal(usageDocs[0].failedRequestCount, 1);
+  });
+
+  it('incrementa failedRequestCount cuando el proveedor colapsa después de reservar', async () => {
+    const store = seedBase();
+
+    const res = await exercise({
+      store,
+      body: { companyId: 'validCompany', prompt: 'Hola' },
+      fetchImpl: async () => {
+        throw new Error('network collapse after reservation');
+      },
+    });
+
+    assert.equal(res.statusCode, 500);
+    assert.match(res.payload.error, /network collapse after reservation/);
+
+    const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
+    assert.equal(usageDocs.length, 1);
+    assert.equal(usageDocs[0].reservedTokens, 0);
+    assert.equal(usageDocs[0].reservedBudgetUsd, 0);
+    assert.equal(usageDocs[0].failedRequestCount, 1);
   });
 
   it('bloquea por rate limiting antes de llamar a OpenAI', async () => {
