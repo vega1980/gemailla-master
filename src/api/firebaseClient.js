@@ -71,7 +71,7 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
   };
 }
 
-async function invokeLLM(params = {}) {
+export async function invokeLLM(params = {}) {
   const correlationId = ensureCorrelationId(params.correlationId, 'ai');
   const companyId = typeof params.companyId === 'string' ? params.companyId.trim() : '';
   if (!companyId) throw new Error('companyId es obligatorio para usar IA.');

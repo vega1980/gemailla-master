@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, TrendingDown, Loader2, Sparkles, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 
+import { askLLM } from '@/modules/ai/aiService';
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
 export default function StockAlerts({ transactions, monthlyData }) {
@@ -33,7 +33,7 @@ export default function StockAlerts({ transactions, monthlyData }) {
 
   const getAIAlerts = async () => {
     setLoading(true);
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: `Eres un CFO experto. Analiza los datos financieros y genera alertas críticas para el negocio.
 

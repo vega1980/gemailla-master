@@ -12,6 +12,7 @@ import { Plus, Users, Search, Pencil, Trash2, Loader2, Sparkles, Phone, Mail, Bu
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
+import { askLLM } from '@/modules/ai/aiService';
 const segmentConfig = {
   premium:    { label: 'Premium',    color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
   recurrente: { label: 'Recurrente', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
@@ -59,7 +60,7 @@ export default function ClientDirectory({ company }) {
     setAiResult('');
     setAiLoading(true);
     const clientInteractions = interactions.filter(i => i.clientId === client.id);
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: `Eres un consultor de CRM experto en PyMEs mexicanas. Analiza al cliente "${client.name}" de la empresa "${company.name}" y genera una estrategia personalizada.
 

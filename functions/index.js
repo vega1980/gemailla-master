@@ -5,6 +5,7 @@ const { defineSecret } = require('firebase-functions/params');
 admin.initializeApp();
 
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
+const DEFAULT_LLM_PROVIDER = 'openai';
 const DEFAULT_MODEL = 'gpt-4o-mini';
 const MAX_PROMPT_LENGTH = 12000;
 const RELEASE_METADATA = Object.freeze({
@@ -400,7 +401,15 @@ function extractOutputText(payload = {}) {
   return chunks.join('\n').trim();
 }
 
-async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }) {
+function getLlmProvider() {
+  return String(process.env.LLM_PROVIDER || DEFAULT_LLM_PROVIDER).trim().toLowerCase();
+}
+
+function getLlmModel(provider = getLlmProvider()) {
+  return process.env.LLM_MODEL || process.env.OPENAI_MODEL || (provider === 'openai' ? DEFAULT_MODEL : 'default');
+}
+
+async function callOpenAIProvider({ apiKey, prompt, user, authorization, correlationId, model }) {
   const startedAt = Date.now();
   const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -410,7 +419,7 @@ async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }
       'X-Correlation-Id': correlationId,
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+      model,
       input: [
         {
           role: 'system',
@@ -444,7 +453,7 @@ async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }
       latencyMs,
       message: payload?.error?.message || payload?.message || 'OpenAI error',
     });
-    const message = payload?.error?.message || payload?.message || `OpenAI respondió HTTP ${response.status}.`;
+    const message = payload?.error?.message || payload?.message || `El proveedor LLM respondió HTTP ${response.status}.`;
     const error = new Error(message);
     error.status = response.status >= 500 ? 502 : response.status;
     throw error;
@@ -452,7 +461,7 @@ async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }
 
   const outputText = extractOutputText(payload);
   if (!outputText) {
-    const error = new Error('OpenAI no devolvió texto utilizable.');
+    const error = new Error('El proveedor LLM no devolvió texto utilizable.');
     error.status = 502;
     throw error;
   }
@@ -462,10 +471,30 @@ async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }
     firebaseUid: user.uid || 'unknown',
     status: response.status,
     latencyMs,
-    model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+    model,
   });
 
-  return { outputText, latencyMs };
+  return { outputText, latencyMs, provider: 'openai', model };
+}
+
+async function askLLM({ prompt, user, authorization, correlationId }) {
+  const provider = getLlmProvider();
+  const model = getLlmModel(provider);
+
+  if (provider !== 'openai') {
+    const error = new Error(`Proveedor LLM no soportado: ${provider}. Configura LLM_PROVIDER=openai o agrega un adaptador en askLLM.`);
+    error.status = 501;
+    throw error;
+  }
+
+  const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    const error = new Error('Backend IA no configurado: falta OPENAI_API_KEY en Firebase Functions.');
+    error.status = 503;
+    throw error;
+  }
+
+  return callOpenAIProvider({ apiKey, prompt, user, authorization, correlationId, model });
 }
 
 async function aiHandler(req, res) {
@@ -505,21 +534,12 @@ async function aiHandler(req, res) {
   try {
     enforceAllowedOrigin(req);
 
-    const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      structuredLog('ERROR', 'ai_backend_not_configured', { correlationId, status: 503 });
-      res.status(503).json({
-        error: 'Backend IA no configurado: falta OPENAI_API_KEY en Firebase Functions.',
-        correlationId,
-        release: RELEASE_METADATA,
-      });
-      return;
-    }
-
     const user = await verifyFirebaseUser(req);
     const prompt = getPrompt(req.body);
     authorization = await authorizeAiRequest({ user, body: req.body || {} });
     const limitReservation = await enforceAiLimits({ user, authorization, prompt, correlationId });
+    const providerName = getLlmProvider();
+    const modelName = getLlmModel(providerName);
     structuredLog('INFO', 'ai_request_started', {
       correlationId,
       firebaseUid: user.uid || 'unknown',
@@ -527,16 +547,18 @@ async function aiHandler(req, res) {
       role: authorization.role,
       requestedDocumentCount: authorization.documents.length,
       promptLength: prompt.length,
-      model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+      provider: providerName,
+      model: modelName,
       estimatedTokens: limitReservation.estimatedTokens,
       estimatedCostUsd: Number(limitReservation.estimatedCostUsd.toFixed(8)),
     });
 
-    const { outputText } = await callOpenAI({ apiKey, prompt, user, authorization, correlationId });
+    const { outputText, provider, model } = await askLLM({ prompt, user, authorization, correlationId });
 
     res.status(200).json({
       response: outputText,
-      model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+      provider,
+      model,
       status: 'completed',
       correlationId,
       ...(authorization?.companyId ? { companyId: authorization.companyId } : {}),

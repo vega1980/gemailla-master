@@ -12,6 +12,7 @@ import { Plus, DollarSign, Loader2, Pencil, Trash2, CheckCircle, Clock, Sparkles
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
+import { askLLM } from '@/modules/ai/aiService';
 const statusConfig = {
   pendiente: { label: 'Pendiente', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: Clock },
   aprobado:  { label: 'Aprobado',  color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',    icon: CheckCircle },
@@ -137,7 +138,7 @@ export default function PayrollManager({ company }) {
   const getAI = async () => {
     setAiLoading(true);
     setAiInsight('');
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: `Eres experto en nóminas y RRHH para PyMEs mexicanas. Analiza la nómina de "${company.name}".
 Empleados activos: ${employees.filter(e => e.status === 'activo').length}

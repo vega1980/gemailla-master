@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { useCompanyCrmClients, useCompanyCrmDeals, useCompanyCrmInteractions } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, PieChart } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 
+import { askLLM } from '@/modules/ai/aiService';
 const SEGMENT_COLORS = {
   premium: '#f59e0b', recurrente: '#3b82f6', nuevo: '#10b981', inactivo: '#6b7280', prospecto: '#8b5cf6',
 };
@@ -54,7 +54,7 @@ export default function ClientSegments({ company }) {
       revenue: c.total_revenue || 0, interactions: intByClient[c.id] || 0,
     }));
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: `Eres un experto en CRM y segmentación de mercado para PyMEs mexicanas.
 

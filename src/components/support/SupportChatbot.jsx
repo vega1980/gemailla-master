@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { askLLM } from '@/modules/ai/aiService';
 const ticketStatusConfig = {
   abierto:     { label: 'Abierto',     color: 'bg-blue-500/15 text-blue-400' },
   en_proceso:  { label: 'En proceso',  color: 'bg-amber-500/15 text-amber-400' },
@@ -72,7 +73,7 @@ export default function SupportChatbot({ company }) {
 
     const history = newMessages.slice(-6).map(m => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`).join('\n');
 
-    const response = await firebase.integrations.Core.InvokeLLM({
+    const response = await askLLM({
       companyId: company.id,
       prompt: `Eres el asistente virtual de GEMAILLA AI para la empresa "${company.name}". Eres un experto en contabilidad, finanzas, fiscal y operaciones para PyMEs mexicanas. Responde de forma clara, directa y útil. Si no sabes algo específico, guía al usuario a consultar con un especialista.
 

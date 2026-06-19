@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { askLLM } from '@/modules/ai/aiService';
 const trendIcon = { positiva: TrendingUp, negativa: TrendingDown, estable: Minus };
 const trendColor = { positiva: 'text-green-400', negativa: 'text-red-400', estable: 'text-yellow-400' };
 
@@ -31,7 +31,7 @@ export default function DemandForecast({ transactions, monthlyData }) {
     const monthlySummary = monthlyData.map(d => ({ month: d.month, ingresos: d.ingresos, gastos: d.gastos }));
     const next6 = [1, 2, 3, 4, 5, 6].map(i => format(addMonths(startOfMonth(new Date()), i), 'MMM yy', { locale: es }));
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: `Eres un experto en forecasting de ventas. Analiza los datos históricos mensuales y genera un pronóstico para los próximos 6 meses.
 
