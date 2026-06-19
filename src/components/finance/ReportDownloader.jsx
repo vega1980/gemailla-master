@@ -85,7 +85,7 @@ export default function ReportDownloader({ transactions, company }) {
         doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.getWidth() / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
       }
 
-      doc.save(`Reporte_${company.name}_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`Reporte_${company.name}_${new Date().toISOString().slice(0, 10)}.pdf`);
       toast.success('PDF descargado exitosamente');
     } catch (error) {
       toast.error('Error al descargar PDF');
@@ -132,7 +132,7 @@ export default function ReportDownloader({ transactions, company }) {
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.setAttribute('href', url);
-      link.setAttribute('download', `Reporte_${company.name}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute('download', `Reporte_${company.name}_${new Date().toISOString().slice(0, 10)}.csv`);
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
       link.click();

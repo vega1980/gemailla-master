@@ -32,7 +32,7 @@ const avgScore = (r) => {
 };
 
 const EMPTY = {
-  employeeId: '', employeeName: '', reviewer: '', period: '', reviewDate: new Date().toISOString().split('T')[0],
+  employeeId: '', employeeName: '', reviewer: '', period: '', reviewDate: new Date().toISOString().slice(0, 10),
   score_productivity: '7', score_quality: '7', score_teamwork: '7', score_punctuality: '7', score_leadership: '7',
   strengths: '', areas_improvement: '', goals_next_period: '',
   overallRating: 'satisfactorio', salary_adjustment: '0', notes: '',

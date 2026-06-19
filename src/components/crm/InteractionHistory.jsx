@@ -25,7 +25,7 @@ const typeConfig = {
   otro:        { label: 'Otro',        icon: MessageSquare,  color: 'bg-secondary text-muted-foreground border-border' },
 };
 
-const EMPTY = { clientId: '', type: 'llamada', date: new Date().toISOString().split('T')[0], summary: '', outcome: '' };
+const EMPTY = { clientId: '', type: 'llamada', date: new Date().toISOString().slice(0, 10), summary: '', outcome: '' };
 
 export default function InteractionHistory({ company }) {
   const qc = useQueryClient();
