@@ -30,7 +30,7 @@ describe('observability policy', () => {
       fileName: 'estado-cuenta-enero.pdf',
       downloadUrl: 'https://storage.example.com/signed-url',
       message: 'usuario cliente@example.com usó bearer abcdefghijklmnopqrstuvwxyz',
-      nested: { apiKey: 'sk-12345678901234567890' },
+      nested: { apiKey: 'sensitive-api-key-placeholder' },
     });
 
     assert.equal(sanitized.email, '[REDACTED]');
