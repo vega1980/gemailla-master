@@ -142,6 +142,14 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, now
   const rateRef = db.collection('aiRateLimits').doc(rateDocId);
   const usageRef = db.collection('aiUsage').doc(usageDocId);
   const nowMs = now.getTime();
+  const reservation = {
+    usageDocId,
+    rateDocId,
+    estimatedTokens,
+    estimatedCostUsd,
+    reservedAtMs: nowMs,
+    reservationStatus: 'reserved',
+  };
 
   await db.runTransaction(async (transaction) => {
     const rateSnap = await transaction.get(rateRef);
@@ -165,8 +173,8 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, now
 
     const usageSnap = await transaction.get(usageRef);
     const usageData = usageSnap.exists ? (usageSnap.data() || {}) : {};
-    const usedTokens = toCounterNumber(usageData.reservedTokens || usageData.tokensUsed);
-    const usedBudgetUsd = toCounterNumber(usageData.reservedBudgetUsd || usageData.budgetUsedUsd);
+    const usedTokens = toCounterNumber(usageData.reservedTokens) + toCounterNumber(usageData.tokensUsed);
+    const usedBudgetUsd = toCounterNumber(usageData.reservedBudgetUsd) + toCounterNumber(usageData.budgetUsedUsd);
     const nextTokens = usedTokens + estimatedTokens;
     const nextBudgetUsd = usedBudgetUsd + estimatedCostUsd;
 
@@ -212,7 +220,93 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, now
     }, { merge: true });
   });
 
-  return { estimatedTokens, estimatedCostUsd };
+  return reservation;
+}
+
+function calculateActualAiUsage({ status, usage, estimatedTokens }) {
+  if (status === 'failed' && !usage) {
+    return { actualTokens: 0, actualCostUsd: 0 };
+  }
+
+  const hasUsage = usage && typeof usage === 'object';
+  let actualTokens = 0;
+
+  if (hasUsage && usage.total_tokens !== undefined && usage.total_tokens !== null) {
+    actualTokens = toCounterNumber(usage.total_tokens);
+  } else if (hasUsage && (usage.input_tokens !== undefined || usage.output_tokens !== undefined || usage.prompt_tokens !== undefined || usage.completion_tokens !== undefined)) {
+    actualTokens = toCounterNumber(usage.input_tokens || usage.prompt_tokens) + toCounterNumber(usage.output_tokens || usage.completion_tokens);
+  } else if (status === 'completed') {
+    actualTokens = toCounterNumber(estimatedTokens);
+  }
+
+  actualTokens = Math.max(0, actualTokens);
+  return { actualTokens, actualCostUsd: calculateCostUsd(actualTokens) };
+}
+
+async function reconcileAiReservation({ user, authorization, reservation, status, usage, provider, model, correlationId }) {
+  if (!reservation?.usageDocId) {
+    const error = new Error('No se puede reconciliar una reserva IA sin usageDocId.');
+    error.status = 500;
+    throw error;
+  }
+
+  if (status !== 'completed' && status !== 'failed') {
+    const error = new Error('Estado de reconciliación IA inválido.');
+    error.status = 500;
+    throw error;
+  }
+
+  const db = admin.firestore();
+  const usageRef = db.collection('aiUsage').doc(reservation.usageDocId);
+  const estimatedTokens = toCounterNumber(reservation.estimatedTokens);
+  const estimatedCostUsd = toCounterNumber(reservation.estimatedCostUsd);
+  const { actualTokens, actualCostUsd } = calculateActualAiUsage({ status, usage, estimatedTokens });
+  const nowMs = Date.now();
+
+  await db.runTransaction(async (transaction) => {
+    const usageSnap = await transaction.get(usageRef);
+    const usageData = usageSnap.exists ? (usageSnap.data() || {}) : {};
+    const baseUpdate = {
+      companyId: authorization.companyId,
+      userUid: user.uid || 'unknown',
+      reservedTokens: Math.max(0, toCounterNumber(usageData.reservedTokens) - estimatedTokens),
+      reservedBudgetUsd: Number(Math.max(0, toCounterNumber(usageData.reservedBudgetUsd) - estimatedCostUsd).toFixed(8)),
+      provider,
+      model,
+      lastCorrelationId: correlationId,
+      updatedAtMs: nowMs,
+    };
+
+    if (status === 'completed') {
+      transaction.set(usageRef, {
+        ...baseUpdate,
+        tokensUsed: Math.max(0, toCounterNumber(usageData.tokensUsed)) + actualTokens,
+        budgetUsedUsd: Number((Math.max(0, toCounterNumber(usageData.budgetUsedUsd)) + actualCostUsd).toFixed(8)),
+        completedRequestCount: toCounterNumber(usageData.completedRequestCount) + 1,
+      }, { merge: true });
+      return;
+    }
+
+    transaction.set(usageRef, {
+      ...baseUpdate,
+      tokensUsed: Math.max(0, toCounterNumber(usageData.tokensUsed)),
+      budgetUsedUsd: Number(Math.max(0, toCounterNumber(usageData.budgetUsedUsd)).toFixed(8)),
+      failedRequestCount: toCounterNumber(usageData.failedRequestCount) + 1,
+    }, { merge: true });
+  });
+
+  structuredLog('INFO', 'ai_reservation_reconciled', {
+    correlationId,
+    companyId: authorization.companyId,
+    firebaseUid: user.uid || 'unknown',
+    status,
+    usageDocId: reservation.usageDocId,
+    estimatedTokens,
+    actualTokens,
+    actualCostUsd,
+  });
+
+  return { tokens: actualTokens, costUsd: actualCostUsd, costo: actualCostUsd };
 }
 
 function createCorrelationId(prefix = 'srv') {
@@ -588,16 +682,20 @@ async function aiHandler(req, res) {
   }
 
   let authorization = null;
+  let user = null;
+  let reservation = null;
+  let providerName = null;
+  let modelName = null;
 
   try {
     enforceAllowedOrigin(req);
 
-    const user = await verifyFirebaseUser(req);
+    user = await verifyFirebaseUser(req);
     const prompt = getPrompt(req.body);
     authorization = await authorizeAiRequest({ user, body: req.body || {} });
-    const limitReservation = await enforceAiLimits({ user, authorization, prompt, correlationId });
-    const providerName = getLlmProvider();
-    const modelName = getLlmModel(providerName);
+    reservation = await enforceAiLimits({ user, authorization, prompt, correlationId });
+    providerName = getLlmProvider();
+    modelName = getLlmModel(providerName);
     structuredLog('INFO', 'ai_request_started', {
       correlationId,
       firebaseUid: user.uid || 'unknown',
@@ -607,11 +705,22 @@ async function aiHandler(req, res) {
       promptLength: prompt.length,
       provider: providerName,
       model: modelName,
-      estimatedTokens: limitReservation.estimatedTokens,
-      estimatedCostUsd: Number(limitReservation.estimatedCostUsd.toFixed(8)),
+      estimatedTokens: reservation.estimatedTokens,
+      estimatedCostUsd: Number(reservation.estimatedCostUsd.toFixed(8)),
     });
 
     const { outputText, provider, model, usage } = await askLLM({ prompt, user, authorization, correlationId });
+
+    const reconciliation = await reconcileAiReservation({
+      user,
+      authorization,
+      reservation,
+      status: 'completed',
+      usage,
+      provider,
+      model,
+      correlationId,
+    });
 
     const costLog = await writeAiCostLog({
       user,
@@ -621,17 +730,17 @@ async function aiHandler(req, res) {
       provider,
       model,
       usage,
-      estimatedTokens: limitReservation.estimatedTokens,
-      estimatedCostUsd: limitReservation.estimatedCostUsd,
+      estimatedTokens: reservation.estimatedTokens,
+      estimatedCostUsd: reservation.estimatedCostUsd,
     });
 
     res.status(200).json({
       response: outputText,
       provider,
       model,
-      tokens: costLog.tokens,
-      costo: costLog.costo,
-      costUsd: costLog.costUsd,
+      tokens: reconciliation.tokens,
+      costo: reconciliation.costo,
+      costUsd: reconciliation.costUsd,
       status: 'completed',
       correlationId,
       ...(authorization?.companyId ? { companyId: authorization.companyId } : {}),
@@ -647,6 +756,26 @@ async function aiHandler(req, res) {
     });
   } catch (error) {
     const status = Number(error.status) || 500;
+    if (reservation) {
+      try {
+        await reconcileAiReservation({
+          user: user || { uid: 'unknown' },
+          authorization,
+          reservation,
+          status: 'failed',
+          usage: null,
+          provider: providerName || getLlmProvider(),
+          model: modelName || getLlmModel(providerName || getLlmProvider()),
+          correlationId,
+        });
+      } catch (reconcileError) {
+        structuredLog('ERROR', 'ai_reservation_reconcile_failed', {
+          correlationId,
+          status: Number(reconcileError.status) || 500,
+          message: reconcileError.message || 'No se pudo reconciliar la reserva IA fallida.',
+        });
+      }
+    }
     structuredLog(status >= 500 ? 'ERROR' : 'WARNING', 'ai_request_failed', {
       correlationId,
       status,
@@ -674,4 +803,6 @@ exports._test = {
   getUsageTokens,
   calculateCostUsd,
   writeAiCostLog,
+  reconcileAiReservation,
+  calculateActualAiUsage,
 };
