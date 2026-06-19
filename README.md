@@ -147,6 +147,26 @@ datos <- read.csv(here::here("data", "archivo.csv"))
 
 Esto evita dependencias del equipo local de cada persona y mantiene los flujos de R portables entre desarrollo, CI y despliegue.
 
+### Estilo para pipelines en R
+
+En ejemplos, scripts o notebooks nuevos de R, prefiere el pipe nativo `|>` para cadenas de transformación con `dplyr` cuando no haga falta una característica específica de `magrittr`:
+
+```r
+datos |>
+  filter(activo) |>
+  mutate(total = precio * cantidad)
+```
+
+Evita usar `%>%` como opción por defecto:
+
+```r
+datos %>%
+  filter(activo) %>%
+  mutate(total = precio * cantidad)
+```
+
+Reserva `%>%` para casos en los que necesites semánticas propias de `magrittr`, como placeholders avanzados o compatibilidad con código heredado que ya dependa de ese paquete.
+
 ### Reproducibilidad con renv
 
 Para cualquier flujo serio en R, inicializa `renv` desde la raíz del repositorio antes de agregar dependencias o análisis compartidos:
