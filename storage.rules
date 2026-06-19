@@ -26,8 +26,11 @@ service firebase.storage {
 
     function documentExists(companyId, documentId) {
       return firestore.exists(
-        /databases/(default)/documents/companies/$(companyId)/documents/$(documentId)
-      );
+        /databases/(default)/documents/documents/$(documentId)
+      )
+      && firestore.get(
+        /databases/(default)/documents/documents/$(documentId)
+      ).data.companyId == companyId;
     }
 
     function hasRequiredUploadMetadata() {
