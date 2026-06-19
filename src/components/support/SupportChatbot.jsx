@@ -52,7 +52,7 @@ export default function SupportChatbot({ company }) {
   const createTicket = async (subject, description) => {
     await firebase.entities.SupportTicket.create({
       companyId: company.id, subject, description, category: 'consulta', status: 'resuelto', priority: 'media',
-      resolved_date: new Date().toISOString().split('T')[0],
+      resolved_date: new Date().toISOString().slice(0, 10),
     });
     qc.invalidateQueries({ queryKey: companyEntityQueryKey('supportTickets', company) });
   };

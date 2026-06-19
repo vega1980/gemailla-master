@@ -38,12 +38,22 @@ export default function ReportGenerator({ company, transactions = [], documents 
       const lightGray = [40, 40, 40];
       const white = [240, 235, 220];
 
+      const filledRect = (...args) => {
+        doc.rect(...args, null);
+        doc.fill();
+      };
+
+      const filledRoundedRect = (...args) => {
+        doc.roundedRect(...args, null);
+        doc.fill();
+      };
+
       // ─── Header Band ─────────────────────────────────────────────
       const drawHeader = () => {
         doc.setFillColor(...dark);
-        doc.rect(0, 0, pageW, 18, 'F');
+        filledRect(0, 0, pageW, 18);
         doc.setFillColor(...gold);
-        doc.rect(0, 16, pageW, 1.5, 'F');
+        filledRect(0, 16, pageW, 1.5);
         doc.setFontSize(8);
         doc.setTextColor(...gold);
         doc.setFont('helvetica', 'bold');
@@ -55,11 +65,11 @@ export default function ReportGenerator({ company, transactions = [], documents 
 
       // ─── Cover Page ───────────────────────────────────────────────
       doc.setFillColor(10, 10, 10);
-      doc.rect(0, 0, pageW, pageH, 'F');
+      filledRect(0, 0, pageW, pageH);
 
       // Gold accent bar
       doc.setFillColor(...gold);
-      doc.rect(0, 0, 4, pageH, 'F');
+      filledRect(0, 0, 4, pageH);
 
       // Title
       doc.setFont('helvetica', 'bold');
@@ -73,7 +83,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
 
       // Divider
       doc.setFillColor(...gold);
-      doc.rect(margin + 6, 114, 60, 0.5, 'F');
+      filledRect(margin + 6, 114, 60, 0.5);
 
       // Company block
       doc.setFontSize(14);
@@ -95,7 +105,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
       // ─── Page 2+: Main Report ─────────────────────────────────────
       doc.addPage();
       doc.setFillColor(12, 12, 12);
-      doc.rect(0, 0, pageW, pageH, 'F');
+      filledRect(0, 0, pageW, pageH);
       y = margin;
       drawHeader();
       y = 28;
@@ -104,7 +114,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
       const sectionTitle = (text) => {
         checkPageBreak(16);
         doc.setFillColor(...gold);
-        doc.rect(margin, y, 3, 7, 'F');
+        filledRect(margin, y, 3, 7);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(...gold);
@@ -131,7 +141,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
       kpis.forEach((kpi, i) => {
         const colX = margin + i * kpiColW;
         doc.setFillColor(...lightGray);
-        doc.roundedRect(colX, y, kpiColW - 3, 22, 2, 2, 'F');
+        filledRoundedRect(colX, y, kpiColW - 3, 22, 2, 2);
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...gold);
@@ -157,7 +167,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
       extra.forEach((item, i) => {
         const colX = margin + i * kpiColW;
         doc.setFillColor(25, 25, 25);
-        doc.roundedRect(colX, y, kpiColW - 3, 16, 2, 2, 'F');
+        filledRoundedRect(colX, y, kpiColW - 3, 16, 2, 2);
         doc.setFontSize(7);
         doc.setTextColor(...gray);
         doc.setFont('helvetica', 'normal');
@@ -179,7 +189,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
 
       // Table header
       doc.setFillColor(...lightGray);
-      doc.rect(margin, y, contentW, 8, 'F');
+      filledRect(margin, y, contentW, 8);
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...gold);
@@ -194,7 +204,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
         checkPageBreak(8);
         if (i % 2 === 0) {
           doc.setFillColor(22, 22, 22);
-          doc.rect(margin, y, contentW, 7.5, 'F');
+          filledRect(margin, y, contentW, 7.5);
         }
         const isIngreso = tx.type === 'ingreso';
         doc.setFontSize(7);
@@ -227,7 +237,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
       const catEntries = Object.entries(catMap).sort((a, b) => (b[1].ingreso + b[1].gasto) - (a[1].ingreso + a[1].gasto)).slice(0, 8);
 
       doc.setFillColor(...lightGray);
-      doc.rect(margin, y, contentW, 7, 'F');
+      filledRect(margin, y, contentW, 7);
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...gold);
@@ -238,7 +248,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
 
       catEntries.forEach(([cat, vals], i) => {
         checkPageBreak(7);
-        if (i % 2 === 0) { doc.setFillColor(22, 22, 22); doc.rect(margin, y, contentW, 6.5, 'F'); }
+        if (i % 2 === 0) { doc.setFillColor(22, 22, 22); filledRect(margin, y, contentW, 6.5); }
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...white);
@@ -257,7 +267,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
         sectionTitle('4. Flujo Mensual Histórico (6 meses)');
 
         doc.setFillColor(...lightGray);
-        doc.rect(margin, y, contentW, 7, 'F');
+        filledRect(margin, y, contentW, 7);
         doc.setFontSize(7.5);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...gold);
@@ -269,7 +279,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
 
         monthlyData.forEach((row, i) => {
           checkPageBreak(7);
-          if (i % 2 === 0) { doc.setFillColor(22, 22, 22); doc.rect(margin, y, contentW, 6.5, 'F'); }
+          if (i % 2 === 0) { doc.setFillColor(22, 22, 22); filledRect(margin, y, contentW, 6.5); }
           const bal = row.ingresos - row.gastos;
           doc.setFontSize(7.5);
           doc.setFont('helvetica', 'normal');
@@ -297,7 +307,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
         const tc = trendColors[prediction.trend] || gray;
         const tb = trendBg[prediction.trend] || [30, 30, 30];
         doc.setFillColor(...tb);
-        doc.roundedRect(margin, y, 55, 12, 2, 2, 'F');
+        filledRoundedRect(margin, y, 55, 12, 2, 2);
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...tc);
@@ -306,7 +316,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
 
         // Prediction table header
         doc.setFillColor(...lightGray);
-        doc.rect(margin, y, contentW, 7, 'F');
+        filledRect(margin, y, contentW, 7);
         doc.setFontSize(7.5);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...gold);
@@ -323,7 +333,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
           const bal = p.ingresos_pred - p.gastos_pred;
           projTotalIngresos += p.ingresos_pred;
           projTotalGastos += p.gastos_pred;
-          if (i % 2 === 0) { doc.setFillColor(22, 22, 22); doc.rect(margin, y, contentW, 7, 'F'); }
+          if (i % 2 === 0) { doc.setFillColor(22, 22, 22); filledRect(margin, y, contentW, 7); }
           doc.setFontSize(7.5);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...white);
@@ -341,7 +351,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
         checkPageBreak(10);
         const projBal = projTotalIngresos - projTotalGastos;
         doc.setFillColor(...lightGray);
-        doc.rect(margin, y, contentW, 9, 'F');
+        filledRect(margin, y, contentW, 9);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...gold);
@@ -360,9 +370,9 @@ export default function ReportGenerator({ company, transactions = [], documents 
           doc.setFillColor(20, 25, 20);
           const noteLines = doc.splitTextToSize(`Análisis IA: ${prediction.trend_note}`, contentW - 8);
           const noteH = noteLines.length * 4.5 + 10;
-          doc.roundedRect(margin, y, contentW, noteH, 2, 2, 'F');
+          filledRoundedRect(margin, y, contentW, noteH, 2, 2);
           doc.setFillColor(...gold);
-          doc.roundedRect(margin, y, 3, noteH, 2, 2, 'F');
+          filledRoundedRect(margin, y, 3, noteH, 2, 2);
           doc.setFontSize(7.5);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...white);
@@ -378,7 +388,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
 
         // Score box
         doc.setFillColor(...lightGray);
-        doc.roundedRect(margin, y, 50, 28, 3, 3, 'F');
+        filledRoundedRect(margin, y, 50, 28, 3, 3);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...gold);
@@ -409,7 +419,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
         auditKpis.forEach((k, i) => {
           const colX = margin + i * akW;
           doc.setFillColor(22, 22, 22);
-          doc.roundedRect(colX, y, akW - 3, 16, 2, 2, 'F');
+          filledRoundedRect(colX, y, akW - 3, 16, 2, 2);
           doc.setFontSize(7);
           doc.setFont('helvetica', 'bold');
           doc.setTextColor(...gold);
@@ -446,7 +456,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
             const bgCol = a.severity === 'high' ? [80, 20, 20] : a.severity === 'medium' ? [70, 55, 10] : [15, 30, 60];
             doc.setFillColor(...bgCol);
             const alertLines = doc.splitTextToSize(`• ${a.message}`, contentW - 6);
-            doc.roundedRect(margin, y, contentW, alertLines.length * 4.5 + 6, 1.5, 1.5, 'F');
+            filledRoundedRect(margin, y, contentW, alertLines.length * 4.5 + 6, 1.5, 1.5);
             doc.setFontSize(7.5);
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(...white);
@@ -468,9 +478,9 @@ export default function ReportGenerator({ company, transactions = [], documents 
             doc.setFillColor(20, 30, 20);
             const recLines = doc.splitTextToSize(r.description || '', contentW - 30);
             const boxH = recLines.length * 4.2 + 14;
-            doc.roundedRect(margin, y, contentW, boxH, 2, 2, 'F');
+            filledRoundedRect(margin, y, contentW, boxH, 2, 2);
             doc.setFillColor(...gold);
-            doc.roundedRect(margin, y, 3, boxH, 2, 2, 'F');
+            filledRoundedRect(margin, y, 3, boxH, 2, 2);
             doc.setFontSize(8);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(...white);
@@ -494,9 +504,9 @@ export default function ReportGenerator({ company, transactions = [], documents 
       for (let p = 2; p <= totalPages; p++) {
         doc.setPage(p);
         doc.setFillColor(10, 10, 10);
-        doc.rect(0, pageH - 12, pageW, 12, 'F');
+        filledRect(0, pageH - 12, pageW, 12);
         doc.setFillColor(...gold);
-        doc.rect(0, pageH - 12, pageW, 0.5, 'F');
+        filledRect(0, pageH - 12, pageW, 0.5);
         doc.setFontSize(7);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...gray);

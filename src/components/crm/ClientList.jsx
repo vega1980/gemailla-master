@@ -77,7 +77,7 @@ export default function ClientList({ company }) {
 
   const openNewClient = () => { setEditingClient(null); setForm(EMPTY_CLIENT); setOpenClient(true); };
   const openEditClient = (c) => { setEditingClient(c); setForm({ ...c }); setOpenClient(true); };
-  const openNewInt = (clientId) => { setActiveClientId(clientId); setIntForm({ ...EMPTY_INT, date: new Date().toISOString().split('T')[0] }); setOpenInt(true); };
+  const openNewInt = (clientId) => { setActiveClientId(clientId); setIntForm({ ...EMPTY_INT, date: new Date().toISOString().slice(0, 10) }); setOpenInt(true); };
   const toggleExpand = (id) => setExpanded(e => ({ ...e, [id]: !e[id] }));
 
   const totalRevenue = clients.reduce((s, c) => s + (c.total_revenue || 0), 0);
