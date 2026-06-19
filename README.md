@@ -147,6 +147,29 @@ datos <- read.csv(here::here("data", "archivo.csv"))
 
 Esto evita dependencias del equipo local de cada persona y mantiene los flujos de R portables entre desarrollo, CI y despliegue.
 
+### Reproducibilidad con renv
+
+Para cualquier flujo serio en R, inicializa `renv` desde la raíz del repositorio antes de agregar dependencias o análisis compartidos:
+
+```r
+install.packages("renv") # solo la primera vez en cada equipo
+renv::init()
+```
+
+`renv::init()` crea `renv.lock`, que debe versionarse para reproducir exactamente las versiones de paquetes usadas por el proyecto. Después de instalar, actualizar o eliminar paquetes R, registra el estado con:
+
+```r
+renv::snapshot()
+```
+
+Cuando otra persona clone el repositorio o cambie de rama, debe restaurar las versiones fijadas en el lockfile con:
+
+```r
+renv::restore()
+```
+
+No subas al repositorio la biblioteca local de paquetes de `renv`; solo se versionan los archivos de configuración y el `renv.lock`.
+
 ## Despliegue
 
 ```bash

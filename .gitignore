@@ -34,3 +34,10 @@ functions/.env.*.local
 # Runtime config generated per environment
 public/app-config.js
 test-results/
+
+# R / renv
+.Rhistory
+.RData
+.Ruserdata
+renv/library/
+renv/staging/
