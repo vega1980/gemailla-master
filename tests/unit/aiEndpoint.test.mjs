@@ -46,6 +46,10 @@ function createFirestore(store) {
       async get() {
         return new MockDocSnap(id, store.get(this.key));
       },
+      async set(value, options = {}) {
+        const previous = options.merge ? (store.get(this.key) || {}) : {};
+        store.set(this.key, { ...previous, ...structuredClone(value) });
+      },
     };
   }
 
@@ -301,12 +305,33 @@ describe('endpoint IA', () => {
     assert.match(res.payload.error, /no pertenece a la empresa validada/);
   });
 
-  it('responde 200 en el caso válido', async () => {
-    const res = await exercise({ body: { companyId: 'validCompany', prompt: 'Hola', documentIds: ['validDoc'] } });
+  it('responde 200 en el caso válido y registra costo de IA', async () => {
+    const store = seedBase();
+    const res = await exercise({
+      store,
+      body: { companyId: 'validCompany', prompt: 'Hola', documentIds: ['validDoc'], integration: 'ellmer' },
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return { output_text: 'Respuesta IA de prueba', usage: { input_tokens: 11, output_tokens: 7, total_tokens: 18 } };
+        },
+      }),
+    });
 
     assert.equal(res.statusCode, 200);
     assert.equal(res.payload.response, 'Respuesta IA de prueba');
     assert.equal(res.payload.companyId, 'validCompany');
+    assert.equal(res.payload.tokens, 18);
+    assert.equal(res.payload.costo, 0.000036);
+
+    const costLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiCostLogs/')).map(([, value]) => value);
+    assert.equal(costLogs.length, 1);
+    assert.equal(costLogs[0].tokens, 18);
+    assert.equal(costLogs[0].model, 'gpt-4o-mini');
+    assert.equal(costLogs[0].costo, 0.000036);
+    assert.equal(costLogs[0].integration, 'ellmer');
+    assert.match(costLogs[0].timestamp, /^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('bloquea por rate limiting antes de llamar a OpenAI', async () => {

@@ -141,7 +141,7 @@ export default function AIAssistant() {
       )));
     };
 
-    const saveConversation = async ({ response, status = 'completed', errorMessage = null, estimatedCostUsd = 0 }) => {
+    const saveConversation = async ({ response, status = 'completed', errorMessage = null, estimatedCostUsd = 0, usageLog = null }) => {
       await firebase.entities.AIConversation.create({
         companyId: activeCompany.id,
         userEmail: user?.email || '',
@@ -151,6 +151,7 @@ export default function AIAssistant() {
         filters_used: { docType: filterDocType },
         status,
         estimatedCostUsd,
+        ...(usageLog ? { tokens: usageLog.tokens, model: usageLog.model, costo: usageLog.costo, costUsd: usageLog.costUsd, costLogTimestamp: usageLog.costLogTimestamp } : {}),
         requiresSupervisorApproval: status === 'pendingApproval',
         errorMessage,
         documentIds: docIds,
@@ -205,7 +206,17 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
       const response = normalizeAIResponse(aiResponse);
       updateConversation(response);
 
-      await saveConversation({ response, estimatedCostUsd });
+      await saveConversation({
+        response,
+        estimatedCostUsd,
+        usageLog: {
+          tokens: aiResponse?.tokens,
+          model: aiResponse?.model,
+          costo: aiResponse?.costo,
+          costUsd: aiResponse?.costUsd,
+          costLogTimestamp: aiResponse?.costLogTimestamp,
+        },
+      });
 
       await logAction({
         companyId: activeCompany.id, userEmail: user?.email, userName: user?.fullName,
