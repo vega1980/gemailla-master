@@ -376,9 +376,11 @@ function getAllowedOrigins() {
 function applyCors(req, res) {
   const allowedOrigins = getAllowedOrigins();
   const requestOrigin = req.get('origin');
-  const allowedOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
 
-  res.set('Access-Control-Allow-Origin', allowedOrigin);
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    res.set('Access-Control-Allow-Origin', requestOrigin);
+  }
+
   res.set('Vary', 'Origin');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
