@@ -532,7 +532,7 @@ async function callOpenAIProvider({ apiKey, prompt, user, authorization, correla
     model,
   });
 
-  return { outputText, latencyMs, provider: 'openai', model };
+  return { outputText, latencyMs, provider: 'openai', model, usage: payload.usage || {} };
 }
 
 async function askLLM({ prompt, user, authorization, correlationId }) {
@@ -611,12 +611,27 @@ async function aiHandler(req, res) {
       estimatedCostUsd: Number(limitReservation.estimatedCostUsd.toFixed(8)),
     });
 
-    const { outputText, provider, model } = await askLLM({ prompt, user, authorization, correlationId });
+    const { outputText, provider, model, usage } = await askLLM({ prompt, user, authorization, correlationId });
+
+    const costLog = await writeAiCostLog({
+      user,
+      authorization,
+      correlationId,
+      integration: req.body?.integration || provider,
+      provider,
+      model,
+      usage,
+      estimatedTokens: limitReservation.estimatedTokens,
+      estimatedCostUsd: limitReservation.estimatedCostUsd,
+    });
 
     res.status(200).json({
       response: outputText,
       provider,
       model,
+      tokens: costLog.tokens,
+      costo: costLog.costo,
+      costUsd: costLog.costUsd,
       status: 'completed',
       correlationId,
       ...(authorization?.companyId ? { companyId: authorization.companyId } : {}),
