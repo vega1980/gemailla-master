@@ -8,6 +8,29 @@ const realRequire = createRequire(import.meta.url);
 const MODULE_PATH = new URL('../../functions/index.js', import.meta.url);
 const ORIGINAL_ENV = { ...process.env };
 
+
+function expect(received) {
+  return {
+    toBe(expected) {
+      assert.equal(received, expected);
+    },
+    toMatch(pattern) {
+      assert.match(received, pattern);
+    },
+    toBeUndefined() {
+      assert.equal(received, undefined);
+    },
+    toBeNull() {
+      assert.equal(received, null);
+    },
+    not: {
+      toHaveProperty(propertyName) {
+        assert.equal(Object.prototype.hasOwnProperty.call(received, propertyName), false);
+      },
+    },
+  };
+}
+
 class MockDocSnap {
   constructor(id, data) {
     this.id = id;
@@ -193,7 +216,7 @@ function seedBase(overrides = {}) {
   });
 }
 
-async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-token', body, fetchImpl } = {}) {
+async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-token', body, fetchImpl, origin } = {}) {
   const handler = await loadAiEndpoint({
     store,
     verifyIdToken: async (receivedToken) => {
@@ -203,7 +226,7 @@ async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-
     fetchImpl: fetchImpl || (async () => ({ ok: true, status: 200, async json() { return { output_text: 'Respuesta IA de prueba' }; } })),
   });
   const res = createRes();
-  await handler(createReq({ token, body }), res);
+  await handler(createReq({ token, body, origin }), res);
   return res;
 }
 
@@ -254,6 +277,49 @@ describe('endpoint IA', () => {
 
     assert.equal(res.statusCode, 403);
     assert.match(res.payload.error, /CORS no permitido/);
+  });
+
+  it('responde con Access-Control-Allow-Origin dinámico cuando el origen está autorizado', async () => {
+    process.env.ALLOWED_ORIGINS = 'https://gemailla.com,https://www.gemailla.com';
+
+    const res = await exercise({
+      origin: 'https://gemailla.com',
+      body: { companyId: 'validCompany', prompt: 'Hola' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['Access-Control-Allow-Origin']).toBe('https://gemailla.com');
+    expect(res.headers.Vary).toBe('Origin');
+  });
+
+  it('responde 403 y no emite Access-Control-Allow-Origin para un origen no autorizado', async () => {
+    process.env.ALLOWED_ORIGINS = 'https://gemailla.com';
+
+    const res = await exercise({
+      origin: 'https://hackdomain.com',
+      body: { companyId: 'validCompany', prompt: 'Hola' },
+      fetchImpl: async () => {
+        throw new Error('OpenAI no debe llamarse para un origen no autorizado');
+      },
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.payload.error).toMatch(/CORS no permitido/);
+    expect(res.headers).not.toHaveProperty('Access-Control-Allow-Origin');
+    expect(res.headers.Vary).toBe('Origin');
+  });
+
+  it('procesa de forma segura una petición sin cabecera Origin', async () => {
+    process.env.ALLOWED_ORIGINS = 'https://gemailla.com';
+
+    const res = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Hola' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers).not.toHaveProperty('Access-Control-Allow-Origin');
+    expect(res.payload.response).toBe('Respuesta IA de prueba');
+    expect(res.headers.Vary).toBe('Origin');
   });
 
   it('responde 401 sin token', async () => {
