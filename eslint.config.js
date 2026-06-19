@@ -57,6 +57,14 @@ export default [
         { ignore: ["cmdk-input-wrapper", "toast-close"] },
       ],
       "react-hooks/rules-of-hooks": "error",
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "Identifier[name=/^(x|y|tmp|data|df2)$/]",
+          message:
+            "Evita nombres ambiguos como x, y, tmp, data o df2; usa nombres descriptivos del dominio, por ejemplo ventasMensuales, clientesActivos o predicciones.",
+        },
+      ],
     },
   },
 ];
