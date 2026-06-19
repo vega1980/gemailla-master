@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, ChevronDown, ChevronUp, RefreshCw, CalendarDays } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { format, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { askLLM } from '@/modules/ai/aiService';
 const CACHE_KEY = 'gemailla_weekly_insight';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 
@@ -71,7 +71,7 @@ export default function WeeklyInsights({ company, transactions, monthlyData }) {
 
     const weekLabel = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "'Semana del' d 'de' MMMM yyyy", { locale: es });
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company?.id,
       prompt: `Eres el consultor financiero de ${company?.name || 'la empresa'}. Genera el resumen semanal de inteligencia financiera para ${weekLabel}.
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { askLLM } from '@/modules/ai/aiService';
 import { AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
@@ -44,7 +44,7 @@ export default function TrendsPanel({ transactions, monthlyData, company }) {
   const getAIStrategicInsight = async () => {
     setLoading(true);
     setAiInsight(null);
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: `Eres un consultor financiero experto en PyMEs mexicanas. Analiza las siguientes tendencias financieras de la empresa "${company.name}" y proporciona recomendaciones estratégicas.
 

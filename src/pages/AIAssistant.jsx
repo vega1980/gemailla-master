@@ -18,6 +18,7 @@ import PlanGate from '@/components/subscription/PlanGate';
 import { useSubscription } from '@/lib/subscriptionContext';
 
 
+import { askLLM } from '@/modules/ai/aiService';
 const HIGH_COST_APPROVAL_THRESHOLD_USD = 0.25;
 
 function estimateRequestCostUsd(prompt, context) {
@@ -197,7 +198,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
         return;
       }
 
-      const aiResponse = await firebase.integrations.Core.InvokeLLM({
+      const aiResponse = await askLLM({
         companyId: activeCompany.id,
         prompt: requestPrompt,
         documentIds: docIds,

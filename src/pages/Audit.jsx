@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -13,6 +12,7 @@ import { Shield, TrendingUp, AlertTriangle, CheckCircle, Loader2, BarChart3 } fr
 import ReportGenerator from '@/components/reports/ReportGenerator';
 import { motion } from 'framer-motion';
 
+import { askLLM } from '@/modules/ai/aiService';
 export default function Audit() {
   const { activeCompany } = useCompany();
   const { user } = useAuth();
@@ -41,7 +41,7 @@ export default function Audit() {
       }, {})
     });
 
-    const result = await firebase.integrations.Core.InvokeLLM({
+    const result = await askLLM({
       companyId: activeCompany.id,
       prompt: `Eres un auditor financiero experto. Analiza estos datos financieros de la empresa "${activeCompany.name}" y genera un diagnóstico completo:
 

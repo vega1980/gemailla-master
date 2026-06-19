@@ -5,6 +5,7 @@ import { logAction } from '@/lib/auditLogger';
 import { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatuses';
 import { ensureCorrelationId, getReleaseMetadata, logFrontendEvent } from '@/lib/observability';
 
+import { askLLM } from '@/modules/ai/aiService';
 function getErrorMessage(error, fallback) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
@@ -23,7 +24,7 @@ export async function analyzeDocumentFlow({ doc, company, user, correlationId: p
   });
 
   try {
-    const result = await firebase.integrations.Core.InvokeLLM({
+    const result = await askLLM({
       companyId: company.id,
       prompt: `Analiza este documento fiscal/financiero mexicano. Extrae toda la información posible:
         - Tipo de documento (factura, nota de crédito, recibo, contrato, estado de cuenta, declaración, nómina, otro)

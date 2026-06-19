@@ -1,7 +1,13 @@
-import { firebase } from '@/api/firebaseClient';
+import { firebase, invokeLLM } from '@/api/firebaseClient';
+
+export async function askLLM(params) {
+  return invokeLLM(params);
+}
 
 export const aiService = {
-  invokeLLM: firebase.integrations.Core.InvokeLLM,
+  askLLM,
+  invokeLLM: askLLM,
   agents: firebase.agents,
 };
+
 export default aiService;

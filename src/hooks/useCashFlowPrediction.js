@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import firebase from '@/api/firebaseClient';
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { askLLM } from '@/modules/ai/aiService';
 export function useCashFlowPrediction() {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export function useCashFlowPrediction() {
     );
 
     try {
-      const result = await firebase.integrations.Core.InvokeLLM({
+      const result = await askLLM({
         companyId: company?.id,
         prompt: `Eres un experto en análisis financiero y predicción de flujos de caja.
 

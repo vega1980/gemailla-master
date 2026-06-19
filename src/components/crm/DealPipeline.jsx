@@ -15,6 +15,7 @@ import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 
+import { askLLM } from '@/modules/ai/aiService';
 const stageConfig = {
   prospecto:       { label: 'Prospecto',       color: 'bg-secondary text-muted-foreground border-border',          prob: 10 },
   contactado:      { label: 'Contactado',      color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',           prob: 25 },
@@ -89,7 +90,7 @@ export default function DealPipeline({ company }) {
   const getAI = async () => {
     setAiLoading(true);
     setAiInsight('');
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: `Eres un director comercial experto en ventas B2B para PyMEs mexicanas. Analiza el pipeline de ventas de "${company.name}".
 

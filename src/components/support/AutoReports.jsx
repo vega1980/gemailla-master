@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,6 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { askLLM } from '@/modules/ai/aiService';
 const REPORT_TYPES = [
   { id: 'executive',    label: 'Informe Ejecutivo Mensual',        icon: BarChart3,  desc: 'Resumen completo de KPIs financieros, tendencias y alertas.' },
   { id: 'fiscal',       label: 'Reporte Fiscal / Cumplimiento',    icon: Shield,      desc: 'Estado fiscal, obligaciones pendientes y recomendaciones.' },
@@ -125,7 +125,7 @@ El reporte debe incluir:
 ## 6. Plan de Acción Siguiente Período`,
     };
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
       companyId: company.id,
       prompt: prompts[reportType] + '\n\nResponde en español. Formato Markdown profesional y detallado.',
       model: 'claude_sonnet_4_6',
