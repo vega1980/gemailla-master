@@ -27,6 +27,8 @@ const DEFAULT_DAILY_TOKEN_LIMIT = 50000;
 const DEFAULT_DAILY_BUDGET_USD = 5;
 const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
 const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
+const AI_COST_LOG_COLLECTION = 'aiCostLogs';
+const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'openai', 'gemini.R', 'groqR']);
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   'https://gemailla.com',
   'https://www.gemailla.com',
@@ -64,6 +66,62 @@ function getUtcDateKey(now = new Date()) {
 
 function toCounterNumber(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+function getOpenAiModel() {
+  return process.env.OPENAI_MODEL || DEFAULT_MODEL;
+}
+
+function normalizeAiIntegration(value) {
+  const candidate = typeof value === 'string' ? value.trim() : '';
+  return TRACKED_AI_INTEGRATIONS.has(candidate) ? candidate : 'openai';
+}
+
+function getUsageTokens(usage = {}) {
+  const inputTokens = toCounterNumber(usage.input_tokens || usage.prompt_tokens);
+  const outputTokens = toCounterNumber(usage.output_tokens || usage.completion_tokens);
+  const totalTokens = toCounterNumber(usage.total_tokens) || inputTokens + outputTokens;
+  return { inputTokens, outputTokens, totalTokens };
+}
+
+function calculateCostUsd(totalTokens, costPer1kTokensUsd = getAiLimitConfig().costPer1kTokensUsd) {
+  return Number(((toCounterNumber(totalTokens) / 1000) * costPer1kTokensUsd).toFixed(8));
+}
+
+async function writeAiCostLog({ user, authorization, correlationId, integration = 'openai', provider = 'openai', model, usage, estimatedTokens, estimatedCostUsd }) {
+  const timestamp = new Date().toISOString();
+  const usageTokens = getUsageTokens(usage);
+  const tokens = usageTokens.totalTokens || toCounterNumber(estimatedTokens);
+  const costUsd = usageTokens.totalTokens ? calculateCostUsd(usageTokens.totalTokens) : Number(toCounterNumber(estimatedCostUsd).toFixed(8));
+  const logId = `${timestamp.replace(/[^0-9A-Za-z]/g, '')}_${String(correlationId || createCorrelationId('cost')).replace(/[^A-Za-z0-9_-]/g, '_')}`.slice(0, 220);
+
+  await admin.firestore().collection(AI_COST_LOG_COLLECTION).doc(logId).set({
+    timestamp,
+    tokens,
+    inputTokens: usageTokens.inputTokens,
+    outputTokens: usageTokens.outputTokens,
+    model,
+    costo: costUsd,
+    costUsd,
+    provider,
+    integration: normalizeAiIntegration(integration),
+    correlationId,
+    companyId: authorization.companyId,
+    userUid: user.uid || 'unknown',
+  }, { merge: true });
+
+  structuredLog('INFO', 'ai_cost_logged', {
+    correlationId,
+    companyId: authorization.companyId,
+    firebaseUid: user.uid || 'unknown',
+    integration: normalizeAiIntegration(integration),
+    provider,
+    model,
+    tokens,
+    costUsd,
+  });
+
+  return { timestamp, tokens, model, costo: costUsd, costUsd };
 }
 
 function getLimitDocIds({ companyId, uid, now = new Date() }) {
@@ -598,4 +656,7 @@ exports._test = {
   getAiLimitConfig,
   getAllowedOrigins,
   enforceAllowedOrigin,
+  getUsageTokens,
+  calculateCostUsd,
+  writeAiCostLog,
 };
