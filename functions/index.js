@@ -26,6 +26,9 @@ const DEFAULT_DAILY_TOKEN_LIMIT = 50000;
 const DEFAULT_DAILY_BUDGET_USD = 5;
 const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
 const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
+const { setTimeout: nodeSetTimeout, clearTimeout: nodeClearTimeout } = require('node:timers');
+const AbortControllerImpl = globalThis.AbortController || require('abort-controller');
+
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   'https://gemailla.com',
   'https://www.gemailla.com',
@@ -403,8 +406,8 @@ function extractOutputText(payload = {}) {
 async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }) {
   const startedAt = Date.now();
   const timeoutMs = Number(process.env.OPENAI_TIMEOUT_MS || 45000);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const controller = new AbortControllerImpl();
+  const timeout = nodeSetTimeout(() => controller.abort(), timeoutMs);
 
   let response;
   try {
@@ -445,7 +448,7 @@ async function callOpenAI({ apiKey, prompt, user, authorization, correlationId }
     wrappedError.status = 502;
     throw wrappedError;
   } finally {
-    clearTimeout(timeout);
+    nodeClearTimeout(timeout);
   }
 
   const latencyMs = Date.now() - startedAt;

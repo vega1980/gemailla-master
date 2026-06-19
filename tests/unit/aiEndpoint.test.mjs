@@ -228,6 +228,8 @@ describe('endpoint IA', () => {
     });
 
     assert.deepEqual(Array.from(getAllowedOrigins()), [
+      'https://gemailla.com',
+      'https://www.gemailla.com',
       'https://gemailla-enterprise.firebaseapp.com',
       'https://gemailla-enterprise.web.app',
     ]);
