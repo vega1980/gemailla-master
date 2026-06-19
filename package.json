@@ -25,7 +25,8 @@
     "test:e2e:emulators": "firebase emulators:exec --only auth,firestore,storage --project demo-gemailla-e2e \"wait-on http://localhost:8080 http://localhost:9099 http://localhost:9199 && npm run test:e2e\"",
     "validate:env": "node scripts/validate-env.js",
     "validate:env:functions": "node scripts/validate-env.js --functions",
-    "validate:env:all": "node scripts/validate-env.js --all"
+    "validate:env:all": "node scripts/validate-env.js --all",
+    "validate:secrets": "node scripts/check-no-hardcoded-secrets.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
