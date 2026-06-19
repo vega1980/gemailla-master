@@ -27,6 +27,8 @@ const DEFAULT_DAILY_BUDGET_USD = 5;
 const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
 const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
 const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
+  'https://gemailla.com',
+  'https://www.gemailla.com',
   'https://gemailla-enterprise.firebaseapp.com',
   'https://gemailla-enterprise.web.app',
 ]);
