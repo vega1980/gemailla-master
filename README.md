@@ -136,6 +136,17 @@ Antes de añadir nuevos módulos al roadmap, la próxima iteración debe dedicar
 
 La suite Playwright cubre los flujos integrados de mayor riesgo: Auth, cambio de empresa, reglas Firebase, Storage, contrato `/api/ai`, restricciones por rol y cierre de sesión. Ver `docs/E2E_PLAYWRIGHT.md`.
 
+## Trabajo con R/RStudio
+
+Si agregas scripts, notebooks o análisis en R, abre el repositorio desde `gemailla-master.Rproj` en lugar de fijar rutas absolutas con `setwd("C:/Users/...")`. Para construir rutas reproducibles dentro del proyecto, usa `here::here()`, por ejemplo:
+
+```r
+# install.packages("here") # solo si no está instalado
+datos <- read.csv(here::here("data", "archivo.csv"))
+```
+
+Esto evita dependencias del equipo local de cada persona y mantiene los flujos de R portables entre desarrollo, CI y despliegue.
+
 ## Despliegue
 
 ```bash
