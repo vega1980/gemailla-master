@@ -167,6 +167,23 @@ datos %>%
 
 Reserva `%>%` para casos en los que necesites semánticas propias de `magrittr`, como placeholders avanzados o compatibilidad con código heredado que ya dependa de ese paquete.
 
+### Organización de scripts R
+
+Aplica el criterio **un archivo = una responsabilidad** para que cada script tenga un propósito claro y sea fácil de mantener. Usa nombres descriptivos que indiquen la etapa del flujo de análisis o el resultado que produce.
+
+Una estructura recomendada para scripts compartidos es:
+
+```text
+R/
+├── import_data.R
+├── clean_data.R
+├── feature_engineering.R
+├── modeling.R
+└── reporting.R
+```
+
+Mantén en cada archivo solo la lógica de su etapa: importación, limpieza, generación de variables, modelado o reportes. Si una etapa crece demasiado, divide el archivo con nombres igualmente explícitos, por ejemplo `clean_customers.R` y `clean_transactions.R`.
+
 ### Reproducibilidad con renv
 
 Para cualquier flujo serio en R, inicializa `renv` desde la raíz del repositorio antes de agregar dependencias o análisis compartidos:
