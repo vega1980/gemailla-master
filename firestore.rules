@@ -316,15 +316,11 @@ service cloud.firestore {
     }
 
     match /aiUsage/{id} {
-      allow read: if canReadAiFinancialData(resource.data);
-      allow create, update, delete: if false;
+      allow read, create, update, delete: if false;
     }
 
     match /aiBudgets/{id} {
-      allow read: if canReadAiFinancialData(resource.data);
-      allow create: if canCreateAiBudget();
-      allow update: if canUpdateAiBudget();
-      allow delete: if false;
+      allow read, create, update, delete: if false;
     }
 
     match /observabilityEvents/{eventId} {

@@ -332,7 +332,7 @@ export const firebase = {
         uid: userUid,
         email: user.email,
         fullName: user.displayName || user.email,
-        role: 'user',
+        role: (await user.getIdTokenResult().catch(() => ({ claims: {} }))).claims?.role || 'user',
       };
     },
     logout: async (redirectUrl) => {

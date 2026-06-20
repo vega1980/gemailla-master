@@ -15,7 +15,8 @@ const RELEASE_METADATA = Object.freeze({
   deployEnv: process.env.DEPLOY_ENV || process.env.NODE_ENV || 'production',
 });
 const ACTIVE_STATUSES = new Set(['active', 'activo']);
-const AI_ALLOWED_ROLES = new Set(['owner', 'director', 'admin', 'editor', 'viewer']);
+const COMPANY_ADMIN_ROLES = new Set(['owner', 'director', 'admin']);
+const AI_ALLOWED_ROLES = new Set(['owner', 'director', 'admin', 'editor']);
 const COMPANY_ID_PATTERN = /^[A-Za-z0-9_-]{1,160}$/;
 const MAX_REQUESTED_DOCUMENTS = 25;
 const MAX_CORRELATION_ID_LENGTH = 160;
@@ -651,6 +652,37 @@ async function askLLM({ prompt, user, authorization, correlationId }) {
   return callOpenAIProvider({ apiKey, prompt, user, authorization, correlationId, model });
 }
 
+
+function getRoleForClaims(role) {
+  const normalized = String(role || '').trim().toLowerCase();
+  return AI_ALLOWED_ROLES.has(normalized) || COMPANY_ADMIN_ROLES.has(normalized) ? normalized : 'viewer';
+}
+
+async function syncCompanyClaimsHandler(req, res) {
+  setCorsHeaders(req, res);
+  if (req.method === 'OPTIONS') {
+    if (!isAllowedOrigin(req)) return res.status(403).json({ error: 'CORS no permitido para este origen.' });
+    return res.status(204).send('');
+  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
+
+  try {
+    const user = await verifyFirebaseUser(req);
+    const companyId = requireCompanyId(req.body || {});
+    const access = await validateCompanyAccess({ user, companyId });
+    const companyRole = getRoleForClaims(access.role);
+    await admin.auth().setCustomUserClaims(user.uid, {
+      companyId,
+      companyRole,
+      role: companyRole,
+    });
+    return res.status(200).json({ success: true, companyId, companyRole });
+  } catch (error) {
+    const status = error?.status || 500;
+    return res.status(status).json({ error: error?.message || 'No se pudieron sincronizar los claims.' });
+  }
+}
+
 async function aiHandler(req, res) {
   const startedAt = Date.now();
   const correlationId = getCorrelationId(req);
@@ -794,6 +826,7 @@ async function aiHandler(req, res) {
 }
 
 exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, aiHandler);
+exports.syncCompanyClaims = onRequest({ cors: false }, syncCompanyClaimsHandler);
 
 exports._test = {
   aiHandler,
