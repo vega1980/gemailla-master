@@ -50,7 +50,7 @@ function serializeQuerySnapshot(snapshot) {
 
 function buildQuery(collectionRef, options = {}) {
   /** @type {import('firebase/firestore').QueryConstraint[]} */
-  const constraints = [];
+      const constraints = normalizedFilters
 
   if (Array.isArray(options.where)) {
     for (const condition of options.where) {
