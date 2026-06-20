@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/lib/companyContext';
@@ -39,6 +39,17 @@ export default function Companies() {
     },
     enabled: companies.length > 0,
   });
+
+  const membersByCompany = useMemo(() => {
+    return allMembers.reduce((accumulator, member) => {
+      if (!member?.companyId || member.status !== 'active') return accumulator;
+      if (!accumulator[member.companyId]) {
+        accumulator[member.companyId] = [];
+      }
+      accumulator[member.companyId].push(member);
+      return accumulator;
+    }, {});
+  }, [allMembers]);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -112,7 +123,7 @@ export default function Companies() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {companies.map(company => {
-            const members = allMembers.filter(m => m.companyId === company.id && m.status === 'active');
+            const members = membersByCompany[company.id] ?? [];
             return (
               <motion.div key={company.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="rounded-xl border border-border bg-card p-5 hover:border-primary/30 transition-colors cursor-pointer"
@@ -200,7 +211,7 @@ export default function Companies() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              {allMembers.filter(m => m.companyId === showMembers?.id).map(m => (
+              {(membersByCompany[showMembers?.id] ?? []).map(m => (
                 <div key={m.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary">
                   <div>
                     <p className="text-sm font-medium">{m.userName || m.userEmail}</p>
