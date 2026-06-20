@@ -108,8 +108,19 @@ export const createRepository = (collectionName) => {
   const filter = async (field, operator, value) => {
     if (field && typeof field === 'object' && !Array.isArray(field)) {
       /** @type {import('firebase/firestore').QueryConstraint[]} */
-      const constraints = Object.entries(field)
-        .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all')
+      const normalizedFilters = Object.entries(field)
+        .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all');
+
+      if (normalizedFilters.length === 0) {
+        throw new Error(`Filtro vacío rechazado para ${collectionName}; define criterios explícitos antes de consultar.`);
+      }
+
+      const unsupportedArrayFilter = normalizedFilters.find(([, filterValue]) => Array.isArray(filterValue));
+      if (unsupportedArrayFilter) {
+        throw new Error(`Filtro array no soportado en ${collectionName}.${unsupportedArrayFilter[0]}; auditar índices y límites antes de usar IN/chunking.`);
+      }
+
+      const constraints = normalizedFilters
         .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
 
       if (operator) {

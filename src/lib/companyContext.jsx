@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useAuth } from '@/lib/AuthContext';
 import { getSavedActiveCompanyId, saveActiveCompanyId } from '@/features/companies/services/activeCompanyStorage';
 import { loadCompanyContextData } from '@/features/companies/services/companyMembershipService';
+import { firebase } from '@/api/firebaseClient';
 
 const CompanyContext = createContext(null);
 
@@ -45,10 +46,25 @@ export function CompanyProvider({ children }) {
     loadCompanies();
   }, [loadCompanies]);
 
+  const syncActiveCompanyClaims = useCallback(async (company) => {
+    if (!company?.id || !user) return;
+    try {
+      await firebase.functions.invoke('syncCompanyClaims', { companyId: company.id });
+      await user.getIdToken(true);
+    } catch (error) {
+      console.warn('No se pudieron sincronizar los claims de empresa activa:', error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    syncActiveCompanyClaims(activeCompany);
+  }, [activeCompany, syncActiveCompanyClaims]);
+
   const switchCompany = useCallback((company) => {
     setActiveCompany(company);
     saveActiveCompanyId(company.id);
-  }, []);
+    syncActiveCompanyClaims(company);
+  }, [syncActiveCompanyClaims]);
 
   const value = useMemo(() => ({
     companies,
