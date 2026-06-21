@@ -88,7 +88,7 @@ export default function Dashboard() {
         {/* Quick Access Modules - Highlighted */}
         <div className="mb-8">
           <h2 className="text-lg font-bold mb-4" style={{ color: '#f0d080', letterSpacing: '0.05em' }}>ACCESOS DIRECTOS</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
             {[
             { path: '/erp', label: 'ERP', icon: Calculator, color: '#f0d080' },
             { path: '/audit', label: 'Auditoría', icon: Shield, color: '#c5a059' },
@@ -114,7 +114,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4 mb-6">
           {[
           { label: 'EMPRESAS ACTIVAS', value: companies.length, change: '+18%', icon: Building2, color: '#f0d080' },
           { label: 'DOCUMENTOS PROCESADOS', value: documents.length, change: '+24%', icon: BarChart3, color: '#c5a059' },
@@ -146,8 +146,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2 rounded-2xl p-6" style={{
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-2 rounded-2xl p-6" style={{
             background: 'linear-gradient(135deg, rgba(197,160,89,0.08) 0%, rgba(197,160,89,0.03) 100%)',
             border: '1px solid rgba(197,160,89,0.25)',
             boxShadow: '0 4px 24px rgba(197,160,89,0.1)'
@@ -247,7 +247,7 @@ export default function Dashboard() {
             <h3 className="text-sm font-bold uppercase" style={{ color: '#f0d080', letterSpacing: '0.05em' }}>ACTIVIDAD RECIENTE</h3>
             <Link to="/activity" className="text-xs" style={{ color: '#f0d080', textDecoration: 'underline' }}>Ver todas</Link>
           </div>
-          <div className="grid grid-cols-4 gap-4 text-xs text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 text-xs text-center">
             {[
             { label: 'Análisis completados', value: '15 hoy', icon: CheckCircle },
             { label: 'Documentos cargados', value: 'Estudios Q1.pdf', icon: FileText },
@@ -265,7 +265,7 @@ export default function Dashboard() {
       </div>
 
       <div className="flex justify-between items-center px-6 py-4 border-t text-xs" style={{ borderColor: 'rgba(197,160,89,0.1)', color: 'rgba(200,190,170,0.5)' }}>
-        <p>GEMAILLA IA © 2025</p>
+        <p>GEMAILLA IA © {new Date().getFullYear()}</p>
         <div className="flex gap-4">
           <span>Última sync: Hoy, 03:15 AM</span>
           <span>Soporte 24/7</span>
