@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/documents', label: 'Documentos', icon: FileText },
   { path: '/erp', label: 'ERP', icon: ArrowUpDown },
   { path: '/audit', label: 'Auditoría', icon: Shield },

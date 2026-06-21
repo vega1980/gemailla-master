@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, ArrowUpDown, FileText, Brain } from 'lucide-react';
 
 const items = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/erp', label: 'ERP', icon: ArrowUpDown },
   { path: '/documents', label: 'Documentos', icon: FileText },
   { path: '/ai', label: 'IA', icon: Brain },
@@ -23,7 +23,7 @@ export default function BottomNav() {
       }}
     >
       {items.map(({ path, label, icon: Icon }) => {
-        const isActive = location.pathname === path || (path === '/' && location.pathname === '/dashboard');
+        const isActive = location.pathname === path;
         return (
           <Link
             key={path}
