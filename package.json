@@ -26,7 +26,8 @@
     "validate:env": "node scripts/validate-env.js",
     "validate:env:functions": "node scripts/validate-env.js --functions",
     "validate:env:all": "node scripts/validate-env.js --all",
-    "validate:secrets": "node scripts/check-no-hardcoded-secrets.js"
+    "validate:secrets": "node scripts/check-no-hardcoded-secrets.js",
+    "validate:architecture": "node scripts/validate-architecture.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

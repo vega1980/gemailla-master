@@ -1,5 +1,5 @@
-import { auth, db } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { auth } from '@/infrastructure/firebase/auth';
+import { addDoc, collection, db } from '@/infrastructure/firebase/firestore';
 import { ensureCorrelationId, getObservabilityEventPolicy, sanitizeObservabilityPayload } from '@/lib/observabilityPolicy';
 export { createCorrelationId, ensureCorrelationId, getObservabilityEventPolicy, sanitizeObservabilityPayload } from '@/lib/observabilityPolicy';
 
