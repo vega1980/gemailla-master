@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { describe, it, beforeEach, afterEach } from 'node:test';
-import vm from 'node:vm';
+import Module from 'node:module';
 
 const realRequire = createRequire(import.meta.url);
 const MODULE_PATH = new URL('../../functions/index.js', import.meta.url);
@@ -127,33 +128,38 @@ function createFirestore(store) {
 }
 
 async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'aiHandler' }) {
-  const source = await readFile(MODULE_PATH, 'utf8');
   const firestore = createFirestore(store);
   const admin = {
     initializeApp() {},
     auth() {
-      return { verifyIdToken };
+      return {
+        verifyIdToken,
+        async setCustomUserClaims() {},
+      };
     },
     firestore() {
       return firestore;
     },
   };
-  const module = { exports: {} };
-  const sandbox = {
-    module,
-    exports: module.exports,
-    process,
-    console,
-    fetch: fetchImpl,
-    require(specifier) {
-      if (specifier === 'firebase-admin') return admin;
-      if (specifier === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler };
-      if (specifier === 'firebase-functions/params') return { defineSecret: () => ({ value: () => process.env.OPENAI_API_KEY }) };
-      return realRequire(specifier);
-    },
+  const modulePath = fileURLToPath(MODULE_PATH);
+  const originalLoad = Module._load;
+  globalThis.fetch = fetchImpl;
+  Module._load = function patchedLoad(request, parent, isMain) {
+    if (request === 'firebase-admin') return admin;
+    if (request === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler };
+    if (request === 'firebase-functions/params') return { defineSecret: () => ({ value: () => process.env.OPENAI_API_KEY }) };
+    return originalLoad.call(this, request, parent, isMain);
   };
-  vm.runInNewContext(source, sandbox, { filename: 'functions/index.js' });
-  return module.exports._test[exportName];
+
+  try {
+    for (const key of Object.keys(realRequire.cache)) {
+      if (key.includes('/functions/')) delete realRequire.cache[key];
+    }
+    const loaded = realRequire(modulePath);
+    return loaded._test[exportName];
+  } finally {
+    Module._load = originalLoad;
+  }
 }
 
 function createReq({ token = 'valid-token', body = {}, method = 'POST', origin = '' } = {}) {
