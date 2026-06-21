@@ -59,24 +59,35 @@ async function getAuthHeader() {
 }
 
 
-function getSafeAiEndpoint() {
-  const configured = String(import.meta.env.VITE_LLM_ENDPOINT || '/api/ai').trim() || '/api/ai';
+function getSafeInternalEndpoint(configuredEndpoint, fallbackPath, label) {
+  const configured = String(configuredEndpoint || fallbackPath).trim() || fallbackPath;
   let url;
   try {
     url = new URL(configured, window.location.origin);
   } catch {
-    throw new Error('Endpoint de IA inválido.');
+    throw new Error(`Endpoint de ${label} inválido.`);
   }
 
   if (url.origin !== window.location.origin || url.username || url.password) {
-    throw new Error('Endpoint de IA bloqueado: solo se permite una ruta interna del mismo origen.');
+    throw new Error(`Endpoint de ${label} bloqueado: solo se permite una ruta interna del mismo origen.`);
   }
 
   if (!url.pathname.startsWith('/api/')) {
-    throw new Error('Endpoint de IA bloqueado: la ruta debe iniciar con /api/.');
+    throw new Error(`Endpoint de ${label} bloqueado: la ruta debe iniciar con /api/.`);
   }
 
   return `${url.pathname}${url.search}`;
+}
+
+function getSafeAiEndpoint() {
+  return getSafeInternalEndpoint(import.meta.env.VITE_LLM_ENDPOINT, '/api/ai', 'IA');
+}
+
+function getSafeFunctionsEndpoint() {
+  const configured = import.meta.env.VITE_FUNCTIONS_ENDPOINT || import.meta.env.VITE_LLM_ENDPOINT;
+  return configured
+    ? getSafeInternalEndpoint(configured, '/api/functions', 'funciones')
+    : '';
 }
 
 function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.', correlationId = ensureCorrelationId('', 'ai')) {
@@ -151,7 +162,7 @@ async function extractDataFromUploadedFile() {
 
 async function invokeFunction(name, payload = {}) {
   const correlationId = ensureCorrelationId(payload.correlationId, name || 'fn');
-  const endpoint = import.meta.env.VITE_FUNCTIONS_ENDPOINT || import.meta.env.VITE_LLM_ENDPOINT;
+  const endpoint = getSafeFunctionsEndpoint();
   if (!endpoint) {
     return {
       data: {
@@ -164,7 +175,10 @@ async function invokeFunction(name, payload = {}) {
     };
   }
 
-  const response = await fetch(`${endpoint.replace(/\/$/, '')}/${name}`, {
+  const safeFunctionName = encodeURIComponent(String(name || '').trim());
+  if (!safeFunctionName) throw new Error('Nombre de función inválido.');
+
+  const response = await fetch(`${endpoint.replace(/\/$/, '')}/${safeFunctionName}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
