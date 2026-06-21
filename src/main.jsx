@@ -2,12 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import '@/styles/index.css';
 import { installGlobalErrorTracking } from '@/lib/observability';
-
-function ensureRuntimeConfigDefaults() {
-  window.GEMAILLA_FIREBASE_CONFIG = window.GEMAILLA_FIREBASE_CONFIG || {};
-  window.GEMAILLA_USE_FIREBASE_EMULATORS = window.GEMAILLA_USE_FIREBASE_EMULATORS ?? 'auto';
-  window.GEMAILLA_RELEASE = window.GEMAILLA_RELEASE || {};
-}
+import { applyRuntimeConfig, ensureRuntimeConfigDefaults, parseRuntimeConfig } from '@/config/runtimeConfig';
 
 async function loadOptionalRuntimeConfig() {
   ensureRuntimeConfigDefaults();
@@ -21,14 +16,10 @@ async function loadOptionalRuntimeConfig() {
       return;
     }
 
-    const configScript = await response.text();
-    if (!configScript.trim()) return;
+    const configText = await response.text();
+    if (!configText.trim()) return;
 
-    const script = document.createElement('script');
-    script.text = configScript;
-    document.head.appendChild(script);
-    script.remove();
-    ensureRuntimeConfigDefaults();
+    applyRuntimeConfig(parseRuntimeConfig(configText));
   } catch (error) {
     console.warn('No se pudo cargar /app-config.js. Se usarán variables de entorno/defaults.', error);
   }

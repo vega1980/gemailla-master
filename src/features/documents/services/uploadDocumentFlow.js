@@ -4,36 +4,22 @@ import firebase from '@/api/firebaseClient';
 import { logAction } from '@/lib/auditLogger';
 import { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatuses';
 import { ensureCorrelationId, getReleaseMetadata, logFrontendEvent } from '@/lib/observability';
+import { validateDocumentFileContent, validateDocumentFileMetadata } from '@/security/documentFileValidation';
 
 export function getUploadErrorMessage(error, fallback = 'No se pudo completar la subida a Storage.') {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
 export function validateDocumentFile(file) {
-  if (!file) throw new Error('No se recibió ningún archivo.');
-
-  const ext = String(file.name || '').split('.').pop()?.toLowerCase();
-  const validTypes = ['pdf', 'xml'];
-  if (!validTypes.includes(ext)) {
-    throw new Error('Formato no soportado. Sube archivos PDF o XML.');
-  }
-
-  if (file.size > 15 * 1024 * 1024) {
-    throw new Error('Archivo muy grande. El límite es 15MB.');
-  }
-
-  return {
-    ext,
-    fileType: ext === 'xml' ? 'xml' : 'pdf',
-    contentType: file.type || (ext === 'xml' ? 'application/xml' : 'application/pdf'),
-  };
+  return validateDocumentFileMetadata(file);
 }
+
 
 export async function uploadDocumentFlow({ file, company, user, correlationId: providedCorrelationId }) {
   if (!company?.id) throw new Error('Necesitas una empresa activa para subir documentos.');
 
   const correlationId = ensureCorrelationId(providedCorrelationId, 'doc_upload');
-  const { fileType, contentType } = validateDocumentFile(file);
+  const { fileType, contentType } = await validateDocumentFileContent(file);
   const documentId = firebase.entities.Document.newId();
 
   const doc = await firebase.entities.Document.createWithId(documentId, {
