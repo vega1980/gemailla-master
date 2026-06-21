@@ -4,9 +4,9 @@ import EmptyState from '@/components/shared/EmptyState';
 import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, MessageCircle, BarChart3, FileOutput } from 'lucide-react';
-import SupportChatbot from '@/components/support/SupportChatbot';
-import ClientDashboardShare from '@/components/support/ClientDashboardShare';
-import AutoReports from '@/components/support/AutoReports';
+import SupportChatbot from '@/features/support/components/SupportChatbot';
+import ClientDashboardShare from '@/features/support/components/ClientDashboardShare';
+import AutoReports from '@/features/support/components/AutoReports';
 
 export default function DigitalSupport() {
   const { activeCompany, loading } = useCompany();

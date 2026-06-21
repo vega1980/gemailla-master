@@ -1,7 +1,7 @@
 import EmptyState from '@/components/shared/EmptyState';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { transactionCategoryLabels } from '@/components/erp/transactionCatalog';
+import { transactionCategoryLabels } from '@/features/erp/components/transactionCatalog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpDown, ArrowUpRight, CalendarClock, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 

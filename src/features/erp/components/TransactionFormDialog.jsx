@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { expenseCategories, incomeCategories, transactionCategoryLabels } from '@/components/erp/transactionCatalog';
+import { expenseCategories, incomeCategories, transactionCategoryLabels } from '@/features/erp/components/transactionCatalog';
 import { CalendarClock, Loader2, RefreshCw } from 'lucide-react';
 
 export default function TransactionFormDialog({ open, onOpenChange, formData, onFormDataChange, onSubmit, isSaving }) {

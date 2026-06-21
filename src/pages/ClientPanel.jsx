@@ -6,10 +6,10 @@ import EmptyState from '@/components/shared/EmptyState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, BarChart3, AlertTriangle, Users, CreditCard } from 'lucide-react';
 import { format, subMonths, startOfMonth } from 'date-fns';
-import TrendsPanel from '@/components/client/TrendsPanel';
-import StockAlerts from '@/components/client/StockAlerts';
-import ChurnPanel from '@/components/client/ChurnPanel';
-import MyPlan from '@/components/client/MyPlan';
+import TrendsPanel from '@/features/client/components/TrendsPanel';
+import StockAlerts from '@/features/client/components/StockAlerts';
+import ChurnPanel from '@/features/client/components/ChurnPanel';
+import MyPlan from '@/features/client/components/MyPlan';
 
 export default function ClientPanel() {
   const { activeCompany, loading: companyLoading } = useCompany();

@@ -4,10 +4,10 @@ import EmptyState from '@/components/shared/EmptyState';
 import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Users, PieChart, TrendingUp } from 'lucide-react';
-import ClientList from '@/components/crm/ClientList';
-import ClientSegments from '@/components/crm/ClientSegments';
-import DealPipeline from '@/components/crm/DealPipeline';
-import ClientImporter from '@/components/crm/ClientImporter';
+import ClientList from '@/features/crm/components/ClientList';
+import ClientSegments from '@/features/crm/components/ClientSegments';
+import DealPipeline from '@/features/crm/components/DealPipeline';
+import ClientImporter from '@/features/crm/components/ClientImporter';
 
 export default function CRM() {
   const { activeCompany, loading } = useCompany();

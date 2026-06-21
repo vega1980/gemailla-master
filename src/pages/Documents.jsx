@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { FileText, Upload, Search, Eye, Brain, Loader2, Trash2, Filter } from 'lucide-react';
-import ReportGenerator from '@/components/reports/ReportGenerator';
+import ReportGenerator from '@/features/reports/components/ReportGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadDocumentFlow } from '@/features/documents/services/uploadDocumentFlow';
 import { analyzeDocumentFlow } from '@/features/documents/services/analyzeDocumentFlow';

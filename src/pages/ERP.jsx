@@ -10,11 +10,11 @@ import { logAction } from '@/lib/auditLogger';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowUpDown, Plus } from 'lucide-react';
-import ImportTransactions from '@/components/erp/ImportTransactions';
-import TransactionFilters from '@/components/erp/TransactionFilters';
-import TransactionFormDialog from '@/components/erp/TransactionFormDialog';
-import TransactionList from '@/components/erp/TransactionList';
-import TransactionStats from '@/components/erp/TransactionStats';
+import ImportTransactions from '@/features/erp/components/ImportTransactions';
+import TransactionFilters from '@/features/erp/components/TransactionFilters';
+import TransactionFormDialog from '@/features/erp/components/TransactionFormDialog';
+import TransactionList from '@/features/erp/components/TransactionList';
+import TransactionStats from '@/features/erp/components/TransactionStats';
 import { format } from 'date-fns';
 
 function createEmptyTransactionForm() {

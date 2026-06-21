@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useCompany } from '@/lib/companyContext';
 import EmptyState from '@/components/shared/EmptyState';
 import { Building2, Target, GitBranch, FolderKanban } from 'lucide-react';
-import StrategicKPIs from '@/components/operations/StrategicKPIs';
-import ProcessOptimizer from '@/components/operations/ProcessOptimizer';
-import ProjectTracker from '@/components/operations/ProjectTracker';
-import ProjectImporter from '@/components/operations/ProjectImporter';
+import StrategicKPIs from '@/features/operations/components/StrategicKPIs';
+import ProcessOptimizer from '@/features/operations/components/ProcessOptimizer';
+import ProjectTracker from '@/features/operations/components/ProjectTracker';
+import ProjectImporter from '@/features/operations/components/ProjectImporter';
 
 export default function Operations() {
   const [activeTab, setActiveTab] = useState('kpis');

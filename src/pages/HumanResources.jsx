@@ -4,9 +4,9 @@ import EmptyState from '@/components/shared/EmptyState';
 import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Users, DollarSign, Star } from 'lucide-react';
-import EmployeeDirectory from '@/components/hr/EmployeeDirectory';
-import PayrollManager from '@/components/hr/PayrollManager';
-import PerformanceManager from '@/components/hr/PerformanceManager';
+import EmployeeDirectory from '@/features/hr/components/EmployeeDirectory';
+import PayrollManager from '@/features/hr/components/PayrollManager';
+import PerformanceManager from '@/features/hr/components/PerformanceManager';
 
 export default function HumanResources() {
   const { activeCompany, loading } = useCompany();
