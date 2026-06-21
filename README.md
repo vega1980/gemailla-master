@@ -95,7 +95,7 @@ El flujo documental está diseñado para evitar archivos huérfanos y URLs públ
 
 No configures claves privadas de OpenAI/LLM en el frontend ni las hardcodees en código, pruebas o documentación. `OPENAI_API_KEY` solo debe existir en backend/Firebase Functions y debe cargarse con variables de entorno/secrets; no declares variantes con prefijo `VITE_` porque Vite puede exponerlas al navegador. El validador falla si detecta `VITE_OPENAI_API_KEY`.
 
-El repositorio incluye un backend real en `functions/` con Firebase Cloud Functions. La app llama por defecto a `/api/ai`, ruta que Firebase Hosting reescribe a la función `ai`. La función valida un token Firebase Auth, limita el tamaño del prompt y llama a OpenAI desde servidor.
+El repositorio incluye un backend real en `functions/` con Firebase Cloud Functions. La app usa exclusivamente rutas relativas same-origin gestionadas por Firebase Hosting: `/api/ai` para IA y `/api/functions` para funciones internas. Firebase Hosting reescribe esas rutas hacia el backend correspondiente, sin exponer endpoints configurables en el navegador. La función `ai` valida un token Firebase Auth, limita el tamaño del prompt y llama a OpenAI desde servidor.
 
 Configuración mínima del backend:
 
@@ -120,7 +120,7 @@ Variables opcionales para Functions:
 
 La función `ai` valida CORS antes de procesar la solicitud, exige un token Firebase Auth `Bearer`, valida acceso a `companyId` y documentos, y registra límites en Firestore por usuario/empresa (`aiRateLimits`) y por empresa/día (`aiUsage`).
 
-Si necesitas otro backend, configura `VITE_LLM_ENDPOINT` apuntando a un endpoint HTTPS propio que acepte `POST { prompt }` y devuelva `{ response }`.
+Las rutas de backend no se configuran con variables `VITE_*`: deben permanecer relativas y bajo el mismo origen (`/api/ai` y `/api/functions`). Si necesitas integrar otro proveedor, publícalo detrás de Firebase Hosting/Cloud Functions/Cloud Run y conserva el acceso desde el frontend mediante esas rutas internas.
 
 ## Reglas de seguridad
 
