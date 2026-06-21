@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
-import { useAuth } from '@/lib/AuthContext';
 import { PLAN_CONFIG, useSubscription } from '@/lib/subscriptionContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +6,6 @@ import { Check, Crown, Sparkles, Zap, Loader2, Star, AlertTriangle, XCircle } fr
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { toast } from 'sonner';
 
 const plans = [
   {
@@ -43,59 +40,21 @@ const plans = [
 ];
 
 export default function MyPlan() {
-  const { user } = useAuth();
-  const { subscription, plan: currentPlan, reload } = useSubscription();
+  const { subscription, plan: currentPlan } = useSubscription();
   const [billing, setBilling] = useState(subscription?.billingCycle || 'monthly');
   const [loading, setLoading] = useState(null);
   const [showCancel, setShowCancel] = useState(false);
-  const userUid = user?.uid || user?.id;
 
-  const handleSelect = async (planId) => {
+  const requestPlanChange = (planId) => {
     if (planId === currentPlan) return;
-    if (!userUid) throw new Error('Usuario sin UID válido.');
     setLoading(planId);
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setMonth(endDate.getMonth() + (billing === 'annual' ? 12 : 1));
-
-    if (subscription?.id) {
-      await firebase.entities.Subscription.update(subscription.id, {
-        userUid,
-        userEmail: user.email,
-        plan: planId,
-        billingCycle: billing,
-        startDate: format(today, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
-        status: 'active',
-      });
-    } else {
-      await firebase.entities.Subscription.create({
-        userUid,
-        userEmail: user.email,
-        plan: planId,
-        billingCycle: billing,
-        startDate: format(today, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
-        status: 'active',
-      });
-    }
-    await reload();
+    window.location.href = `mailto:soporte@gemailla.com?subject=Cambio de plan GEMAILLA AI&body=Solicito cambiar mi plan a ${planId} con facturación ${billing}.`;
     setLoading(null);
-    toast.success(`Plan actualizado a ${planId.charAt(0).toUpperCase() + planId.slice(1)}`);
   };
 
-  const handleCancel = async () => {
-    if (!subscription?.id) return;
-    setLoading('cancel');
-    await firebase.entities.Subscription.update(subscription.id, {
-      userUid,
-      userEmail: user.email,
-      status: 'cancelled',
-    });
-    await reload();
-    setLoading(null);
+  const requestCancellation = () => {
+    window.location.href = 'mailto:soporte@gemailla.com?subject=Cancelación de suscripción GEMAILLA AI';
     setShowCancel(false);
-    toast.success('Suscripción cancelada. Tu plan Basic sigue activo.');
   };
 
   const daysLeft = subscription?.endDate
@@ -155,9 +114,9 @@ export default function MyPlan() {
       {showCancel && (
         <div className="bg-destructive/10 border border-destructive/30 rounded-2xl p-5">
           <p className="text-sm font-semibold text-foreground mb-2">⚠️ ¿Confirmar cancelación?</p>
-          <p className="text-sm text-muted-foreground mb-4">Tu plan bajará a Basic. Perderás acceso a las funciones avanzadas al final del período actual.</p>
+          <p className="text-sm text-muted-foreground mb-4">La cancelación ya no se aplica desde el frontend. Soporte validará la solicitud y confirmará el cambio de forma segura.</p>
           <div className="flex gap-3">
-            <Button size="sm" variant="destructive" onClick={handleCancel} disabled={loading === 'cancel'} className="gap-2">
+            <Button size="sm" variant="destructive" onClick={requestCancellation} disabled={loading === 'cancel'} className="gap-2">
               {loading === 'cancel' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
               Sí, cancelar
             </Button>
@@ -215,7 +174,7 @@ export default function MyPlan() {
                   </li>
                 ))}
               </ul>
-              <Button onClick={() => handleSelect(p.id)} disabled={isCurrent || loading === p.id}
+              <Button onClick={() => requestPlanChange(p.id)} disabled={isCurrent || loading === p.id}
                 className={`w-full gap-2 ${isCurrent ? 'bg-muted text-muted-foreground cursor-default' : p.id === 'pro' ? 'bg-violet-600 hover:bg-violet-700 text-white' : p.id === 'enterprise' ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}>
                 {loading === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : isCurrent ? '✓ Plan actual' : `Seleccionar ${p.name}`}
               </Button>

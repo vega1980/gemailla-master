@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
+import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/filterValidation';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
@@ -107,9 +108,9 @@ export const createRepository = (collectionName) => {
 
   const filter = async (field, operator, value) => {
     if (field && typeof field === 'object' && !Array.isArray(field)) {
+      const normalizedFilters = normalizeObjectFilters(field, collectionName);
       /** @type {import('firebase/firestore').QueryConstraint[]} */
-      const constraints = Object.entries(field)
-        .filter(([, filterValue]) => filterValue !== undefined && filterValue !== null && filterValue !== 'all')
+      const constraints = normalizedFilters
         .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
 
       if (operator) {

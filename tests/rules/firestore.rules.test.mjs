@@ -20,6 +20,7 @@ const editor = { uid: 'editor-uid', claims: { email: 'editor@gemailla.test', ema
 const viewer = { uid: 'viewer-uid', claims: { email: 'viewer@gemailla.test', email_verified: true, companyId, companyRole: 'viewer' } };
 const inactive = { uid: 'inactive-uid', claims: { email: 'inactive@gemailla.test', email_verified: true, companyId, companyRole: 'editor' } };
 const outsider = { uid: 'outsider-uid', claims: { email: 'outsider@gemailla.test', email_verified: true, companyId: otherCompanyId, companyRole: 'admin' } };
+const noMembership = { uid: 'no-membership-uid', claims: { email: 'no-membership@gemailla.test', email_verified: true, companyId, companyRole: 'admin' } };
 const legacyEmailUser = { uid: 'legacy-new-uid', claims: { email: 'legacy@gemailla.test', email_verified: true, companyId, companyRole: 'director' } };
 
 async function seedFirestoreAcl() {
@@ -408,6 +409,60 @@ describe('Firestore security rules', () => {
       type: 'ingreso',
       amount: 400,
     }, mismatchedEditor), 'mismatched claim transaction update');
+  });
+
+  it('allows company administrators to read AI usage and budgets for their company', async () => {
+    for (const [label, user] of [['owner', owner], ['director', director], ['admin', admin]]) {
+      await assertAllowed(firestoreGet('aiUsage/company-usage', user), `${label} company ai usage read`);
+      await assertAllowed(firestoreGet('aiBudgets/company-budget', user), `${label} company ai budget read`);
+    }
+  });
+
+  it('denies non-administrators and inactive users from reading AI usage and budgets', async () => {
+    for (const [label, user] of [['editor', editor], ['viewer', viewer], ['inactive', inactive], ['no membership', noMembership]]) {
+      await assertDenied(firestoreGet('aiUsage/company-usage', user), `${label} company ai usage read`);
+      await assertDenied(firestoreGet('aiBudgets/company-budget', user), `${label} company ai budget read`);
+    }
+  });
+
+  it('denies other-company and anonymous users from reading company AI usage and budgets', async () => {
+    await assertDenied(firestoreGet('aiUsage/company-usage', outsider), 'other company admin company ai usage read');
+    await assertDenied(firestoreGet('aiBudgets/company-budget', outsider), 'other company admin company ai budget read');
+    await assertDenied(firestoreGet('aiUsage/company-usage', null), 'anonymous company ai usage read');
+    await assertDenied(firestoreGet('aiBudgets/company-budget', null), 'anonymous company ai budget read');
+  });
+
+  it('denies administrators from reading AI usage and budgets outside their company or without companyId', async () => {
+    await assertDenied(firestoreGet('aiUsage/other-company-usage', admin), 'admin other company ai usage read');
+    await assertDenied(firestoreGet('aiBudgets/other-company-budget', admin), 'admin other company ai budget read');
+    await assertDenied(firestoreGet('aiUsage/usage-without-company', admin), 'admin ai usage without company read');
+    await assertDenied(firestoreGet('aiBudgets/budget-without-company', admin), 'admin ai budget without company read');
+  });
+
+  it('keeps AI usage backend-write-only for clients', async () => {
+    await assertDenied(firestoreSet('aiUsage/client-created-usage', {
+      companyId,
+      tokens: 100,
+    }, admin), 'client ai usage create');
+
+    await assertDenied(firestorePatch('aiUsage/company-usage', {
+      companyId,
+      tokens: 150,
+    }, admin), 'client ai usage update');
+
+    await assertDenied(firestoreDelete('aiUsage/company-usage', admin), 'client ai usage delete');
+  });
+
+  it('keeps viewers from creating or modifying AI budgets', async () => {
+    await assertDenied(firestoreSet('aiBudgets/viewer-budget', {
+      companyId,
+      dailyLimitUsd: 999,
+    }, viewer), 'viewer ai budget create');
+
+    await assertDenied(firestorePatch('aiBudgets/company-budget', {
+      companyId,
+      dailyLimitUsd: 999,
+    }, viewer), 'viewer ai budget update');
   });
 
   it('blocks user profile role escalation and keeps AI/audit writes backend-only', async () => {

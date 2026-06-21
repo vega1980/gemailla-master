@@ -56,6 +56,15 @@ service firebase.storage {
         || request.resource.contentType == 'application/xml';
     }
 
+    function hasAllowedFileExtension(fileName) {
+      return fileName.matches('(?i)^.+\\.(pdf|xml)$');
+    }
+
+    function contentTypeMatchesExtension(fileName) {
+      return (fileName.matches('(?i)^.+\\.pdf$') && request.resource.contentType == 'application/pdf')
+        || (fileName.matches('(?i)^.+\\.xml$') && (request.resource.contentType == 'text/xml' || request.resource.contentType == 'application/xml'));
+    }
+
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
       allow read: if hasCompanyToken(companyId)
@@ -64,8 +73,11 @@ service firebase.storage {
       allow create: if canWriteCompanyDocuments(companyId)
                     && documentExists(companyId, documentId)
                     && isValidMetadata(companyId, documentId)
+                    && request.resource.size > 0
                     && request.resource.size < 15 * 1024 * 1024
-                    && hasAllowedDocumentContentType();
+                    && hasAllowedDocumentContentType()
+                    && hasAllowedFileExtension(fileName)
+                    && contentTypeMatchesExtension(fileName);
 
       allow update, delete: if false;
     }

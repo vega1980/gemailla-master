@@ -58,6 +58,27 @@ async function getAuthHeader() {
   return { Authorization: `Bearer ${token}` };
 }
 
+
+function getSafeAiEndpoint() {
+  const configured = String(import.meta.env.VITE_LLM_ENDPOINT || '/api/ai').trim() || '/api/ai';
+  let url;
+  try {
+    url = new URL(configured, window.location.origin);
+  } catch {
+    throw new Error('Endpoint de IA inválido.');
+  }
+
+  if (url.origin !== window.location.origin || url.username || url.password) {
+    throw new Error('Endpoint de IA bloqueado: solo se permite una ruta interna del mismo origen.');
+  }
+
+  if (!url.pathname.startsWith('/api/')) {
+    throw new Error('Endpoint de IA bloqueado: la ruta debe iniciar con /api/.');
+  }
+
+  return `${url.pathname}${url.search}`;
+}
+
 function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.', correlationId = ensureCorrelationId('', 'ai')) {
   return {
     disabled: true,
@@ -75,7 +96,7 @@ export async function invokeLLM(params = {}) {
   const correlationId = ensureCorrelationId(params.correlationId, 'ai');
   const companyId = typeof params.companyId === 'string' ? params.companyId.trim() : '';
   if (!companyId) throw new Error('companyId es obligatorio para usar IA.');
-  const endpoint = import.meta.env.VITE_LLM_ENDPOINT || '/api/ai';
+  const endpoint = getSafeAiEndpoint();
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -332,7 +353,7 @@ export const firebase = {
         uid: userUid,
         email: user.email,
         fullName: user.displayName || user.email,
-        role: 'user',
+        role: (await user.getIdTokenResult().catch(() => ({ claims: {} }))).claims?.role || 'user',
       };
     },
     logout: async (redirectUrl) => {
