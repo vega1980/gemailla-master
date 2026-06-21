@@ -6,12 +6,45 @@ import { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatus
 import { ensureCorrelationId, getReleaseMetadata, logFrontendEvent } from '@/lib/observability';
 
 import { askLLM } from '@/modules/ai/aiService';
+
+const AI_RESULT_FIELDS = new Set([
+  'docType',
+  'rfc_emisor',
+  'rfc_receptor',
+  'subtotal',
+  'iva',
+  'total',
+  'currency',
+  'docDate',
+  'concepts',
+  'ai_summary',
+  'ai_classification',
+  'tags',
+]);
+
+function pickAiResultFields(result = {}) {
+  if (!result || typeof result !== 'object') return {};
+  return Object.fromEntries(Object.entries(result).filter(([key]) => AI_RESULT_FIELDS.has(key)));
+}
+
+function validateDocumentReadyForAi({ doc, company }) {
+  if (!company?.id) throw new Error('Necesitas una empresa activa para analizar documentos.');
+  if (doc.companyId !== company.id) throw new Error('El documento no pertenece a la empresa activa.');
+  if (!doc.storagePath || !String(doc.storagePath).startsWith(`companies/${company.id}/documents/${doc.id}/`)) {
+    throw new Error('El documento no tiene una ruta interna válida para esta empresa.');
+  }
+  if (!['pdf', 'xml'].includes(String(doc.fileType || '').toLowerCase())) {
+    throw new Error('Solo se pueden analizar documentos PDF o XML validados.');
+  }
+}
+
 function getErrorMessage(error, fallback) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
 export async function analyzeDocumentFlow({ doc, company, user, correlationId: providedCorrelationId }) {
   if (!doc?.id) throw new Error('Documento inválido.');
+  validateDocumentReadyForAi({ doc, company });
 
   const correlationId = ensureCorrelationId(providedCorrelationId || doc.correlationId, 'doc_ai');
 
@@ -75,7 +108,7 @@ export async function analyzeDocumentFlow({ doc, company, user, correlationId: p
     }
 
     await firebase.entities.Document.update(doc.id, {
-      ...result,
+      ...pickAiResultFields(result),
       status: DOCUMENT_STATUSES.ANALYZED,
       aiDisabled: false,
       errorMessage: null,
