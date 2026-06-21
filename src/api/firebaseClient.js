@@ -80,14 +80,12 @@ function getSafeInternalEndpoint(configuredEndpoint, fallbackPath, label) {
 }
 
 function getSafeAiEndpoint() {
-  return getSafeInternalEndpoint(import.meta.env.VITE_LLM_ENDPOINT, '/api/ai', 'IA');
+  const url = new URL('/api/ai', window.location.origin);
+  return `${url.pathname}${url.search}`;
 }
 
 function getSafeFunctionsEndpoint() {
-  const configured = import.meta.env.VITE_FUNCTIONS_ENDPOINT || import.meta.env.VITE_LLM_ENDPOINT;
-  return configured
-    ? getSafeInternalEndpoint(configured, '/api/functions', 'funciones')
-    : '';
+  return getSafeInternalEndpoint('/api/functions', '/api/functions', 'funciones');
 }
 
 function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.', correlationId = ensureCorrelationId('', 'ai')) {

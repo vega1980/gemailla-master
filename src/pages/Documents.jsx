@@ -155,7 +155,7 @@ export default function Documents() {
       invalidateDocuments();
       toast({
         title: 'No se pudo analizar',
-        description: getErrorMessage(error, 'Verifica VITE_LLM_ENDPOINT y vuelve a intentar.'),
+        description: getErrorMessage(error, 'Verifica el backend seguro de IA y vuelve a intentar.'),
         variant: 'destructive',
       });
     } finally {
