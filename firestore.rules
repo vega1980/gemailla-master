@@ -255,6 +255,12 @@ service cloud.firestore {
         && sameCompany(resource.data.companyId);
     }
 
+    function canReadAiFinancialData(data) {
+      return signedIn()
+        && hasCompanyId(data)
+        && canManageCompany(data.companyId);
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && userId == currentUid();
       allow create: if signedIn()
@@ -310,12 +316,12 @@ service cloud.firestore {
     }
 
     match /aiUsage/{id} {
-      allow read: if signedIn();
+      allow read: if canReadAiFinancialData(resource.data);
       allow create, update, delete: if false;
     }
 
     match /aiBudgets/{id} {
-      allow read: if signedIn();
+      allow read: if canReadAiFinancialData(resource.data);
       allow create: if canCreateAiBudget();
       allow update: if canUpdateAiBudget();
       allow delete: if false;
