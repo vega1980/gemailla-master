@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyCrmClients } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,7 @@ import { Plus, Users, Search, Pencil, Trash2, Loader2, Sparkles, Phone, Mail, Bu
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
+import { askLLM } from '@/modules/ai/aiService';
 const segmentConfig = {
   premium:    { label: 'Premium',    color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
   recurrente: { label: 'Recurrente', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
@@ -34,26 +36,20 @@ export default function ClientDirectory({ company }) {
   const [aiResult, setAiResult] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  const { data: clients = [], isLoading } = useQuery({
-    queryKey: ['crm-clients', company.id],
-    queryFn: () => firebase.entities.CRMClient.filter({ companyId: company.id }),
-  });
+  const { data: clients = [], isLoading } = useCompanyCrmClients(company);
 
-  const { data: interactions = [] } = useQuery({
-    queryKey: ['crm-interactions', company.id],
-    queryFn: () => firebase.entities.CRMInteraction.filter({ companyId: company.id }),
-  });
+  const { data: interactions = [] } = useCompanyCrmInteractions(company);
 
   const save = useMutation({
     mutationFn: (data) => editing
       ? firebase.entities.CRMClient.update(editing.id, data)
       : firebase.entities.CRMClient.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries(['crm-clients', company.id]); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Cliente guardado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Cliente guardado'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.CRMClient.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['crm-clients', company.id]); toast.success('Cliente eliminado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); toast.success('Cliente eliminado'); },
   });
 
   const openEdit = (c) => { setEditing(c); setForm({ ...c }); setOpen(true); };
@@ -64,7 +60,8 @@ export default function ClientDirectory({ company }) {
     setAiResult('');
     setAiLoading(true);
     const clientInteractions = interactions.filter(i => i.clientId === client.id);
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un consultor de CRM experto en PyMEs mexicanas. Analiza al cliente "${client.name}" de la empresa "${company.name}" y genera una estrategia personalizada.
 
 DATOS DEL CLIENTE:

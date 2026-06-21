@@ -6,6 +6,7 @@ import { normalizeData, normalizeFilters, normalizeKey } from '@/infrastructure/
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { createRepository } from '@/infrastructure/firebase/repositories/createRepository';
 import { getDocumentAccessUrl, uploadFile } from '@/infrastructure/firebase/storage/documentStorage';
+import { ensureCorrelationId, getReleaseMetadata, logFrontendEvent, persistObservabilityEvent } from '@/lib/observability';
 export { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatuses';
 
 import {
@@ -40,13 +41,7 @@ function getCurrentUserUid() {
   return user?.uid || user?.id || null;
 }
 
-function isArchivedRecord(record) {
-  return record?.status === DOCUMENT_STATUSES.ARCHIVED || record?.status === 'archived';
-}
-
-function keepVisibleRecords(records, includeArchived = false) {
-  return includeArchived ? records : records.filter((item) => !isArchivedRecord(item));
-}
+const mutations = createAuditMutationMiddleware({ getCurrentUserUid, nowIso });
 
 const mutations = createAuditMutationMiddleware({ getCurrentUserUid, nowIso });
 
@@ -64,7 +59,28 @@ async function getAuthHeader() {
   return { Authorization: `Bearer ${token}` };
 }
 
-function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.') {
+
+function getSafeAiEndpoint() {
+  const configured = String(import.meta.env.VITE_LLM_ENDPOINT || '/api/ai').trim() || '/api/ai';
+  let url;
+  try {
+    url = new URL(configured, window.location.origin);
+  } catch {
+    throw new Error('Endpoint de IA inválido.');
+  }
+
+  if (url.origin !== window.location.origin || url.username || url.password) {
+    throw new Error('Endpoint de IA bloqueado: solo se permite una ruta interna del mismo origen.');
+  }
+
+  if (!url.pathname.startsWith('/api/')) {
+    throw new Error('Endpoint de IA bloqueado: la ruta debe iniciar con /api/.');
+  }
+
+  return `${url.pathname}${url.search}`;
+}
+
+function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.', correlationId = ensureCorrelationId('', 'ai')) {
   return {
     disabled: true,
     status: 'disabled',
@@ -72,6 +88,8 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
     message: reason,
     summary: reason,
     response: reason,
+    correlationId,
+    release: getReleaseMetadata(),
   };
 }
 
@@ -87,9 +105,15 @@ async function invokeLLM(params = {}) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-Correlation-Id': correlationId,
       ...(await getAuthHeader()),
     },
-    body: JSON.stringify(params),
+    body: JSON.stringify({
+      ...params,
+      companyId,
+      correlationId,
+      release: getReleaseMetadata(),
+    }),
   });
 
   const raw = await response.text();
@@ -104,10 +128,21 @@ async function invokeLLM(params = {}) {
 
   if (!response.ok) {
     const message = payload?.error || payload?.message || `Error HTTP ${response.status} al llamar IA.`;
-    throw new Error(message);
+    logFrontendEvent('ai_request_failed', { correlationId, status: response.status, message }, 'error');
+    await persistObservabilityEvent('ai_request_failed', {
+      correlationId,
+      severity: 'ERROR',
+      source: 'frontend',
+      status: response.status,
+      message,
+    }).catch(() => null);
+    throw new Error(`${message} (correlationId: ${correlationId})`);
   }
 
-  return payload?.data || payload?.result || payload;
+  logFrontendEvent('ai_request_completed', { correlationId, status: response.status });
+  const result = payload?.data || payload?.result || payload;
+  if (result && typeof result === 'object') return { ...result, correlationId: result.correlationId || correlationId };
+  return { response: result, correlationId };
 }
 
 async function extractDataFromUploadedFile() {
@@ -119,6 +154,7 @@ async function extractDataFromUploadedFile() {
 }
 
 async function invokeFunction(name, payload = {}) {
+  const correlationId = ensureCorrelationId(payload.correlationId, name || 'fn');
   const endpoint = import.meta.env.VITE_FUNCTIONS_ENDPOINT || import.meta.env.VITE_LLM_ENDPOINT;
   if (!endpoint) {
     return {
@@ -127,6 +163,7 @@ async function invokeFunction(name, payload = {}) {
         disabled: true,
         message: `Función ${name} desactivada: falta backend seguro.`,
         results: {},
+        correlationId,
       },
     };
   }
@@ -135,13 +172,22 @@ async function invokeFunction(name, payload = {}) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-Correlation-Id': correlationId,
       ...(await getAuthHeader()),
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      correlationId,
+      release: payload.release || getReleaseMetadata(),
+    }),
   });
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error || data?.message || `No se pudo ejecutar ${name}.`);
+  if (!response.ok) {
+    const message = data?.error || data?.message || `No se pudo ejecutar ${name}.`;
+    logFrontendEvent('function_request_failed', { correlationId, functionName: name, status: response.status, message }, 'error');
+    throw new Error(`${message} (correlationId: ${correlationId})`);
+  }
   return { data };
 }
 
@@ -151,6 +197,88 @@ const connectors = {
   },
   disconnectAppUser: async () => ({ success: true, disabled: true }),
 };
+
+
+async function syncUserProfile(profile = {}) {
+  const user = getCurrentUser();
+  const userUid = profile.uid || profile.id || getCurrentUserUid();
+  if (!userUid) throw new Error('No se puede sincronizar el perfil sin UID.');
+
+  const payload = normalizeData({
+    ...profile,
+    uid: userUid,
+    email: profile.email || user?.email || '',
+    fullName: profile.fullName || profile.displayName || user?.displayName || user?.email || '',
+    status: profile.status || 'active',
+  });
+  delete payload.id;
+
+  const dataWithAudit = mutations.withCreateAuditFields(payload);
+  const userRef = doc(db, 'users', userUid);
+
+  await runTransaction(db, async (transaction) => {
+    transaction.set(userRef, dataWithAudit, { merge: true });
+  });
+
+  return { id: userUid, ...dataWithAudit, uid: userUid };
+}
+
+async function createCompanyWithInitialOwner(companyData = {}, membershipData = {}) {
+  const user = getCurrentUser();
+  const userUid = membershipData.userUid || companyData.ownerUid || getCurrentUserUid();
+  if (!userUid) throw new Error('No se puede crear la empresa sin UID de propietario.');
+
+  const companyRef = doc(collection(db, 'companies'));
+  const membershipRef = doc(db, 'companyMembers', `${companyRef.id}_${userUid}`);
+
+  const companyPayload = mutations.withCreateAuditFields(normalizeData({
+    ...companyData,
+    ownerUid: userUid,
+    status: companyData.status || 'active',
+  }));
+
+  const membershipPayload = mutations.withCreateAuditFields(normalizeData({
+    ...membershipData,
+    companyId: companyRef.id,
+    userUid,
+    userEmail: membershipData.userEmail || user?.email || '',
+    userName: membershipData.userName || user?.displayName || user?.email || '',
+    role: membershipData.role || 'director',
+    status: membershipData.status || 'active',
+  }));
+
+  await runTransaction(db, async (transaction) => {
+    transaction.set(companyRef, companyPayload);
+    transaction.set(membershipRef, membershipPayload);
+  });
+
+  return {
+    id: companyRef.id,
+    ...companyPayload,
+    initialOwnerMembership: { id: membershipRef.id, ...membershipPayload },
+  };
+}
+
+function buildEntities() {
+  const entities = Object.fromEntries(
+    Object.entries(ENTITY_COLLECTIONS).map(([entityName, collectionName]) => [
+      entityName,
+      createRepository(collectionName),
+    ]),
+  );
+
+  entities.User = {
+    ...entities.User,
+    syncUserProfile,
+  };
+
+  entities.Company = {
+    ...entities.Company,
+    createCompanyWithInitialOwner,
+  };
+
+  return entities;
+}
 
 const agents = {
   createConversation: async ({ metadata = {}, agent_name: agentName = 'assistant' } = {}) => {
@@ -176,9 +304,17 @@ const agents = {
     messages.push({ ...message, createdAt: nowIso() });
 
     if (message?.role === 'user') {
-      const aiResponse = await invokeLLM({ prompt: message.content });
+      const correlationId = ensureCorrelationId(message.correlationId, 'ai');
+      const aiResponse = await invokeLLM({
+        companyId: current.companyId,
+        documentIds: current.context_documents || current.documentIds || [],
+        prompt: message.content,
+        correlationId,
+      });
       messages.push({
         role: 'assistant',
+        correlationId,
+        release: getReleaseMetadata(),
         content: typeof aiResponse === 'string' ? aiResponse : aiResponse?.response || aiResponse?.message || 'IA desactivada temporalmente.',
         createdAt: nowIso(),
       });
@@ -197,24 +333,7 @@ const agents = {
 };
 
 export const firebase = {
-  entities: Object.fromEntries(
-    Object.entries(ENTITY_COLLECTIONS).map(([entityName, collectionName]) => [
-      entityName,
-      createRepository({
-        db,
-        entityName,
-        collectionName,
-        getCurrentUser,
-        getCurrentUserUid,
-        isArchivedRecord,
-        keepVisibleRecords,
-        normalizeData,
-        normalizeFilters,
-        normalizeKey,
-        nowIso,
-      }),
-    ]),
-  ),
+  entities: buildEntities(),
   integrations: {
     Core: {
       InvokeLLM: invokeLLM,
@@ -238,7 +357,7 @@ export const firebase = {
         uid: userUid,
         email: user.email,
         fullName: user.displayName || user.email,
-        role: 'user',
+        role: (await user.getIdTokenResult().catch(() => ({ claims: {} }))).claims?.role || 'user',
       };
     },
     logout: async (redirectUrl) => {

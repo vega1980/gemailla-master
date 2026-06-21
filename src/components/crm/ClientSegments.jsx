@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyCrmClients, useCompanyCrmDeals, useCompanyCrmInteractions } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, PieChart } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 
+import { askLLM } from '@/modules/ai/aiService';
 const SEGMENT_COLORS = {
   premium: '#f59e0b', recurrente: '#3b82f6', nuevo: '#10b981', inactivo: '#6b7280', prospecto: '#8b5cf6',
 };
@@ -26,20 +26,11 @@ export default function ClientSegments({ company }) {
   const [insight, setInsight] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ['crm-clients', company.id],
-    queryFn: () => firebase.entities.CRMClient.filter({ companyId: company.id }),
-  });
+  const { data: clients = [] } = useCompanyCrmClients(company);
 
-  const { data: deals = [] } = useQuery({
-    queryKey: ['crm-deals', company.id],
-    queryFn: () => firebase.entities.CRMDeal.filter({ companyId: company.id }),
-  });
+  const { data: deals = [] } = useCompanyCrmDeals(company);
 
-  const { data: interactions = [] } = useQuery({
-    queryKey: ['crm-interactions', company.id],
-    queryFn: () => firebase.entities.CRMInteraction.filter({ companyId: company.id }),
-  });
+  const { data: interactions = [] } = useCompanyCrmInteractions(company);
 
   // Segment distribution
   const segCounts = clients.reduce((acc, c) => { acc[c.segment] = (acc[c.segment] || 0) + 1; return acc; }, {});
@@ -63,7 +54,8 @@ export default function ClientSegments({ company }) {
       revenue: c.total_revenue || 0, interactions: intByClient[c.id] || 0,
     }));
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un experto en CRM y segmentación de mercado para PyMEs mexicanas.
 
 EMPRESA: ${company.name}

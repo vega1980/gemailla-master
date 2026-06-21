@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DOCUMENT_STATUSES, firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyDocuments } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -16,6 +17,7 @@ import ReportGenerator from '@/components/reports/ReportGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadDocumentFlow } from '@/features/documents/services/uploadDocumentFlow';
 import { analyzeDocumentFlow } from '@/features/documents/services/analyzeDocumentFlow';
+import { useDebouncedValue, useFilteredDocuments } from '@/features/documents/hooks/useFilteredDocuments';
 
 const statusColors = {
   [DOCUMENT_STATUSES.UPLOADED]: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
@@ -66,13 +68,9 @@ export default function Documents() {
   const [analyzing, setAnalyzing] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
 
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', activeCompany?.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: activeCompany.id }, '-createdAt'),
-    enabled: !!activeCompany,
-  });
+  const { data: documents = [], isLoading } = useCompanyDocuments(activeCompany);
 
-  const documentsQueryKey = ['documents', activeCompany?.id];
+  const documentsQueryKey = companyEntityQueryKey('documents', activeCompany);
 
   const invalidateDocuments = () => queryClient.invalidateQueries({ queryKey: documentsQueryKey });
 
@@ -165,11 +163,8 @@ export default function Documents() {
     }
   };
 
-  const filtered = documents.filter(d => {
-    const matchSearch = d.title?.toLowerCase().includes(search.toLowerCase()) || d.rfc_emisor?.toLowerCase().includes(search.toLowerCase());
-    const matchType = filterType === 'all' || d.docType === filterType;
-    return matchSearch && matchType;
-  });
+  const debouncedSearch = useDebouncedValue(search);
+  const filtered = useFilteredDocuments(documents, debouncedSearch, filterType);
 
   if (!activeCompany) return <EmptyState icon={FileText} title="Selecciona una empresa" description="Necesitas una empresa activa para ver documentos." />;
 
@@ -185,6 +180,7 @@ export default function Documents() {
               <input type="file" id="file-upload" className="hidden" accept=".pdf,.xml" onChange={handleUpload} />
               <Button
                 onClick={() => document.getElementById('file-upload').click()}
+                aria-label="Subir documento"
                 disabled={uploading}
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
               >
@@ -256,16 +252,17 @@ export default function Documents() {
                       size="sm"
                       variant="outline"
                       onClick={() => handleAnalyze(doc)}
+                      aria-label={`Analizar documento ${doc.title}`}
                       disabled={analyzing === doc.id}
                       className="border-primary/30 text-primary hover:bg-primary/10"
                     >
                       {analyzing === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => setSelectedDoc(doc)} className="border-border">
+                  <Button size="sm" variant="outline" onClick={() => setSelectedDoc(doc)} aria-label={`Ver documento ${doc.title}`} className="border-border">
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => deleteMutation.mutate(doc.id)} className="border-border text-destructive hover:bg-destructive/10">
+                  <Button size="sm" variant="outline" onClick={() => deleteMutation.mutate(doc.id)} aria-label={`Archivar documento ${doc.title}`} className="border-border text-destructive hover:bg-destructive/10">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>

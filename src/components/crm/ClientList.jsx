@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyCrmClients, useCompanyCrmInteractions } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,31 +48,25 @@ export default function ClientList({ company }) {
   const [form, setForm] = useState(EMPTY_CLIENT);
   const [intForm, setIntForm] = useState(EMPTY_INT);
 
-  const { data: clients = [], isLoading } = useQuery({
-    queryKey: ['crm-clients', company.id],
-    queryFn: () => firebase.entities.CRMClient.filter({ companyId: company.id }),
-  });
+  const { data: clients = [], isLoading } = useCompanyCrmClients(company);
 
-  const { data: interactions = [] } = useQuery({
-    queryKey: ['crm-interactions', company.id],
-    queryFn: () => firebase.entities.CRMInteraction.filter({ companyId: company.id }),
-  });
+  const { data: interactions = [] } = useCompanyCrmInteractions(company);
 
   const saveClient = useMutation({
     mutationFn: (data) => editingClient
       ? firebase.entities.CRMClient.update(editingClient.id, data)
       : firebase.entities.CRMClient.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries(['crm-clients', company.id]); setOpenClient(false); setEditingClient(null); setForm(EMPTY_CLIENT); toast.success('Cliente guardado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); setOpenClient(false); setEditingClient(null); setForm(EMPTY_CLIENT); toast.success('Cliente guardado'); },
   });
 
   const delClient = useMutation({
     mutationFn: (id) => firebase.entities.CRMClient.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['crm-clients', company.id]); toast.success('Cliente eliminado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); toast.success('Cliente eliminado'); },
   });
 
   const saveInt = useMutation({
     mutationFn: (data) => firebase.entities.CRMInteraction.create({ ...data, companyId: company.id, clientId: activeClientId }),
-    onSuccess: () => { qc.invalidateQueries(['crm-interactions', company.id]); setOpenInt(false); setIntForm(EMPTY_INT); toast.success('Interacción registrada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmInteractions', company) }); setOpenInt(false); setIntForm(EMPTY_INT); toast.success('Interacción registrada'); },
   });
 
   const filtered = clients.filter(c => {
@@ -82,7 +77,7 @@ export default function ClientList({ company }) {
 
   const openNewClient = () => { setEditingClient(null); setForm(EMPTY_CLIENT); setOpenClient(true); };
   const openEditClient = (c) => { setEditingClient(c); setForm({ ...c }); setOpenClient(true); };
-  const openNewInt = (clientId) => { setActiveClientId(clientId); setIntForm({ ...EMPTY_INT, date: new Date().toISOString().split('T')[0] }); setOpenInt(true); };
+  const openNewInt = (clientId) => { setActiveClientId(clientId); setIntForm({ ...EMPTY_INT, date: new Date().toISOString().slice(0, 10) }); setOpenInt(true); };
   const toggleExpand = (id) => setExpanded(e => ({ ...e, [id]: !e[id] }));
 
   const totalRevenue = clients.reduce((s, c) => s + (c.total_revenue || 0), 0);

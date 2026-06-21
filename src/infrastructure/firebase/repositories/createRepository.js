@@ -1,11 +1,9 @@
-// @ts-check
-
 import {
   collection,
   doc,
   getDoc,
   getDocs,
-  limit,
+  limit as firestoreLimit,
   orderBy,
   query,
   where,
@@ -37,46 +35,40 @@ export function createRepository({
     return doc(col()).id;
   }
 
-  async function list(options = {}) {
-    const snapshot = await getDocs(col());
-    const records = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-    return entityName === 'User' ? records : keepVisibleRecords(records, options.includeArchived);
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
   }
 
-  async function filter(filters = {}, orderByField = null, limitCount = null, options = {}) {
-    const normalizedFilters = normalizeFilters(filters);
-    const constraints = [];
+  return chunks;
+}
 
-    for (const [key, value] of Object.entries(normalizedFilters)) {
-      if (value !== undefined && value !== null && value !== 'all') {
-        constraints.push(where(key, '==', value));
-      }
+function serializeDocSnapshot(snapshot) {
+  return {
+    id: snapshot.id,
+    ...snapshot.data(),
+  };
+}
+
+function serializeQuerySnapshot(snapshot) {
+  return snapshot.docs.map(serializeDocSnapshot);
+}
+
+function buildQuery(collectionRef, options = {}) {
+  /** @type {import('firebase/firestore').QueryConstraint[]} */
+  const constraints = [];
+
+  if (Array.isArray(options.where)) {
+    for (const condition of options.where) {
+      constraints.push(where(condition.field, condition.operator, condition.value));
     }
-
-    if (orderByField) {
-      const direction = String(orderByField).startsWith('-') ? 'desc' : 'asc';
-      const field = normalizeKey(String(orderByField).replace(/^-/, ''));
-      constraints.push(orderBy(field, direction));
-    }
-
-    if (limitCount) constraints.push(limit(limitCount));
-
-    const q = constraints.length ? query(col(), ...constraints) : col();
-    const snapshot = await getDocs(q);
-    const records = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-    return ('status' in normalizedFilters) || entityName === 'User'
-      ? records
-      : keepVisibleRecords(records, options.includeArchived);
   }
 
-  async function getRaw(id) {
-    const snap = await getDoc(doc(db, collectionName, id));
-    return serializeDocument(snap);
+  if (options.orderBy) {
+    constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
   }
 
-  async function get(id, options = {}) {
-    const record = await getRaw(id);
-    return options.includeArchived || !isArchivedRecord(record) ? record : null;
+  if (options.cursor) {
+    constraints.push(startAfter(options.cursor));
   }
 
   async function create(data = {}) {
@@ -95,8 +87,13 @@ export function createRepository({
       return { id, ...auditedPayload, uid: id };
     }
 
-    if (entityName === 'Company') {
-      payload.ownerUid = userUid || payload.ownerUid || null;
+    return serializeDocSnapshot(snapshot);
+  };
+
+  const list = async (options) => {
+    if (!options || Object.keys(options).length === 0) {
+      const snapshot = await getDocs(collectionRef);
+      return serializeQuerySnapshot(snapshot);
     }
 
     if (entityName === 'CompanyMember') {
@@ -116,6 +113,11 @@ export function createRepository({
         const { payload: auditedPayload } = await mutations.set(doc(db, collectionName, docId), payload, { merge: true });
         return { id: docId, ...auditedPayload };
       }
+
+      if (value) constraints.push(firestoreLimit(value));
+
+      const snapshot = await getDocs(constraints.length ? query(collectionRef, ...constraints) : collectionRef);
+      return serializeQuerySnapshot(snapshot);
     }
 
     const { refDoc, payload: auditedPayload } = await mutations.add(col(), payload);
@@ -155,9 +157,7 @@ export function createRepository({
       created.push({ id: refDoc.id, ...auditedPayload });
     });
 
-    await batch.commit();
-    return created;
-  }
+    const documentRef = await addDoc(collectionRef, dataWithAudit);
 
   async function update(id, data = {}) {
     const { payload } = await mutations.update(doc(db, collectionName, id), normalizeData(data));
@@ -176,16 +176,16 @@ export function createRepository({
   }
 
   return {
+    get: getById,
+    getById,
     list,
     filter,
-    get,
-    getRaw,
-    newId,
     create,
     createWithId,
     bulkCreate,
     update,
     softDelete,
+    newId,
     delete: softDelete,
   };
-}
+};

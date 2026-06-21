@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { firebase, isAiDisabledResponse } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { createCorrelationId } from '@/lib/observability';
+import { useCompanyAiConversations } from '@/lib/companyEntityQueries';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
@@ -14,6 +16,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import PlanGate from '@/components/subscription/PlanGate';
 import { useSubscription } from '@/lib/subscriptionContext';
+
+
+import { askLLM } from '@/modules/ai/aiService';
+const HIGH_COST_APPROVAL_THRESHOLD_USD = 0.25;
+
+function estimateRequestCostUsd(prompt, context) {
+  return ((String(prompt || '').length + String(context || '').length) / 1000) * 0.01;
+}
 
 const suggestedQueries = [
   '¿Cuál es el total de gastos en nómina este año?',
@@ -63,23 +73,8 @@ export default function AIAssistant() {
   const isMountedRef = useRef(false);
   const hasHydratedSavedConversationsRef = useRef(false);
 
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', activeCompany?.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
-
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', activeCompany?.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }),
-    enabled: !!activeCompany,
-  });
-
-  const { data: savedConvos = [] } = useQuery({
-    queryKey: ['conversations', activeCompany?.id],
-    queryFn: () => firebase.entities.AIConversation.filter({ companyId: activeCompany.id }, '-createdAt', 20),
-    enabled: !!activeCompany,
-  });
+  const { documents, transactions } = useCompanyData(activeCompany);
+  const { data: savedConvos = [] } = useCompanyAiConversations(activeCompany);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -130,6 +125,7 @@ export default function AIAssistant() {
       .filter(d => filterDocType === 'all' || d.docType === filterDocType)
       .slice(0, 15);
     const docIds = relevantDocs.map(d => d.id);
+    const correlationId = createCorrelationId('ai');
     const pendingId = createPendingConversationId();
     const pendingConvo = { id: pendingId, query: userQuery, response: null, docs: docIds };
     if (isMountedRef.current) {
@@ -146,7 +142,7 @@ export default function AIAssistant() {
       )));
     };
 
-    const saveConversation = async ({ response, status = 'completed', errorMessage = null }) => {
+    const saveConversation = async ({ response, status = 'completed', errorMessage = null, estimatedCostUsd = 0, usageLog = null }) => {
       await firebase.entities.AIConversation.create({
         companyId: activeCompany.id,
         userEmail: user?.email || '',
@@ -155,7 +151,12 @@ export default function AIAssistant() {
         context_documents: docIds,
         filters_used: { docType: filterDocType },
         status,
+        estimatedCostUsd,
+        ...(usageLog ? { tokens: usageLog.tokens, model: usageLog.model, costo: usageLog.costo, costUsd: usageLog.costUsd, costLogTimestamp: usageLog.costLogTimestamp } : {}),
+        requiresSupervisorApproval: status === 'pendingApproval',
         errorMessage,
+        documentIds: docIds,
+        correlationId,
       });
     };
 
@@ -170,8 +171,7 @@ export default function AIAssistant() {
         num_transactions: transactions.length,
       };
 
-      const aiResponse = await firebase.integrations.Core.InvokeLLM({
-        prompt: `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
+      const requestPrompt = `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
 
 Empresa: ${activeCompany.name}
 RFC: ${activeCompany.rfc || 'N/A'}
@@ -188,16 +188,40 @@ RESUMEN FINANCIERO:
 PREGUNTA DEL USUARIO:
 ${userQuery}
 
-Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`
+Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`;
+      const estimatedCostUsd = estimateRequestCostUsd(requestPrompt, docContext);
+
+      if (estimatedCostUsd > HIGH_COST_APPROVAL_THRESHOLD_USD) {
+        const approvalMessage = 'Solicitud pendiente de aprobación: el costo estimado supera $0.25 USD y requiere autorización de un supervisor.';
+        updateConversation(approvalMessage);
+        await saveConversation({ response: approvalMessage, status: 'pendingApproval', estimatedCostUsd });
+        return;
+      }
+
+      const aiResponse = await askLLM({
+        companyId: activeCompany.id,
+        prompt: requestPrompt,
+        documentIds: docIds,
+        correlationId,
       });
       const response = normalizeAIResponse(aiResponse);
       updateConversation(response);
 
-      await saveConversation({ response });
+      await saveConversation({
+        response,
+        estimatedCostUsd,
+        usageLog: {
+          tokens: aiResponse?.tokens,
+          model: aiResponse?.model,
+          costo: aiResponse?.costo,
+          costUsd: aiResponse?.costUsd,
+          costLogTimestamp: aiResponse?.costLogTimestamp,
+        },
+      });
 
       await logAction({
         companyId: activeCompany.id, userEmail: user?.email, userName: user?.fullName,
-        action: 'ai_query', entityType: 'AIConversation', details: userQuery
+        action: 'ai_query', entityType: 'AIConversation', details: `Consulta IA completada (longitud: ${userQuery.length}, documentos: ${docIds.length})`, correlationId: aiResponse?.correlationId || correlationId
       });
     } catch (error) {
       const errorMessage = getErrorMessage(error, 'Verifica la configuración del backend seguro y vuelve a intentar.');
@@ -212,7 +236,8 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
           userName: user?.fullName,
           action: 'ai_query_error',
           entityType: 'AIConversation',
-          details: `${userQuery} — ${errorMessage}`,
+          details: `Consulta IA fallida (longitud: ${userQuery.length}, documentos: ${docIds.length}) — ${errorMessage}`,
+          correlationId,
         });
       } catch (persistenceError) {
         console.error('Error persisting failed AI conversation:', persistenceError);

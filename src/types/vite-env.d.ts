@@ -7,7 +7,10 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID?: string;
   readonly VITE_LLM_ENDPOINT?: string;
   readonly VITE_FUNCTIONS_ENDPOINT?: string;
-  readonly VITE_OPENAI_API_KEY?: string;
+  readonly VITE_APP_VERSION?: string;
+  readonly VITE_BUILD_ID?: string;
+  readonly VITE_GIT_SHA?: string;
+  readonly VITE_DEPLOY_ENV?: string;
 }
 
 interface ImportMeta {
@@ -24,4 +27,16 @@ interface Window {
     appId?: string;
   };
   GEMAILLA_USE_FIREBASE_EMULATORS?: 'auto' | 'true' | 'false' | boolean;
+  GEMAILLA_RELEASE?: {
+    APP_VERSION?: string;
+    BUILD_ID?: string;
+    GIT_SHA?: string;
+    DEPLOY_ENV?: string;
+  };
+  __GEMAILLA_ERROR_TRACKING__?: boolean;
 }
+
+declare const __APP_VERSION__: string;
+declare const __BUILD_ID__: string;
+declare const __GIT_SHA__: string;
+declare const __DEPLOY_ENV__: string;

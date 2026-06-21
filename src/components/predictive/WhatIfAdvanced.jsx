@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Sparkles, Loader2, FlaskConical, RefreshCw, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { askLLM } from '@/modules/ai/aiService';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer
@@ -54,7 +54,8 @@ export default function WhatIfAdvanced({ transactions, monthlyData }) {
     const variableDescriptions = variables.map(v => `${v.label}: ${vars[v.key] > 0 ? '+' : ''}${vars[v.key]}%`).join(', ');
     const next6 = [1, 2, 3, 4, 5, 6].map(i => format(addMonths(startOfMonth(new Date()), i), 'MMM yy', { locale: es }));
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un consultor financiero experto en simulación de escenarios de negocio. 
 
 Datos base actuales:

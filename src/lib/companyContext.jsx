@@ -1,8 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { getSavedActiveCompanyId, saveActiveCompanyId } from '@/features/companies/services/activeCompanyStorage';
-import { getCompanyRole } from '@/features/companies/services/companyRole';
 import { loadCompanyContextData } from '@/features/companies/services/companyMembershipService';
+import { firebase } from '@/api/firebaseClient';
 
 const CompanyContext = createContext(null);
 
@@ -46,25 +46,34 @@ export function CompanyProvider({ children }) {
     loadCompanies();
   }, [loadCompanies]);
 
+  const syncActiveCompanyClaims = useCallback(async (company) => {
+    if (!company?.id || !user) return;
+    try {
+      await firebase.functions.invoke('syncCompanyClaims', { companyId: company.id });
+      await user.getIdToken(true);
+    } catch (error) {
+      console.warn('No se pudieron sincronizar los claims de empresa activa:', error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    syncActiveCompanyClaims(activeCompany);
+  }, [activeCompany, syncActiveCompanyClaims]);
+
   const switchCompany = useCallback((company) => {
     setActiveCompany(company);
     saveActiveCompanyId(company.id);
-  }, []);
-
-  const getUserRole = useCallback(() => {
-    if (!activeCompany || !user) return null;
-    return getCompanyRole({ activeCompany, memberships, user });
-  }, [activeCompany, memberships, user]);
+    syncActiveCompanyClaims(company);
+  }, [syncActiveCompanyClaims]);
 
   const value = useMemo(() => ({
     companies,
     activeCompany,
-    switchCompany,
     loading,
     memberships,
-    getUserRole,
+    switchCompany,
     reloadCompanies: loadCompanies,
-  }), [activeCompany, companies, getUserRole, loadCompanies, loading, memberships, switchCompany]);
+  }), [activeCompany, companies, loadCompanies, loading, memberships, switchCompany]);
 
   return (
     <CompanyContext.Provider value={value}>

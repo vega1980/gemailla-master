@@ -1,77 +1,89 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+
     function signedIn() {
       return request.auth != null;
     }
 
-    function currentUid() {
-      return request.auth.uid;
-    }
-
-    function membershipId(companyId) {
-      return companyId + '_' + currentUid();
-    }
-
-    function companyExists(companyId) {
-      return firestore.exists(/databases/(default)/documents/companies/$(companyId));
-    }
-
-    function isCompanyOwner(companyId) {
+    function hasCompanyToken(companyId) {
       return signedIn()
-        && companyExists(companyId)
-        && firestore.get(/databases/(default)/documents/companies/$(companyId)).data.ownerUid == currentUid();
+        && request.auth.token.companyId == companyId
+        && request.auth.token.membershipStatus == 'active';
     }
 
-    function hasActiveMembership(companyId) {
-      let memberId = membershipId(companyId);
-      return signedIn()
-        && firestore.exists(/databases/(default)/documents/companyMembers/$(memberId))
-        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.status == 'active';
+    function canWriteCompanyDocuments(companyId) {
+      return hasCompanyToken(companyId)
+        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
     }
 
-    function memberRole(companyId) {
-      let memberId = membershipId(companyId);
-      return firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.role;
+    function hasExistingObjectMetadata(companyId, documentId) {
+      return resource.metadata != null
+        && resource.metadata.keys().hasAll(['companyId', 'documentId'])
+        && resource.metadata.companyId == companyId
+        && resource.metadata.documentId == documentId;
     }
 
-    function canReadCompany(companyId) {
-      return isCompanyOwner(companyId) || hasActiveMembership(companyId);
+    function documentExists(companyId, documentId) {
+      return firestore.exists(
+        /databases/(default)/documents/documents/$(documentId)
+      )
+      && firestore.get(
+        /databases/(default)/documents/documents/$(documentId)
+      ).data.companyId == companyId;
     }
 
-    function canWriteCompany(companyId) {
-      return isCompanyOwner(companyId)
-        || (hasActiveMembership(companyId) && memberRole(companyId) in ['owner', 'director', 'admin', 'editor']);
+    function hasRequiredUploadMetadata() {
+      return request.resource.metadata != null
+        && request.resource.metadata.keys().hasAll(['companyId', 'documentId']);
     }
 
-    function validDocumentFile() {
-      return request.resource.size <= 15 * 1024 * 1024
+    function isValidMetadata(companyId, documentId) {
+      return hasRequiredUploadMetadata()
         && (
-          request.resource.contentType == 'application/pdf'
-          || request.resource.contentType == 'text/xml'
-          || request.resource.contentType == 'application/xml'
+          request.resource.metadata.companyId == companyId
+          || request.resource.metadata.get('companyId', null) == companyId
+        )
+        && (
+          request.resource.metadata.documentId == documentId
+          || request.resource.metadata.get('documentId', null) == documentId
         );
     }
 
-    function documentRecordPath(documentId) {
-      return /databases/(default)/documents/documents/$(documentId);
+    function hasAllowedDocumentContentType() {
+      return request.resource.contentType == 'application/pdf'
+        || request.resource.contentType == 'text/xml'
+        || request.resource.contentType == 'application/xml';
     }
 
-    function documentRecordExists(companyId, documentId) {
-      return firestore.exists(documentRecordPath(documentId))
-        && firestore.get(documentRecordPath(documentId)).data.companyId == companyId
-        && firestore.get(documentRecordPath(documentId)).data.status in ['uploading', 'pending', 'uploaded', 'processing', 'analyzed', 'error', 'ai_disabled'];
+    function hasAllowedFileExtension(fileName) {
+      return fileName.matches('(?i)^.+\\.(pdf|xml)$');
     }
 
-    function documentAcceptsUpload(companyId, documentId) {
-      return documentRecordExists(companyId, documentId)
-        && firestore.get(documentRecordPath(documentId)).data.status == 'uploading';
+    function contentTypeMatchesExtension(fileName) {
+      return (fileName.matches('(?i)^.+\\.pdf$') && request.resource.contentType == 'application/pdf')
+        || (fileName.matches('(?i)^.+\\.xml$') && (request.resource.contentType == 'text/xml' || request.resource.contentType == 'application/xml'));
     }
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
-      allow read: if canReadCompany(companyId) && documentRecordExists(companyId, documentId);
-      allow create: if canWriteCompany(companyId) && documentAcceptsUpload(companyId, documentId) && validDocumentFile();
+
+      allow read: if hasCompanyToken(companyId)
+                  && hasExistingObjectMetadata(companyId, documentId);
+
+      allow create: if canWriteCompanyDocuments(companyId)
+                    && documentExists(companyId, documentId)
+                    && isValidMetadata(companyId, documentId)
+                    && request.resource.size > 0
+                    && request.resource.size < 15 * 1024 * 1024
+                    && hasAllowedDocumentContentType()
+                    && hasAllowedFileExtension(fileName)
+                    && contentTypeMatchesExtension(fileName);
+
       allow update, delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

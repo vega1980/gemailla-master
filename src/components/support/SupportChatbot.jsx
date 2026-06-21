@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey } from '@/lib/companyEntityQueries';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { askLLM } from '@/modules/ai/aiService';
 const ticketStatusConfig = {
   abierto:     { label: 'Abierto',     color: 'bg-blue-500/15 text-blue-400' },
   en_proceso:  { label: 'En proceso',  color: 'bg-amber-500/15 text-amber-400' },
@@ -36,34 +39,23 @@ export default function SupportChatbot({ company }) {
   const [showTickets, setShowTickets] = useState(false);
   const bottomRef = useRef(null);
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', company.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: company.id }),
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', company.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: company.id }),
-  });
-
-  const { data: tickets = [] } = useQuery({
-    queryKey: ['support-tickets', company.id],
-    queryFn: () => firebase.entities.SupportTicket.filter({ companyId: company.id }),
+  const { transactions, documents, supportTickets: tickets = [] } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'documents', 'supportTickets'],
   });
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, aiLoading]);
 
   const updateTicket = useMutation({
     mutationFn: ({ id, data }) => firebase.entities.SupportTicket.update(id, data),
-    onSuccess: () => qc.invalidateQueries(['support-tickets', company.id]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: companyEntityQueryKey('supportTickets', company) }),
   });
 
   const createTicket = async (subject, description) => {
     await firebase.entities.SupportTicket.create({
       companyId: company.id, subject, description, category: 'consulta', status: 'resuelto', priority: 'media',
-      resolved_date: new Date().toISOString().split('T')[0],
+      resolved_date: new Date().toISOString().slice(0, 10),
     });
-    qc.invalidateQueries(['support-tickets', company.id]);
+    qc.invalidateQueries({ queryKey: companyEntityQueryKey('supportTickets', company) });
   };
 
   const sendMessage = async (text) => {
@@ -81,7 +73,8 @@ export default function SupportChatbot({ company }) {
 
     const history = newMessages.slice(-6).map(m => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`).join('\n');
 
-    const response = await firebase.integrations.Core.InvokeLLM({
+    const response = await askLLM({
+      companyId: company.id,
       prompt: `Eres el asistente virtual de GEMAILLA AI para la empresa "${company.name}". Eres un experto en contabilidad, finanzas, fiscal y operaciones para PyMEs mexicanas. Responde de forma clara, directa y útil. Si no sabes algo específico, guía al usuario a consultar con un especialista.
 
 CONTEXTO FINANCIERO DE LA EMPRESA:

@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { firebase } from '@/api/firebaseClient';
-import { useAuth } from '@/lib/AuthContext';
 import { PLAN_CONFIG, useSubscription } from '@/lib/subscriptionContext';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -10,7 +8,6 @@ import { Check, Crown, Sparkles, Zap, Loader2, Star, Trash2 } from 'lucide-react
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { toast } from 'sonner';
 
 const plans = [
   {
@@ -70,71 +67,15 @@ const plans = [
 ];
 
 export default function Subscriptions() {
-  const { user } = useAuth();
-  const { subscription, plan: currentPlan, reload } = useSubscription();
+  const { subscription, plan: currentPlan } = useSubscription();
   const [billing, setBilling] = useState('monthly');
   const [loading, setLoading] = useState(null);
-  const userUid = user?.uid || user?.id;
 
-  const handleDeleteAccount = async () => {
-    const [subsByUid, subsByEmail] = await Promise.all([
-      userUid
-        ? firebase.entities.Subscription.filter({ userUid, status: 'active' }).catch(() => [])
-        : [],
-      user?.email
-        ? firebase.entities.Subscription.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
-        : [],
-    ]);
-    const subsById = new Map();
-    [...subsByUid, ...subsByEmail, subscription].forEach((sub) => {
-      if (sub?.id) subsById.set(sub.id, sub);
-    });
-
-    await Promise.all(
-      Array.from(subsById.values()).map((sub) =>
-        firebase.entities.Subscription.update(sub.id, {
-          userUid: sub.userUid || userUid || null,
-          userEmail: sub.userEmail || user?.email || '',
-          status: 'cancelled',
-        }),
-      ),
-    );
-    await firebase.auth.logout();
-  };
-
-  const handleSelect = async (planId) => {
+  const requestPlanChange = (planId) => {
     if (planId === currentPlan) return;
-    if (!userUid) throw new Error('Usuario sin UID válido.');
     setLoading(planId);
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setMonth(endDate.getMonth() + (billing === 'annual' ? 12 : 1));
-
-    if (subscription?.id) {
-      await firebase.entities.Subscription.update(subscription.id, {
-        userUid,
-        userEmail: user.email,
-        plan: planId,
-        billingCycle: billing,
-        startDate: format(today, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
-        status: 'active',
-      });
-    } else {
-      await firebase.entities.Subscription.create({
-        userUid,
-        userEmail: user.email,
-        plan: planId,
-        billingCycle: billing,
-        startDate: format(today, 'yyyy-MM-dd'),
-        endDate: format(endDate, 'yyyy-MM-dd'),
-        status: 'active',
-      });
-    }
-
-    await reload();
+    window.location.href = `mailto:soporte@gemailla.com?subject=Cambio de plan GEMAILLA AI&body=Solicito cambiar mi plan a ${planId} con facturación ${billing}.`;
     setLoading(null);
-    toast.success(`Plan actualizado a ${planId.charAt(0).toUpperCase() + planId.slice(1)}`);
   };
 
   return (
@@ -238,7 +179,7 @@ export default function Subscriptions() {
               </ul>
 
               <Button
-                onClick={() => handleSelect(p.id)}
+                onClick={() => requestPlanChange(p.id)}
                 disabled={isCurrent || loading === p.id}
                 className={`w-full gap-2 ${isCurrent ? 'bg-muted text-muted-foreground cursor-default' : p.id === 'pro' ? 'bg-violet-600 hover:bg-violet-700 text-white' : p.id === 'enterprise' ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-primary text-primary-foreground hover:bg-primary/90'}`}
               >
@@ -266,28 +207,28 @@ export default function Subscriptions() {
       {/* Danger Zone */}
       <div className="mt-10 p-5 rounded-xl border border-destructive/30 bg-destructive/5">
         <h3 className="text-sm font-semibold text-destructive mb-1">Zona de peligro</h3>
-        <p className="text-xs text-muted-foreground mb-4">Esta acción es permanente e irreversible. Tu cuenta y datos serán eliminados.</p>
+        <p className="text-xs text-muted-foreground mb-4">Esta acción requiere validación del equipo de soporte. No elimina datos automáticamente desde el frontend.</p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="destructive" size="sm" className="gap-2">
               <Trash2 className="w-4 h-4" />
-              Eliminar cuenta
+              Solicitar baja de cuenta
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>¿Eliminar tu cuenta?</AlertDialogTitle>
+              <AlertDialogTitle>¿Solicitar baja de tu cuenta?</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta acción no se puede deshacer. Se cancelará tu suscripción y se cerrará tu sesión inmediatamente.
+                El frontend no elimina cuentas ni suscripciones. Se abrirá un correo para que soporte valide y procese la baja de forma segura.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleDeleteAccount}
+                onClick={() => { window.location.href = 'mailto:soporte@gemailla.com?subject=Solicitud de baja de cuenta GEMAILLA AI'; }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Sí, eliminar cuenta
+                Solicitar baja
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

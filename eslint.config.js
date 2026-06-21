@@ -11,7 +11,13 @@ export default [
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,
     languageOptions: {
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        __APP_VERSION__: "readonly",
+        __BUILD_ID__: "readonly",
+        __GIT_SHA__: "readonly",
+        __DEPLOY_ENV__: "readonly",
+      },
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: "module",
@@ -51,6 +57,14 @@ export default [
         { ignore: ["cmdk-input-wrapper", "toast-close"] },
       ],
       "react-hooks/rules-of-hooks": "error",
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: "Identifier[name=/^(x|y|tmp|data|df2)$/]",
+          message:
+            "Evita nombres ambiguos como x, y, tmp, data o df2; usa nombres descriptivos del dominio, por ejemplo ventasMensuales, clientesActivos o predicciones.",
+        },
+      ],
     },
   },
 ];

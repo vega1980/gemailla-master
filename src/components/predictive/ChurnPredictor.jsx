@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { UserX, Sparkles, Loader2, Shield, User } from 'lucide-react';
 
+import { askLLM } from '@/modules/ai/aiService';
 const riskConfig = {
   alto: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', bar: 'bg-red-500', label: 'RIESGO ALTO' },
   medio: { color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30', bar: 'bg-yellow-500', label: 'RIESGO MEDIO' },
@@ -41,7 +41,8 @@ export default function ChurnPredictor({ subscriptions, transactions }) {
     if (loading) return;
     setLoading(true);
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un experto en análisis de churn (fuga de clientes) para SaaS. Analiza los siguientes datos de suscriptores y predice cuáles están en riesgo de cancelar.
 
 Datos de clientes/suscriptores:

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, Sparkles, Loader2, CheckCircle, Info } from 'lucide-react';
 
+import { askLLM } from '@/modules/ai/aiService';
 const severityConfig = {
   alta: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', icon: AlertTriangle, dot: '#ef4444' },
   media: { color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30', icon: Info, dot: '#eab308' },
@@ -31,7 +31,8 @@ export default function AnomalyDetector({ transactions, monthlyData }) {
       balance: d.ingresos - d.gastos,
     }));
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un experto en detección de anomalías financieras. Analiza las transacciones y datos mensuales y encuentra desviaciones estadísticas importantes.
 
 Transacciones recientes (muestra):

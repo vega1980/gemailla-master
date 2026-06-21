@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -19,19 +18,8 @@ const ChartTooltip = ({ active, payload, label }) => {
 };
 
 export default function ClientDashboardShare({ company }) {
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', company.id],
-    queryFn: () => firebase.entities.Transaction.filter({ companyId: company.id }),
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ['documents', company.id],
-    queryFn: () => firebase.entities.Document.filter({ companyId: company.id }),
-  });
-
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['kpis', company.id],
-    queryFn: () => firebase.entities.KPI.filter({ companyId: company.id }),
+  const { transactions, documents, kpis } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'documents', 'kpis'],
   });
 
   const monthlyData = useMemo(() => {

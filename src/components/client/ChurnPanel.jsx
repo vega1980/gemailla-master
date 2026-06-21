@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Loader2, Sparkles, TrendingDown, UserCheck, UserX } from 'lucide-react';
 
+import { askLLM } from '@/modules/ai/aiService';
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
 const riskConfig = {
@@ -33,7 +33,8 @@ export default function ChurnPanel({ subscriptions, transactions }) {
       end: s.endDate,
     }));
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un experto en retención de clientes y análisis de churn para SaaS/servicios de suscripción.
 
 DATOS DE SUSCRIPCIONES:

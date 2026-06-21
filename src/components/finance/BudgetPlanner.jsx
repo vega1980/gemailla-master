@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { firebase } from '@/api/firebaseClient';
 
+import { askLLM } from '@/modules/ai/aiService';
 function fmt(n) { return `$${(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`; }
 
 function CustomTooltip({ active, payload, label }) {
@@ -113,7 +113,8 @@ export default function BudgetPlanner({ transactions, monthlyData }) {
   const getAIInsight = async () => {
     setAiLoading(true);
     setAiInsight(null);
-    const data = await firebase.integrations.Core.InvokeLLM({
+    const data = await askLLM({
+      companyId: company.id,
       prompt: `Eres un CFO experto en finanzas para PyMEs mexicanas. Analiza este presupuesto mensual:
 
 PRESUPUESTO PLANIFICADO:

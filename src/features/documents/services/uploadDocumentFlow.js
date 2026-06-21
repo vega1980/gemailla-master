@@ -3,35 +3,23 @@
 import firebase from '@/api/firebaseClient';
 import { logAction } from '@/lib/auditLogger';
 import { DOCUMENT_STATUSES } from '@/features/documents/constants/documentStatuses';
+import { ensureCorrelationId, getReleaseMetadata, logFrontendEvent } from '@/lib/observability';
+import { validateDocumentFileContent, validateDocumentFileMetadata } from '@/security/documentFileValidation';
 
 export function getUploadErrorMessage(error, fallback = 'No se pudo completar la subida a Storage.') {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
 export function validateDocumentFile(file) {
-  if (!file) throw new Error('No se recibió ningún archivo.');
-
-  const ext = String(file.name || '').split('.').pop()?.toLowerCase();
-  const validTypes = ['pdf', 'xml'];
-  if (!validTypes.includes(ext)) {
-    throw new Error('Formato no soportado. Sube archivos PDF o XML.');
-  }
-
-  if (file.size > 15 * 1024 * 1024) {
-    throw new Error('Archivo muy grande. El límite es 15MB.');
-  }
-
-  return {
-    ext,
-    fileType: ext === 'xml' ? 'xml' : 'pdf',
-    contentType: file.type || (ext === 'xml' ? 'application/xml' : 'application/pdf'),
-  };
+  return validateDocumentFileMetadata(file);
 }
 
-export async function uploadDocumentFlow({ file, company, user }) {
+
+export async function uploadDocumentFlow({ file, company, user, correlationId: providedCorrelationId }) {
   if (!company?.id) throw new Error('Necesitas una empresa activa para subir documentos.');
 
-  const { fileType, contentType } = validateDocumentFile(file);
+  const correlationId = ensureCorrelationId(providedCorrelationId, 'doc_upload');
+  const { fileType, contentType } = await validateDocumentFileContent(file);
   const documentId = firebase.entities.Document.newId();
 
   const doc = await firebase.entities.Document.createWithId(documentId, {
@@ -41,6 +29,8 @@ export async function uploadDocumentFlow({ file, company, user }) {
     fileSize: file.size,
     fileType,
     status: DOCUMENT_STATUSES.UPLOADING,
+    correlationId,
+    release: getReleaseMetadata(),
   });
 
   try {
@@ -48,6 +38,7 @@ export async function uploadDocumentFlow({ file, company, user }) {
       file,
       companyId: company.id,
       documentId,
+      correlationId,
     });
 
     await firebase.entities.Document.update(documentId, {
@@ -55,6 +46,7 @@ export async function uploadDocumentFlow({ file, company, user }) {
       contentType: uploaded.contentType,
       fileSize: uploaded.fileSize,
       status: DOCUMENT_STATUSES.PENDING,
+      correlationId,
       uploadCompletedAt: new Date().toISOString(),
       errorMessage: null,
     });
@@ -67,6 +59,7 @@ export async function uploadDocumentFlow({ file, company, user }) {
       entityType: 'Document',
       entityId: doc.id,
       details: file.name,
+      correlationId,
     });
 
     return {
@@ -74,13 +67,16 @@ export async function uploadDocumentFlow({ file, company, user }) {
       ...uploaded,
       id: documentId,
       status: DOCUMENT_STATUSES.PENDING,
+      correlationId,
     };
   } catch (uploadError) {
     await firebase.entities.Document.update(documentId, {
       status: DOCUMENT_STATUSES.ERROR,
-      errorMessage: getUploadErrorMessage(uploadError),
+      errorMessage: `${getUploadErrorMessage(uploadError)} (correlationId: ${correlationId})`,
+      correlationId,
     }).catch(() => {});
 
+    logFrontendEvent('document_upload_failed', { correlationId, documentId, companyId: company.id, message: getUploadErrorMessage(uploadError) }, 'error');
     throw uploadError;
   }
 }

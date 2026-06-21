@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Sparkles, X, TrendingUp, AlertTriangle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { askLLM } from '@/modules/ai/aiService';
 const LOCAL_KEY = 'gemailla_welcome_dismissed';
 
 // Checks if we should show the welcome banner this session
@@ -71,7 +71,8 @@ export default function WelcomeAnalysis({ company, transactions, monthlyData }) 
     const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
     const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres GEMAILLA, un asistente financiero inteligente para PyMEs mexicanas. 
 Genera un mensaje de bienvenida PERSONALIZADO y CONCISO (máximo 4 secciones cortas) para el cliente de la empresa "${company.name}".
 El nombre del usuario es "${user?.fullName || 'Cliente'}".

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
-import { useQuery } from '@tanstack/react-query';
+import { useCompanyData } from '@/hooks/useCompanyData';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sparkles, Loader2, GitBranch, Clock, TrendingDown, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+import { askLLM } from '@/modules/ai/aiService';
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
 const PROCESSES = [
@@ -32,16 +32,8 @@ export default function ProcessOptimizer({ company }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', company?.id],
-    queryFn: () => company ? firebase.entities.Transaction.filter({ companyId: company.id }) : Promise.resolve([]),
-    enabled: !!company,
-  });
-
-  const { data: kpis = [] } = useQuery({
-    queryKey: ['kpis', company?.id],
-    queryFn: () => company ? firebase.entities.KPI.filter({ companyId: company.id }) : Promise.resolve([]),
-    enabled: !!company,
+  const { transactions, kpis } = useCompanyData(company?.id, {
+    queryNames: ['transactions', 'kpis'],
   });
 
   const displayTransactions = company ? transactions : [];
@@ -62,7 +54,8 @@ export default function ProcessOptimizer({ company }) {
     setResult(null);
     const proc = PROCESSES.find(p => p.id === selectedProcess);
 
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un experto en optimización de procesos y cadena de suministro para PyMEs mexicanas.
 
 EMPRESA: ${company?.name || 'Empresa sin seleccionar'} | Industria: ${company?.industry || 'tecnología'}

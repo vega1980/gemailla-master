@@ -1,0 +1,12 @@
+{
+  "name": "wait-on",
+  "version": "0.0.0-local",
+  "private": true,
+  "description": "Minimal local wait-on CLI for Firebase emulator readiness checks.",
+  "bin": {
+    "wait-on": "bin/wait-on.js"
+  },
+  "engines": {
+    "node": ">=18.19.0"
+  }
+}

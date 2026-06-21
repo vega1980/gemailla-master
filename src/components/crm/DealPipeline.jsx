@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyCrmClients, useCompanyCrmDeals } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 
+import { askLLM } from '@/modules/ai/aiService';
 const stageConfig = {
   prospecto:       { label: 'Prospecto',       color: 'bg-secondary text-muted-foreground border-border',          prob: 10 },
   contactado:      { label: 'Contactado',      color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',           prob: 25 },
@@ -45,31 +47,25 @@ export default function DealPipeline({ company }) {
   const [aiInsight, setAiInsight] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  const { data: clients = [] } = useQuery({
-    queryKey: ['crm-clients', company.id],
-    queryFn: () => firebase.entities.CRMClient.filter({ companyId: company.id }),
-  });
+  const { data: clients = [] } = useCompanyCrmClients(company);
 
-  const { data: deals = [], isLoading } = useQuery({
-    queryKey: ['crm-deals', company.id],
-    queryFn: () => firebase.entities.CRMDeal.filter({ companyId: company.id }),
-  });
+  const { data: deals = [], isLoading } = useCompanyCrmDeals(company);
 
   const save = useMutation({
     mutationFn: (data) => editing
       ? firebase.entities.CRMDeal.update(editing.id, data)
       : firebase.entities.CRMDeal.create({ ...data, companyId: company.id }),
-    onSuccess: () => { qc.invalidateQueries(['crm-deals', company.id]); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Oportunidad guardada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmDeals', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Oportunidad guardada'); },
   });
 
   const del = useMutation({
     mutationFn: (id) => firebase.entities.CRMDeal.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['crm-deals', company.id]); toast.success('Oportunidad eliminada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmDeals', company) }); toast.success('Oportunidad eliminada'); },
   });
 
   const moveStage = (deal, stage) => {
     const prob = stageConfig[stage]?.prob ?? deal.probability;
-    firebase.entities.CRMDeal.update(deal.id, { stage, probability: prob }).then(() => qc.invalidateQueries(['crm-deals', company.id]));
+    firebase.entities.CRMDeal.update(deal.id, { stage, probability: prob }).then(() => qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmDeals', company) }));
   };
 
   const openNew  = () => { setEditing(null); setForm(EMPTY); setOpen(true); };
@@ -94,7 +90,8 @@ export default function DealPipeline({ company }) {
   const getAI = async () => {
     setAiLoading(true);
     setAiInsight('');
-    const res = await firebase.integrations.Core.InvokeLLM({
+    const res = await askLLM({
+      companyId: company.id,
       prompt: `Eres un director comercial experto en ventas B2B para PyMEs mexicanas. Analiza el pipeline de ventas de "${company.name}".
 
 PIPELINE ACTIVO (${active.length} oportunidades):

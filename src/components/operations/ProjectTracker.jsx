@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { companyEntityQueryKey, useCompanyProjects, useCompanyProjectTasks } from '@/lib/companyEntityQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,17 +53,8 @@ export default function ProjectTracker({ company }) {
   const [taskForm, setTaskForm] = useState(TASK_EMPTY);
   const [expanded, setExpanded] = useState({});
 
-  const { data: projects = [], isLoading } = useQuery({
-    queryKey: ['projects', company?.id],
-    queryFn: () => company ? firebase.entities.Project.filter({ companyId: company.id }) : Promise.resolve([]),
-    enabled: !!company,
-  });
-
-  const { data: tasks = [] } = useQuery({
-    queryKey: ['tasks-proj', company?.id],
-    queryFn: () => company ? firebase.entities.ProjectTask.filter({ companyId: company.id }) : Promise.resolve([]),
-    enabled: !!company,
-  });
+  const { data: projects = [], isLoading } = useCompanyProjects(company);
+  const { data: tasks = [] } = useCompanyProjectTasks(company);
 
   const displayProjects = company ? projects : [];
   const displayTasks = company ? tasks : [];
@@ -72,12 +64,12 @@ export default function ProjectTracker({ company }) {
       if (!company) { toast.error('Selecciona una empresa para guardar'); return; }
       return editingProj ? firebase.entities.Project.update(editingProj.id, data) : firebase.entities.Project.create({ ...data, companyId: company.id });
     },
-    onSuccess: () => { qc.invalidateQueries(['projects', company?.id]); setOpenProj(false); setEditingProj(null); setForm(PROJ_EMPTY); toast.success('Proyecto guardado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('projects', company) }); setOpenProj(false); setEditingProj(null); setForm(PROJ_EMPTY); toast.success('Proyecto guardado'); },
   });
 
   const delProj = useMutation({
     mutationFn: (id) => firebase.entities.Project.delete(id),
-    onSuccess: () => { qc.invalidateQueries(['projects', company?.id]); toast.success('Proyecto eliminado'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('projects', company) }); toast.success('Proyecto eliminado'); },
   });
 
   const saveTask = useMutation({
@@ -85,17 +77,17 @@ export default function ProjectTracker({ company }) {
       if (!company) { toast.error('Selecciona una empresa para guardar'); return; }
       return editingTask ? firebase.entities.ProjectTask.update(editingTask.id, data) : firebase.entities.ProjectTask.create({ ...data, projectId: activeProject, companyId: company.id });
     },
-    onSuccess: () => { qc.invalidateQueries(['tasks-proj', company?.id]); setOpenTask(false); setEditingTask(null); setTaskForm(TASK_EMPTY); toast.success('Tarea guardada'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('projectTasks', company) }); setOpenTask(false); setEditingTask(null); setTaskForm(TASK_EMPTY); toast.success('Tarea guardada'); },
   });
 
   const delTask = useMutation({
     mutationFn: (id) => firebase.entities.ProjectTask.delete(id),
-    onSuccess: () => qc.invalidateQueries(['tasks-proj', company?.id]),
+    onSuccess: () => qc.invalidateQueries({ queryKey: companyEntityQueryKey('projectTasks', company) }),
   });
 
   const updateTaskStatus = (task, status) => {
     if (!company) return;
-    firebase.entities.ProjectTask.update(task.id, { status }).then(() => qc.invalidateQueries(['tasks-proj', company?.id]));
+    firebase.entities.ProjectTask.update(task.id, { status }).then(() => qc.invalidateQueries({ queryKey: companyEntityQueryKey('projectTasks', company) }));
   };
 
   const openNewProj = () => { setEditingProj(null); setForm(PROJ_EMPTY); setOpenProj(true); };

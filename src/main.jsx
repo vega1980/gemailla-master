@@ -1,11 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import '@/index.css';
-
-function ensureRuntimeConfigDefaults() {
-  window.GEMAILLA_FIREBASE_CONFIG = window.GEMAILLA_FIREBASE_CONFIG || {};
-  window.GEMAILLA_USE_FIREBASE_EMULATORS = window.GEMAILLA_USE_FIREBASE_EMULATORS ?? 'auto';
-}
+import '@/styles/index.css';
+import { installGlobalErrorTracking } from '@/lib/observability';
+import { applyRuntimeConfig, ensureRuntimeConfigDefaults, parseRuntimeConfig } from '@/config/runtimeConfig';
 
 async function loadOptionalRuntimeConfig() {
   ensureRuntimeConfigDefaults();
@@ -19,23 +16,20 @@ async function loadOptionalRuntimeConfig() {
       return;
     }
 
-    const configScript = await response.text();
-    if (!configScript.trim()) return;
+    const configText = await response.text();
+    if (!configText.trim()) return;
 
-    const script = document.createElement('script');
-    script.text = configScript;
-    document.head.appendChild(script);
-    script.remove();
-    ensureRuntimeConfigDefaults();
+    applyRuntimeConfig(parseRuntimeConfig(configText));
   } catch (error) {
     console.warn('No se pudo cargar /app-config.js. Se usarán variables de entorno/defaults.', error);
   }
 }
 
 async function bootstrap() {
+  installGlobalErrorTracking();
   await loadOptionalRuntimeConfig();
 
-  const { default: App } = await import('@/App.jsx');
+  const { default: App } = await import('@/app/App.jsx');
 
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>

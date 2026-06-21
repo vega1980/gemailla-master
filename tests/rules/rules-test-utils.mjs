@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { deleteApp, initializeApp } from 'firebase/app';
+import { connectStorageEmulator, getStorage, ref, uploadBytes } from 'firebase/storage';
 
 export const PROJECT_ID = process.env.FIREBASE_RULES_TEST_PROJECT_ID || 'demo-gemailla-test';
 export const FIRESTORE_HOST = process.env.FIRESTORE_EMULATOR_HOST || '127.0.0.1:8080';
@@ -90,6 +92,25 @@ export async function firestoreSet(path, data, auth = 'owner') {
   return response;
 }
 
+export async function firestoreCommitSet(writes, auth = 'owner') {
+  const response = await fetch(`${firestoreBase}:commit`, {
+    method: 'POST',
+    headers: auth === 'owner'
+      ? ownerHeaders({ 'Content-Type': 'application/json' })
+      : authHeaders(auth, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      writes: writes.map(({ path, data }) => ({
+        update: {
+          name: `projects/${PROJECT_ID}/databases/(default)/documents/${path}`,
+          fields: firestoreFields(data),
+        },
+      })),
+    }),
+  });
+
+  return response;
+}
+
 export async function firestoreGet(path, auth) {
   return fetch(`${firestoreBase}/${path}`, {
     headers: authHeaders(auth),
@@ -157,19 +178,63 @@ export async function seedCompany({ companyId, ownerUid, memberships = [] }) {
   }
 }
 
-export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture' } = {}) {
-  return fetch(`${storageBase}?name=${encodeURIComponent(path)}`, {
-    method: 'POST',
-    headers: auth === 'owner'
-      ? ownerHeaders({ 'Content-Type': contentType })
-      : authHeaders(auth, { 'Content-Type': contentType }),
-    body,
-  });
+function storageEmulatorHostAndPort() {
+  const [host, port = '9199'] = STORAGE_HOST.split(':');
+  return { host, port: Number(port) };
+}
+
+function storageUploadResponse(status, message = '') {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => message,
+  };
+}
+
+function storageBodyBytes(body) {
+  if (body instanceof Uint8Array || body instanceof ArrayBuffer) return body;
+  return Buffer.from(String(body));
+}
+
+export async function storageUpload(path, auth, { contentType = 'application/pdf', body = 'PDF fixture', customMetadata, metadata = customMetadata || {} } = {}) {
+  const token = typeof auth === 'string' ? authToken(auth) : auth?.token || authToken(auth?.uid, auth?.claims);
+  const app = initializeApp({
+    projectId: PROJECT_ID,
+    storageBucket: STORAGE_BUCKET,
+  }, `storage-rules-test-${Date.now()}-${Math.random()}`);
+
+  try {
+    const { host, port } = storageEmulatorHostAndPort();
+    const storage = getStorage(app);
+    connectStorageEmulator(storage, host, port, token ? { mockUserToken: token } : undefined);
+
+    await uploadBytes(ref(storage, path), storageBodyBytes(body), {
+      contentType,
+      customMetadata: Object.fromEntries(
+        Object.entries(metadata).map(([key, value]) => [key, String(value)]),
+      ),
+    });
+
+    return storageUploadResponse(200);
+  } catch (error) {
+    const status = error?.code === 'storage/unauthorized' ? 403 : 500;
+    return storageUploadResponse(status, error?.message || String(error));
+  } finally {
+    await deleteApp(app);
+  }
 }
 
 export async function storageRead(path, auth) {
   return fetch(`${storageBase}/${encodeURIComponent(path)}?alt=media`, {
     headers: authHeaders(auth),
+  });
+}
+
+export async function storageUpdate(path, auth, { contentType = 'application/pdf', body = 'updated bytes' } = {}) {
+  return fetch(`${storageBase}/${encodeURIComponent(path)}`, {
+    method: 'PATCH',
+    headers: authHeaders(auth, { 'Content-Type': contentType }),
+    body,
   });
 }
 
