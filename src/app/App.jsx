@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { AppProviders } from '@/app/providers';
-import { appRoutes, publicRoutes } from '@/app/router';
+import { appRoutes, publicRoutes } from '@/app/routes';
 
 const ProtectedRoute = lazy(() => import('@/components/auth/ProtectedRoute'));
 const PublicRoute = lazy(() => import('@/components/auth/PublicRoute'));
