@@ -15,8 +15,11 @@ describe('fachada pública firebaseClient', () => {
 
   it('reutiliza la validación para funciones compatibles y evita interpolar nombres sin codificar', () => {
     assert.match(source, /function getSafeFunctionsEndpoint\(\)/);
-    assert.match(source, /getSafeInternalEndpoint\(configured, '\/api\/functions', 'funciones'\)/);
+    assert.match(source, /const defaultEndpoint = '\/api\/functions';/);
+    assert.match(source, /getSafeInternalEndpoint\(defaultEndpoint, '\/api\/functions', 'funciones'\)/);
     assert.match(source, /const endpoint = getSafeFunctionsEndpoint\(\);/);
+    assert.match(source, /const defaultEndpoint = '\/api\/ai';/);
+    assert.match(source, /getSafeInternalEndpoint\(defaultEndpoint, '\/api\/ai', 'ia'\)/);
     assert.match(source, /const safeFunctionName = encodeURIComponent\(String\(name \|\| ''\)\.trim\(\)\);/);
     assert.match(source, /fetch\(`.*safeFunctionName.*`/);
   });
