@@ -34,6 +34,31 @@ Reglas de migración:
 - Mover lógica de UI a servicios por feature antes de reubicar páginas completas.
 - Centralizar providers de negocio en `src/app/providers.jsx`, no en layouts visuales.
 
+## Responsabilidades por carpeta (`modules`, `features`, `lib`, `shared`)
+
+La regla general es separar **composición de aplicación**, **pantallas de negocio**, **casos de uso**, **infraestructura transversal** y **primitivas reutilizables**. Para evitar duplicidad, cada carpeta debe tener un propietario claro:
+
+| Carpeta | Qué vive aquí | Qué no vive aquí |
+| --- | --- | --- |
+| `src/app/` | Composición global de React: providers, definición única de rutas, layout de rutas y wiring de alto nivel. | Lógica de negocio, llamadas directas a Firebase o componentes específicos de dominio. |
+| `src/modules/` | Entrada pública de cada módulo vertical de producto: páginas/contenedores del módulo, componentes grandes acoplados a esa experiencia y fachadas legacy mientras se migra. | Servicios reutilizables de negocio, validaciones compartidas o utilidades transversales. |
+| `src/features/` | Casos de uso y servicios por dominio que pueden ser consumidos por páginas, módulos o hooks: flujos documentales, membresía de compañías, roles, hooks de filtrado y constantes del dominio. | Componentes de layout global, UI genérica o adaptadores concretos de infraestructura. |
+| `src/lib/` | Infraestructura transversal de la aplicación: contextos globales, query client, observabilidad, auditoría, utilidades base y fachadas técnicas estables. | Reglas de negocio específicas de un dominio si ya existe una `feature` propietaria. |
+| `src/shared/` | Contratos y piezas reutilizables sin dependencia de una feature concreta: validaciones, constantes compartidas, barrels de componentes compartidos y utilidades públicas. | Estado global, providers de aplicación o implementaciones de infraestructura. |
+| `src/infrastructure/` | Adaptadores técnicos externos: Firebase Auth/Firestore/Storage/Functions, repositorios y normalización persistente. | Componentes React, decisiones de navegación o reglas visuales. |
+| `src/components/` | Sistema visual y componentes reutilizables existentes, separados por familia (`ui`, `layout`, `shared`) o dominio visual legacy mientras se migra. | Casos de uso de negocio que deban poder probarse fuera de React. |
+| `src/pages/` | Páginas enrutable actuales que conectan layout, componentes y servicios. A medio plazo deben adelgazarse o moverse detrás del módulo correspondiente. | Lógica persistente reutilizable o contratos de dominio. |
+
+### Criterios prácticos de decisión
+
+- Si el archivo define una **ruta o provider global**, vive en `src/app/`.
+- Si representa una **pantalla vertical de producto** o el punto de entrada de un módulo, vive en `src/modules/<dominio>/` o temporalmente en `src/pages/` hasta completar la migración.
+- Si implementa un **caso de uso de negocio reusable** (`uploadDocumentFlow`, membresía, roles, filtros de dominio), vive en `src/features/<dominio>/`.
+- Si es una **capacidad transversal técnica** (`observability`, `query-client`, contextos globales, logger), vive en `src/lib/`.
+- Si es una **pieza reusable sin dueño de dominio** (schemas, constantes compartidas, componentes compartidos), vive en `src/shared/`.
+- Si habla con un **servicio externo o persistencia**, vive en `src/infrastructure/` y se consume mediante fachadas/servicios, no directamente desde UI nueva.
+
+
 ## Principios de arquitectura
 
 ### 1. Firebase como backend primario

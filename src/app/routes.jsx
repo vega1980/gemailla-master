@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react';
 
+// Fuente única de rutas de la aplicación: no crear un router paralelo.
+
 // Spinner sutil para transiciones de submódulos dentro del Layout principal
 const ModuleLoader = (Component) => (
   <Suspense
