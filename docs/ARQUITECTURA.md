@@ -14,6 +14,9 @@ flowchart LR
 
 ## Estructura modular incremental
 
+> Roadmap de refactor: ver `docs/PLAN_REFACTOR_4_FASES.md` para el plan recomendado de estabilización, extracción por dominios, reorganización de capas y optimización operativa.
+
+
 La estructura se corrige sin ruptura mediante fachadas estables y módulos internos nuevos:
 
 ```text
