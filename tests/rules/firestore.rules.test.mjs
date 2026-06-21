@@ -106,10 +106,61 @@ async function seedFirestoreAcl() {
   }), 'admin ai budget without company seed');
 }
 
+async function assertAiFinancialReadAllowed(user, label) {
+  await assertAllowed(firestoreGet('aiUsage/company-usage', user), `${label} ai usage read`);
+  await assertAllowed(firestoreGet('aiBudgets/company-budget', user), `${label} ai budget read`);
+}
+
+async function assertAiFinancialReadDenied(user, label) {
+  await assertDenied(firestoreGet('aiUsage/company-usage', user), `${label} ai usage read`);
+  await assertDenied(firestoreGet('aiBudgets/company-budget', user), `${label} ai budget read`);
+}
+
 describe('Firestore security rules', () => {
   beforeEach(async () => {
     await clearFirestore();
     await seedFirestoreAcl();
+  });
+
+
+  it('restricts AI financial reads to active company administrators', async () => {
+    await assertAiFinancialReadAllowed(owner, 'owner');
+    await assertAiFinancialReadAllowed(director, 'director');
+    await assertAiFinancialReadAllowed(admin, 'admin');
+
+    await assertAiFinancialReadDenied(editor, 'editor');
+    await assertAiFinancialReadDenied(viewer, 'viewer');
+    await assertAiFinancialReadDenied(inactive, 'inactive member');
+    await assertAiFinancialReadDenied(outsider, 'other company user');
+    await assertAiFinancialReadDenied(null, 'anonymous user');
+  });
+
+  it('denies AI financial reads for other companies and documents without companyId', async () => {
+    await assertDenied(firestoreGet('aiUsage/other-company-usage', admin), 'admin other company ai usage read');
+    await assertDenied(firestoreGet('aiBudgets/other-company-budget', admin), 'admin other company ai budget read');
+    await assertDenied(firestoreGet('aiUsage/usage-without-company', admin), 'admin ai usage without company read');
+    await assertDenied(firestoreGet('aiBudgets/budget-without-company', admin), 'admin ai budget without company read');
+  });
+
+  it('keeps AI usage backend-write-only and AI budget writes admin-only', async () => {
+    await assertDenied(firestoreSet('aiUsage/client-created-usage', {
+      companyId,
+      tokens: 100,
+    }, admin), 'client ai usage create');
+    await assertDenied(firestorePatch('aiUsage/company-usage', {
+      companyId,
+      tokens: 150,
+    }, admin), 'client ai usage update');
+    await assertDenied(firestoreDelete('aiUsage/company-usage', admin), 'client ai usage delete');
+
+    await assertDenied(firestoreSet('aiBudgets/viewer-created-budget', {
+      companyId,
+      dailyLimitUsd: 999,
+    }, viewer), 'viewer ai budget create');
+    await assertDenied(firestorePatch('aiBudgets/company-budget', {
+      companyId,
+      dailyLimitUsd: 999,
+    }, viewer), 'viewer ai budget update');
   });
 
   it('allows a signed-in user without company claims to create a company with their initial owner membership atomically', async () => {
