@@ -8,10 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2 } from 'lucide-react';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
-import FinancialStatements from '@/components/finance/FinancialStatements';
-import RiskManagement from '@/components/finance/RiskManagement';
-import BudgetPlanner from '@/components/finance/BudgetPlanner';
-import ReportDownloader from '@/components/finance/ReportDownloader';
+import FinancialStatements from '@/features/finance/components/FinancialStatements';
+import RiskManagement from '@/features/finance/components/RiskManagement';
+import BudgetPlanner from '@/features/finance/components/BudgetPlanner';
+import ReportDownloader from '@/features/finance/components/ReportDownloader';
 
 export default function FinancialHub() {
   const { activeCompany, memberships, loading: companyLoading } = useCompany();

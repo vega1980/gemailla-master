@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Brain, Send, Loader2, FileText, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import PlanGate from '@/components/subscription/PlanGate';
+import PlanGate from '@/features/subscription/components/PlanGate';
 import { useSubscription } from '@/lib/subscriptionContext';
 
 

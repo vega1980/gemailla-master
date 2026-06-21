@@ -9,7 +9,7 @@ import { logAction } from '@/lib/auditLogger';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Shield, TrendingUp, AlertTriangle, CheckCircle, Loader2, BarChart3 } from 'lucide-react';
-import ReportGenerator from '@/components/reports/ReportGenerator';
+import ReportGenerator from '@/features/reports/components/ReportGenerator';
 import { motion } from 'framer-motion';
 
 import { askLLM } from '@/modules/ai/aiService';
