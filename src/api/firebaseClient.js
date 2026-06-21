@@ -79,13 +79,21 @@ function getSafeInternalEndpoint(configuredEndpoint, fallbackPath, label) {
   return `${url.pathname}${url.search}`;
 }
 
-function getSafeAiEndpoint() {
-  const url = new URL('/api/ai', window.location.origin);
-  return `${url.pathname}${url.search}`;
+/**
+ * Resuelve de forma segura el endpoint para Cloud Functions internas.
+ * Mantiene la firma esperada por los tests unitarios.
+ */
+export function getSafeFunctionsEndpoint() {
+  const defaultEndpoint = '/api/functions';
+  return getSafeInternalEndpoint(defaultEndpoint, '/api/functions', 'funciones');
 }
 
-function getSafeFunctionsEndpoint() {
-  return getSafeInternalEndpoint('/api/functions', '/api/functions', 'funciones');
+/**
+ * Resuelve de forma segura el endpoint de la API de Inteligencia Artificial.
+ */
+export function getSafeAiEndpoint() {
+  const defaultEndpoint = '/api/ai';
+  return getSafeInternalEndpoint(defaultEndpoint, '/api/ai', 'ia');
 }
 
 function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.', correlationId = ensureCorrelationId('', 'ai')) {
