@@ -64,7 +64,7 @@ La regla general es separar **composición de aplicación**, **pantallas de nego
 
 `src/main.jsx` puede solicitar `/app-config.js` para permitir configuración runtime en despliegues estáticos, pero ese archivo no debe insertarse como `<script>` ni ejecutarse con `eval`/`Function`. La carga aprobada es: descargar el texto, parsearlo con `src/config/runtimeConfig.js`, aceptar solo JSON o asignaciones literales de las llaves permitidas (`GEMAILLA_FIREBASE_CONFIG`, `GEMAILLA_USE_FIREBASE_EMULATORS`, `GEMAILLA_RELEASE`) y descartar cualquier código no permitido. Este patrón reduce el riesgo de XSS asociado a ejecutar configuración remota como JavaScript arbitrario.
 
-Las llamadas de IA deben conservar integración segura y same-origin: `src/api/firebaseClient.js` resuelve `VITE_LLM_ENDPOINT` con `window.location.origin`, rechaza credenciales embebidas, bloquea orígenes externos y limita la ruta a `/api/*`. Si se necesita un proveedor externo, debe exponerse detrás de Cloud Functions/Cloud Run y no configurarse como endpoint directo desde el navegador.
+Las llamadas de IA y funciones internas deben conservar integración segura y same-origin: `src/api/firebaseClient.js` usa rutas relativas fijas (`/api/ai` y `/api/functions`) que Firebase Hosting gestiona de forma segura bajo el mismo origen. No existen endpoints configurables desde el navegador para estos servicios; si se necesita un proveedor externo, debe exponerse detrás de Cloud Functions/Cloud Run y mantenerse accesible mediante las rutas internas de Hosting.
 
 ## Validaciones tempranas en flujos
 

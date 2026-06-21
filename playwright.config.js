@@ -25,7 +25,6 @@ export default defineConfig({
         env: {
           ...process.env,
           VITE_FIREBASE_PROJECT_ID: process.env.VITE_FIREBASE_PROJECT_ID || 'demo-gemailla-e2e',
-          VITE_LLM_ENDPOINT: process.env.VITE_LLM_ENDPOINT || '/api/ai',
         },
       },
   projects: [
