@@ -12,6 +12,10 @@
         "function": "ai"
       },
       {
+        "source": "/api/functions/**",
+        "function": "functionsRouter"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
