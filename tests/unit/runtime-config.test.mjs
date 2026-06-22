@@ -32,4 +32,12 @@ describe('runtime config seguro', () => {
     assert.equal(config.useFirebaseEmulators, 'auto');
   });
 
+  it('parsea asignaciones literales permitidas aunque no haya líneas en blanco entre ellas', () => {
+    const config = parseRuntimeConfig('window.GEMAILLA_FIREBASE_CONFIG = { apiKey: "public" };\nwindow.GEMAILLA_USE_FIREBASE_EMULATORS = "auto";window.GEMAILLA_RELEASE = { gitSha: "abc" };');
+
+    assert.deepEqual(config.firebaseConfig, { apiKey: 'public' });
+    assert.equal(config.useFirebaseEmulators, 'auto');
+    assert.deepEqual(config.release, { gitSha: 'abc' });
+  });
+
 });
