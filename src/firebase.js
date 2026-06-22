@@ -28,7 +28,7 @@ function shouldUseFirebaseEmulators() {
   const setting = window.GEMAILLA_USE_FIREBASE_EMULATORS;
   if (setting === true || setting === 'true') return true;
   if (setting === false || setting === 'false') return false;
-  return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  return false;
 }
 
 const useFirebaseEmulators = shouldUseFirebaseEmulators();
