@@ -72,13 +72,16 @@ La app mantiene las fachadas públicas existentes (`@/api/firebaseClient`, `@/li
 
 ```text
 src/app/                         # rutas y composición de providers
-src/features/documents/          # constantes y flujos del dominio documental
-src/features/companies/          # servicios de membresía, rol y empresa activa
+src/modules/<dominio>/pages/      # pantallas de cada módulo funcional
+src/modules/<dominio>/components/ # componentes propios de cada módulo
+src/modules/<dominio>/services/   # servicios y adaptadores del módulo
+src/features/documents/           # flujos incrementales del dominio documental
+src/features/companies/           # servicios de membresía, rol y empresa activa
 src/infrastructure/firebase/      # repositorios, colecciones, normalización y Storage Firebase
 src/api/firebaseClient.js         # fachada pública de compatibilidad
 ```
 
-Los módulos internos deben migrarse de forma gradual y reexportarse desde las fachadas antiguas hasta que todo el producto use las rutas nuevas.
+Esta convención describe la dirección de la migración modular, pero la arquitectura aún es incremental: parte de la lógica heredada sigue en `src/pages`, `src/lib` y `src/features`. Durante la transición, las rutas heredadas en la raíz de cada módulo se conservan como shims de compatibilidad y reexportan las implementaciones disponibles para no romper imports existentes.
 
 ## Arquitectura de documentos
 

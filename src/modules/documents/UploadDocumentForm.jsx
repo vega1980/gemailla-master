@@ -1,1 +1,1 @@
-export { uploadDocumentFlow as uploadDocument } from '@/features/documents/services/uploadDocumentFlow';
+export { uploadDocument } from './components/UploadDocumentForm';

@@ -1,1 +1,1 @@
-export { default } from '@/pages/AIAssistant';
+export { default } from './pages/AIAssistantPage';

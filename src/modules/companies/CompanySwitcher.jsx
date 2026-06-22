@@ -1,1 +1,1 @@
-export { CompanyProvider, useCompany } from '@/lib/companyContext';
+export { CompanyProvider, useCompany } from './components/CompanySwitcher';

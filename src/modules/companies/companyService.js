@@ -1,4 +1,2 @@
-import { firebase } from '@/api/firebaseClient';
-
-export const companyService = firebase.entities.Company;
-export default companyService;
+export * from './services/companyService';
+export { default } from './services/companyService';

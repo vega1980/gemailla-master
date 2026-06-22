@@ -1,1 +1,1 @@
-export { default } from '@/components/auth/AuthRequiredPage';
+export { default } from './pages/RegisterPage';
