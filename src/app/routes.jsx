@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 
 // Fuente única de rutas de la aplicación: no crear un router paralelo.
