@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import '@/styles/index.css';
 import { installGlobalErrorTracking } from '@/lib/observability';
-import { applyRuntimeConfig, ensureRuntimeConfigDefaults, parseRuntimeConfig } from '@/config/runtimeConfig';
+import { applyRuntimeConfig, ensureRuntimeConfigDefaults, isRuntimeConfigPayload, parseRuntimeConfig } from '@/config/runtimeConfig';
 
 async function loadOptionalRuntimeConfig() {
   ensureRuntimeConfigDefaults();
@@ -17,7 +17,7 @@ async function loadOptionalRuntimeConfig() {
     }
 
     const configText = await response.text();
-    if (!configText.trim()) return;
+    if (!configText.trim() || !isRuntimeConfigPayload(configText)) return;
 
     applyRuntimeConfig(parseRuntimeConfig(configText));
   } catch (error) {

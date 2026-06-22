@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { auth, onAuthStateChanged } from '@/infrastructure/firebase/auth';
+import { auth, login as loginWithEmailAndPassword, onAuthStateChanged } from '@/infrastructure/firebase/auth';
 
 const AuthContext = createContext();
 
@@ -38,6 +38,8 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
+  const login = useCallback((email, password) => loginWithEmailAndPassword(email, password), []);
+
   const logout = useCallback(async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
@@ -52,8 +54,9 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     isLoadingAuth,
     authError,
+    login,
     logout,
-  }), [authError, isAuthenticated, isLoadingAuth, logout, user]);
+  }), [authError, isAuthenticated, isLoadingAuth, login, logout, user]);
 
   return (
     <AuthContext.Provider value={value}>

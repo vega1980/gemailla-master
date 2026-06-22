@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { applyRuntimeConfig, parseRuntimeConfig } from '../../src/config/runtimeConfig.js';
+import { applyRuntimeConfig, isRuntimeConfigPayload, parseRuntimeConfig } from '../../src/config/runtimeConfig.js';
 
 describe('runtime config seguro', () => {
+
+  it('identifica respuestas HTML de fallback como ausencia de config runtime', () => {
+    assert.equal(isRuntimeConfigPayload('<!doctype html><html><body>SPA fallback</body></html>'), false);
+    assert.equal(isRuntimeConfigPayload('window.GEMAILLA_USE_FIREBASE_EMULATORS = "auto";'), true);
+  });
+
   it('rechaza app-config.js con código no permitido', () => {
     assert.throws(
       () => parseRuntimeConfig('window.location = \"https://evil.example\";'),
@@ -30,6 +36,14 @@ describe('runtime config seguro', () => {
 
     assert.deepEqual(config.firebaseConfig, { apiKey: 'public' });
     assert.equal(config.useFirebaseEmulators, 'auto');
+  });
+
+  it('parsea asignaciones literales permitidas aunque no haya líneas en blanco entre ellas', () => {
+    const config = parseRuntimeConfig('window.GEMAILLA_FIREBASE_CONFIG = { apiKey: "public" };\nwindow.GEMAILLA_USE_FIREBASE_EMULATORS = "auto";window.GEMAILLA_RELEASE = { gitSha: "abc" };');
+
+    assert.deepEqual(config.firebaseConfig, { apiKey: 'public' });
+    assert.equal(config.useFirebaseEmulators, 'auto');
+    assert.deepEqual(config.release, { gitSha: 'abc' });
   });
 
 });
