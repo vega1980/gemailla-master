@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function AuthRequiredPage() {
@@ -27,22 +26,29 @@ export default function AuthRequiredPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-[#050505] px-6 py-10">
-      <section className="w-full max-w-lg rounded-2xl border border-amber-300/20 bg-[#080808] p-8 text-center shadow-2xl shadow-black/40">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-300/10 text-amber-200">
-          <ShieldCheck className="h-8 w-8" aria-hidden="true" />
-        </div>
-        <p className="mb-2 text-xs font-black uppercase tracking-[0.3em] text-amber-200/70">
-          GEMAILLA IA
-        </p>
-        <h1 className="mb-4 text-3xl font-bold text-amber-100">
-          Acceso restringido
-        </h1>
-        <p className="text-sm leading-6 text-stone-300">
-          Debes iniciar sesión con una cuenta autorizada para acceder al panel y a los módulos de negocio.
+    <main className="relative min-h-[100svh] overflow-x-hidden overflow-y-auto bg-[#050505] px-5 pb-[clamp(1.5rem,4svh,3rem)] pt-[clamp(1.25rem,5svh,4rem)] text-amber-50 sm:px-8">
+      <img
+        className="absolute inset-0 h-full w-full object-cover object-center"
+        src="/assets/auth-bg.png"
+        alt=""
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 mx-auto flex min-h-[calc(100svh-clamp(2.75rem,9svh,7rem))] w-full max-w-[760px] flex-col items-center justify-start">
+        <img
+          className="h-auto max-h-[34svh] w-[min(72vw,34rem)] shrink-0 object-contain"
+          src="/assets/logo-full.png"
+          alt="Gemailla IA"
+        />
+
+        <p className="mt-[clamp(0.75rem,2svh,1.25rem)] text-center text-base font-medium leading-7 text-amber-50/90 sm:text-lg">
+          Inicia sesión con tu correo y contraseña para acceder al panel.
         </p>
 
-        <form className="mt-8 space-y-4 text-left" onSubmit={handleSubmit}>
+        <form
+          className="mt-[clamp(1rem,2.75svh,2rem)] w-full max-w-[680px] space-y-4 rounded-2xl border border-amber-300/20 bg-[#080808]/92 p-5 text-left shadow-2xl shadow-black/40 backdrop-blur-sm sm:p-7"
+          onSubmit={handleSubmit}
+        >
           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-amber-100/70" htmlFor="auth-email">
             Correo autorizado
           </label>
@@ -76,18 +82,14 @@ export default function AuthRequiredPage() {
           )}
 
           <button
-            className="w-full rounded-lg bg-amber-200 px-4 py-3 text-sm font-bold text-stone-950 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-amber-200 px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-stone-950 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
             type="submit"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Iniciando sesión...' : 'Iniciar sesión'}
           </button>
         </form>
-
-        <p className="mt-6 rounded-lg border border-amber-300/10 bg-amber-300/5 p-4 text-xs leading-5 text-stone-400">
-          Usa el proveedor de Firebase Email/Password configurado para este entorno local.
-        </p>
-      </section>
+      </div>
     </main>
   );
 }
