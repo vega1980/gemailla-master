@@ -70,6 +70,7 @@ export default function ConsultorVirtual({ company, transactions, monthlyData })
     const ctx = buildContext();
     const conv = await firebase.agents.createConversation({
       agent_name: 'financial_advisor',
+      companyId: company?.id,
       metadata: { name: `Asesoría - ${company?.name || 'Mi Empresa'}` },
     });
     setConversation(conv);

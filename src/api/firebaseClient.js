@@ -217,7 +217,12 @@ const connectors = {
 
 async function syncUserProfile(profile = {}) {
   const user = getCurrentUser();
-  const userUid = profile.uid || profile.id || getCurrentUserUid();
+  const currentUid = getCurrentUserUid();
+  const requestedUid = profile.uid || profile.id || currentUid;
+  if (requestedUid && currentUid && requestedUid !== currentUid) {
+    throw new Error('No puedes sincronizar el perfil de otro usuario.');
+  }
+  const userUid = currentUid;
   if (!userUid) throw new Error('No se puede sincronizar el perfil sin UID.');
 
   const payload = normalizeData({
@@ -241,7 +246,12 @@ async function syncUserProfile(profile = {}) {
 
 async function createCompanyWithInitialOwner(companyData = {}, membershipData = {}) {
   const user = getCurrentUser();
-  const userUid = membershipData.userUid || companyData.ownerUid || getCurrentUserUid();
+  const currentUid = getCurrentUserUid();
+  const requestedOwnerUid = membershipData.userUid || companyData.ownerUid || currentUid;
+  if (requestedOwnerUid && currentUid && requestedOwnerUid !== currentUid) {
+    throw new Error('No puedes crear empresas ni membresías iniciales para otro usuario.');
+  }
+  const userUid = currentUid;
   if (!userUid) throw new Error('No se puede crear la empresa sin UID de propietario.');
 
   const companyRef = doc(collection(db, 'companies'));
@@ -297,9 +307,12 @@ function buildEntities() {
 }
 
 const agents = {
-  createConversation: async ({ metadata = {}, agent_name: agentName = 'assistant' } = {}) => {
+  createConversation: async ({ metadata = {}, agent_name: agentName = 'assistant', companyId } = {}) => {
+    const safeCompanyId = typeof companyId === 'string' ? companyId.trim() : '';
+    if (!safeCompanyId) throw new Error('companyId es obligatorio para crear conversaciones de IA.');
     const payload = withCreateDefaults({
       agentName,
+      companyId: safeCompanyId,
       metadata,
       ownerUid: getCurrentUserUid(),
       messages: [],
@@ -315,7 +328,14 @@ const agents = {
 
     const refDoc = doc(db, 'aiConversations', conversationId);
     const snap = await getDoc(refDoc);
+    if (!snap.exists()) throw new Error('Conversación no encontrada o sin acceso.');
     const current = snap.exists() ? snap.data() : {};
+    const currentUid = getCurrentUserUid();
+    if (!currentUid) throw new Error('Debes iniciar sesión para enviar mensajes.');
+    if (current.ownerUid && current.ownerUid !== currentUid) {
+      throw new Error('No puedes enviar mensajes en conversaciones de otro usuario.');
+    }
+    if (!current.companyId) throw new Error('La conversación no tiene companyId válido.');
     const messages = Array.isArray(current.messages) ? [...current.messages] : [];
     messages.push({ ...message, createdAt: nowIso() });
 
