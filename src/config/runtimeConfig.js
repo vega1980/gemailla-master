@@ -34,16 +34,19 @@ function parseJsLiteral(literal) {
 }
 
 function parseRuntimeConfigAssignments(raw) {
-  const allowedStatement = /^window\.(GEMAILLA_FIREBASE_CONFIG|GEMAILLA_USE_FIREBASE_EMULATORS|GEMAILLA_RELEASE)\s*=\s*([\s\S]*?)\s*;\s*$/;
+  const allowedStatement = /window\.(GEMAILLA_FIREBASE_CONFIG|GEMAILLA_USE_FIREBASE_EMULATORS|GEMAILLA_RELEASE)\s*=\s*([\s\S]*?)\s*;/g;
   const payload = {};
+  let cursor = 0;
   let matched = false;
 
-  for (const statement of raw.split(/\n\s*\n/).map((part) => part.trim()).filter(Boolean)) {
-    const match = statement.match(allowedStatement);
-    if (!match) return null;
+  for (const match of raw.matchAll(allowedStatement)) {
+    if (raw.slice(cursor, match.index).trim()) return null;
     matched = true;
     payload[match[1]] = parseJsLiteral(match[2]);
+    cursor = match.index + match[0].length;
   }
+
+  if (raw.slice(cursor).trim()) return null;
 
   return matched ? payload : null;
 }
