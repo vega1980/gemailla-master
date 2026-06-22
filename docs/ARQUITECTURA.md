@@ -2,13 +2,30 @@
 
 ```mermaid
 flowchart LR
-  Usuario[Usuario] --> Hosting[Firebase Hosting]
-  Hosting --> App[App Web Estática React/Vite]
-  App --> Auth[Firebase Auth]
-  App --> Firestore[Firestore]
-  App --> Storage[Firebase Storage]
-  App --> BackendSeguro[Cloud Functions / Cloud Run opcional]
-  BackendSeguro --> LLM[Proveedor LLM]
+  subgraph Cliente
+    Usuario[Usuario]
+    App[App Web React/Vite]
+  end
+
+  subgraph PlataformaFirebase
+    Hosting[Firebase Hosting]
+    Auth[Firebase Auth]
+    Firestore[Firestore]
+    Storage[Firebase Storage]
+    Backend[Cloud Functions / Cloud Run]
+  end
+
+  subgraph ServiciosExternos
+    LLM[Proveedor LLM]
+  end
+
+  Usuario --> Hosting
+  Hosting --> App
+  App -->|autenticación| Auth
+  App -->|datos de negocio| Firestore
+  App -->|archivos PDF/XML| Storage
+  App -->|operaciones seguras de IA| Backend
+  Backend -->|integración privada| LLM
 ```
 
 
