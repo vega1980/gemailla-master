@@ -23,15 +23,15 @@ function getConfigValue(envValue, runtimeValue) {
   return normalizeConfigValue(envValue) || normalizeConfigValue(runtimeValue);
 }
 
-function shouldUseFirebaseEmulators() {
+function shouldUseFirebaseEmulators(projectId) {
   if (typeof window === 'undefined') return false;
   const setting = window.GEMAILLA_USE_FIREBASE_EMULATORS;
   if (setting === true || setting === 'true') return true;
   if (setting === false || setting === 'false') return false;
-  return false;
+  const hostname = window.location.hostname;
+  const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+  return isLocalHost && String(projectId || '').startsWith('demo-');
 }
-
-const useFirebaseEmulators = shouldUseFirebaseEmulators();
 
 const firebaseConfig = {
   apiKey: getConfigValue(import.meta.env.VITE_FIREBASE_API_KEY, runtimeConfig.apiKey),
@@ -41,6 +41,8 @@ const firebaseConfig = {
   messagingSenderId: getConfigValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, runtimeConfig.messagingSenderId),
   appId: getConfigValue(import.meta.env.VITE_FIREBASE_APP_ID, runtimeConfig.appId),
 };
+
+const useFirebaseEmulators = shouldUseFirebaseEmulators(firebaseConfig.projectId);
 
 if (useFirebaseEmulators && !firebaseConfig.projectId) {
   firebaseConfig.projectId = 'demo-gemailla-local';

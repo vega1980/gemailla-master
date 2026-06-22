@@ -16,8 +16,34 @@ function uniqueById(records) {
   return Array.from(recordsById.values()).sort(compareMembershipsByCreation);
 }
 
+async function getActiveCompanyClaim(user) {
+  if (!user?.getIdTokenResult) return null;
+  const tokenResult = await user.getIdTokenResult().catch(() => null);
+  const companyId = tokenResult?.claims?.companyId;
+  return typeof companyId === 'string' && companyId.trim() ? companyId.trim() : null;
+}
+
 export async function loadCompanyMemberships(user) {
   const userUid = user?.uid || user?.id;
+  const activeCompanyId = await getActiveCompanyClaim(user);
+  if (userUid && activeCompanyId) {
+    const [byId, byEmail] = await Promise.all([
+      firebase.entities.CompanyMember.get(`${activeCompanyId}_${userUid}`).catch(() => null),
+      user?.email
+        ? firebase.entities.CompanyMember.filter({
+          companyId: activeCompanyId,
+          userEmail: user.email,
+          status: 'active',
+        }).catch(() => [])
+        : [],
+    ]);
+
+    return uniqueById([
+      byId?.status === 'active' ? byId : null,
+      ...byEmail,
+    ].filter(Boolean));
+  }
+
   const [byUid, byEmail] = await Promise.all([
     userUid
       ? firebase.entities.CompanyMember.filter({ userUid, status: 'active' }).catch(() => [])
