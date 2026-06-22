@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { applyRuntimeConfig, parseRuntimeConfig } from '../../src/config/runtimeConfig.js';
+import { applyRuntimeConfig, isRuntimeConfigPayload, parseRuntimeConfig } from '../../src/config/runtimeConfig.js';
 
 describe('runtime config seguro', () => {
+
+  it('identifica respuestas HTML de fallback como ausencia de config runtime', () => {
+    assert.equal(isRuntimeConfigPayload('<!doctype html><html><body>SPA fallback</body></html>'), false);
+    assert.equal(isRuntimeConfigPayload('window.GEMAILLA_USE_FIREBASE_EMULATORS = "auto";'), true);
+  });
+
   it('rechaza app-config.js con código no permitido', () => {
     assert.throws(
       () => parseRuntimeConfig('window.location = \"https://evil.example\";'),

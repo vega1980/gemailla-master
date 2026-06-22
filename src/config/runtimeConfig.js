@@ -51,6 +51,15 @@ function parseRuntimeConfigAssignments(raw) {
   return matched ? payload : null;
 }
 
+
+export function isRuntimeConfigPayload(text = '') {
+  const raw = String(text || '').trim();
+  return raw.startsWith('{')
+    || raw.startsWith('window.GEMAILLA_FIREBASE_CONFIG')
+    || raw.startsWith('window.GEMAILLA_USE_FIREBASE_EMULATORS')
+    || raw.startsWith('window.GEMAILLA_RELEASE');
+}
+
 export function parseRuntimeConfig(text = '') {
   const raw = String(text || '').trim();
   if (!raw) return {};
