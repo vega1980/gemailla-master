@@ -2,148 +2,190 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCompany } from '@/lib/companyContext';
 import {
-  LayoutDashboard, FileText, ArrowUpDown, Shield, Brain,
-  Building2, Activity, ChevronLeft, ChevronRight, LogOut,
-  ChevronDown, Crown, FlaskConical, BarChart3, Users, Rocket, Handshake, UserCog } from
-'lucide-react';
+  Activity,
+  ArrowUpDown,
+  BarChart3,
+  Brain,
+  Building2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  FileText,
+  FlaskConical,
+  Handshake,
+  LayoutDashboard,
+  LogOut,
+  Rocket,
+  Shield,
+  UserCog,
+  Users,
+} from 'lucide-react';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from
-'@/components/ui/dropdown-menu';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { firebase } from '@/api/firebaseClient';
 
 const navItems = [
-{ path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-{ path: '/documents', label: 'Documentos', icon: FileText },
-{ path: '/erp', label: 'ERP', icon: ArrowUpDown },
-{ path: '/audit', label: 'Auditoría', icon: Shield },
-{ path: '/ai', label: 'IA Asistente', icon: Brain },
-{ path: '/companies', label: 'Empresas', icon: Building2 },
-{ path: '/predictive', label: 'Análisis Predictivo', icon: FlaskConical },
-{ path: '/finance', label: 'Hub Financiero', icon: BarChart3 },
-{ path: '/client', label: 'Panel Cliente', icon: Users },
-{ path: '/operations', label: 'Estrategia & Ops', icon: Rocket },
-{ path: '/crm', label: 'CRM', icon: Handshake },
-{ path: '/hr', label: 'Recursos Humanos', icon: UserCog },
-{ path: '/activity', label: 'Log', icon: Activity },
-{ path: '/subscriptions', label: 'Suscripciones', icon: Crown }];
-
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/documents', label: 'Documentos', icon: FileText },
+  { path: '/erp', label: 'ERP', icon: ArrowUpDown },
+  { path: '/audit', label: 'Auditoría', icon: Shield },
+  { path: '/ai', label: 'IA Asistente', icon: Brain },
+  { path: '/companies', label: 'Empresas', icon: Building2 },
+  { path: '/predictive', label: 'Análisis Predictivo', icon: FlaskConical },
+  { path: '/finance', label: 'Hub Financiero', icon: BarChart3 },
+  { path: '/client', label: 'Panel Cliente', icon: Users },
+  { path: '/operations', label: 'Estrategia & Ops', icon: Rocket },
+  { path: '/crm', label: 'CRM', icon: Handshake },
+  { path: '/hr', label: 'Recursos Humanos', icon: UserCog },
+  { path: '/activity', label: 'Log', icon: Activity },
+  { path: '/subscriptions', label: 'Suscripciones', icon: Crown },
+];
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const location = useLocation();
   const { companies, activeCompany, switchCompany } = useCompany();
 
   return (
-    <aside className={`fixed left-0 top-0 h-full z-40 flex flex-col border-r bg-[#080808] transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`} style={{ borderColor: 'rgba(197,160,89,0.18)' }}>
-      {/* Logo */}
-      <div className="flex items-center justify-center py-8 px-4 border-b" style={{ borderColor: 'rgba(197,160,89,0.15)', background: 'transparent' }}>
-         {!collapsed ?
-        <div className="flex flex-col items-center gap-3">
-          {/* Logo */}
-          <img src="/assets/logo-emblem.png" alt="GEMAILLA IA" className="w-24 h-24" style={{ background: 'transparent', objectFit: 'contain' }} />
-          <div className="text-center">
-          <p className="font-display tracking-[0.12em] uppercase" style={{ color: '#fef3c7', fontSize: '0.85rem', letterSpacing: '0.1em', fontWeight: '600', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>La Evolución de</p>
-          <p className="font-display tracking-[0.12em] uppercase" style={{ color: '#fef3c7', fontSize: '0.85rem', letterSpacing: '0.1em', fontWeight: '600', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>la Asesoría Empresaria</p>
-              <span className="font-display tracking-[0.08em] leading-tight mt-2" style={{
-              fontSize: '1.5rem',
-              color: '#c5a059',
-              fontWeight: '700',
-              letterSpacing: '0.08em'
-            }}>GEMAILLA IA</span>
-            </div>
-          </div> :
+    <aside
+      className={`fixed left-0 top-0 z-40 flex h-full flex-col border-r border-zinc-800/80 bg-zinc-950 transition-all duration-300 ${
+        collapsed ? 'w-16' : 'w-64'
+      }`}
+    >
+      <div
+        className={`border-b border-zinc-800/80 ${
+          collapsed ? 'p-3' : 'px-5 py-6'
+        }`}
+      >
+        {collapsed ? (
+          <div className="flex justify-center">
+            <img
+              src="/assets/logo-emblem.png"
+              alt="GEMAILLA IA"
+              className="h-10 w-10 object-contain"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center text-center">
+            <img
+              src="/assets/logo-emblem.png"
+              alt="GEMAILLA IA"
+              className="h-20 w-20 object-contain"
+            />
 
-        <img src="/assets/logo-emblem.png" alt="GEMAILLA IA" className="w-16 h-16" style={{ background: 'transparent' }} />
-        }
+            <span className="mt-3 text-sm font-semibold tracking-[0.16em] text-[#F3E5AB]">
+              GEMAILLA IA
+            </span>
+
+            <span className="mt-1 text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+              La evolución de la asesoría
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Company Selector */}
-      {!collapsed && activeCompany &&
-      <div className="px-3 py-3 border-b" style={{ borderColor: 'rgba(197,160,89,0.12)' }}>
+      {!collapsed && activeCompany && (
+        <div className="border-b border-zinc-800/80 px-3 py-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 aria-label={`Empresa activa: ${activeCompany.name}`}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm hover:bg-white/5"
-                style={{ background: 'rgba(197,160,89,0.06)', border: '1px solid rgba(197,160,89,0.2)' }}
+                className="flex w-full items-center gap-2 rounded-lg border border-[rgba(243,229,171,0.10)] bg-zinc-900/50 px-3 py-2.5 text-sm transition-colors hover:border-zinc-700 hover:bg-zinc-900"
               >
-                <Building2 className="w-4 h-4 shrink-0" style={{ color: '#c5a059' }} />
-                <div className="flex-1 text-left min-w-0">
-                  <p className="truncate text-xs font-semibold" style={{ color: '#e8d5a3' }}>{activeCompany.name}</p>
+                <Building2 className="h-4 w-4 shrink-0 text-zinc-400" />
+
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-xs font-medium text-zinc-200">
+                    {activeCompany.name}
+                  </p>
                 </div>
-                <ChevronDown className="w-3 h-3 text-muted-foreground shrink-0" />
+
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {companies.map((c) =>
-            <DropdownMenuItem key={c.id} onClick={() => switchCompany(c)}>
-                  <Building2 className="w-4 h-4 mr-2" />
-                  {c.name}
+
+            <DropdownMenuContent
+              align="start"
+              className="w-56 border-zinc-800 bg-zinc-950 text-zinc-200"
+            >
+              {companies.map((company) => (
+                <DropdownMenuItem
+                  key={company.id}
+                  onClick={() => switchCompany(company)}
+                  className="cursor-pointer focus:bg-zinc-900 focus:text-[#F3E5AB]"
+                >
+                  <Building2 className="mr-2 h-4 w-4" />
+                  {company.name}
                 </DropdownMenuItem>
-            )}
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      }
+      )}
 
-      {/* Navigation */}
-      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
+          const Icon = item.icon;
+
           return (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group font-semibold bg-[#000000] ${collapsed ? 'justify-center' : ''}`}
-              style={isActive ? {
-                background: 'rgba(197,160,89,0.12)',
-                border: '1px solid rgba(197,160,89,0.25)',
-                color: '#c5a059'
-              } : {
-                color: 'rgba(200,190,170,0.55)',
-                border: '1px solid transparent'
-              }}
               title={collapsed ? item.label : undefined}
-              onMouseEnter={(e) => {if (!isActive) {e.currentTarget.style.background = 'rgba(197,160,89,0.06)';e.currentTarget.style.color = '#e8d5a3';}}}
-              onMouseLeave={(e) => {if (!isActive) {e.currentTarget.style.background = 'transparent';e.currentTarget.style.color = 'rgba(200,190,170,0.55)';}}}>
-              
-              <item.icon className="w-4 h-4 shrink-0" style={isActive ? { color: '#c5a059' } : {}} />
-              {!collapsed && <span className="tracking-wide font-black text-lg">{item.label}</span>}
-            </Link>);
+              className={`relative flex items-center gap-3 px-3 py-2.5 text-sm transition-colors ${
+                collapsed ? 'justify-center rounded-lg' : ''
+              } ${
+                isActive
+                  ? 'text-[#F3E5AB] before:absolute before:bottom-2 before:left-0 before:top-2 before:w-0.5 before:rounded-r before:bg-[#F3E5AB]'
+                  : 'text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200'
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
 
+              {!collapsed && (
+                <span className="font-medium tracking-wide">{item.label}</span>
+              )}
+            </Link>
+          );
         })}
       </nav>
 
-      {/* Collapse Toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-24 w-6 h-6 rounded-full flex items-center justify-center transition-all"
-        style={{ background: '#111', border: '1px solid rgba(197,160,89,0.35)', color: '#c5a059' }}>
-        
-        {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-      </button>
+      <div className="border-t border-zinc-800/80 p-2">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-zinc-400 transition-colors hover:bg-zinc-900/50 hover:text-[#F3E5AB] ${
+            collapsed ? 'justify-center' : ''
+          }`}
+          aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'}
+        >
+          {collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <>
+              <ChevronLeft className="h-4 w-4" />
+              <span className="text-sm">Contraer menú</span>
+            </>
+          )}
+        </button>
 
-      {/* User section */}
-      <div className="p-3 border-t" style={{ borderColor: 'rgba(197,160,89,0.15)' }}>
-        <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-          <img
-            src="/assets/logo-emblem.png"
-            alt="GEMAILLA IA"
-            className="w-10 h-10 shrink-0"
-            style={{ objectFit: 'contain' }} />
-          
+        <button
+          onClick={() => firebase.auth.logout()}
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+          className={`mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-zinc-400 transition-colors hover:bg-zinc-900/50 hover:text-zinc-200 ${
+            collapsed ? 'justify-center' : ''
+          }`}
+        >
+          <LogOut className="h-4 w-4" />
 
-          {!collapsed &&
-          <button
-            onClick={() => firebase.auth.logout()}
-            aria-label="Cerrar sesión"
-            className="p-1.5 rounded-md transition-colors text-muted-foreground hover:text-foreground hover:bg-white/5"
-            title="Cerrar sesión">
-            
-              <LogOut className="w-4 h-4" />
-            </button>
-          }
-        </div>
+          {!collapsed && <span className="text-sm">Cerrar sesión</span>}
+        </button>
       </div>
-    </aside>);
-
+    </aside>
+  );
 }
