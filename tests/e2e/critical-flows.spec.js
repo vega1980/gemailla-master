@@ -10,6 +10,7 @@ import {
   loginUser,
   logoutUser,
   readDocument,
+  setActiveCompanyClaims,
   uniqueId,
 } from './support/firebaseHarness.js';
 
@@ -35,6 +36,7 @@ async function signInOwnerWithCompanies(page) {
     ownerEmail,
     name: `Empresa Secundaria ${runId}`,
   });
+  await setActiveCompanyClaims(page, { userUid: owner.uid, companyId: primaryCompanyId, role: 'owner' });
 
   await page.goto('/dashboard');
   await expect(page.getByText(`Empresa Primaria ${runId}`).first()).toBeVisible({ timeout: 15_000 });
@@ -136,6 +138,7 @@ test.describe('flujos críticos multi-capa', () => {
       ownerEmail,
       name: `Empresa Roles ${runId}`,
     });
+    await setActiveCompanyClaims(page, { userUid: owner.uid, companyId, role: 'owner' });
     await logoutUser(page);
 
     const viewer = await createAndLoginUser(page, { email: viewerEmail, password: TEST_PASSWORD });
@@ -149,6 +152,7 @@ test.describe('flujos críticos multi-capa', () => {
       role: 'viewer',
       actorUid: owner.uid,
     });
+    await setActiveCompanyClaims(page, { userUid: viewer.uid, companyId, role: 'viewer' });
     await logoutUser(page);
 
     await loginUser(page, { email: viewerEmail, password: TEST_PASSWORD });

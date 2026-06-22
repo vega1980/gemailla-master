@@ -38,6 +38,12 @@ export async function logoutTestUser() {
   await signOut(auth);
 }
 
+export async function refreshCurrentUserToken() {
+  if (!auth.currentUser) return null;
+  const tokenResult = await auth.currentUser.getIdTokenResult(true);
+  return tokenResult.claims;
+}
+
 export async function createOwnedCompany({ companyId, ownerUid, ownerEmail, name }) {
   const now = new Date().toISOString();
   await setDoc(doc(db, 'companies', companyId), {
