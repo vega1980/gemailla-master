@@ -41,3 +41,4 @@ test-results/
 .Ruserdata
 renv/library/
 renv/staging/
+.firebase/
