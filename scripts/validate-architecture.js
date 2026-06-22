@@ -54,7 +54,7 @@ function addIssue(issues, check, file, message) {
 }
 
 function validateFirebaseImports(issues) {
-  const importPattern = /(?:import|export)\s+(?:[^'";]+\s+from\s+)?['"](firebase(?:\/[^'"]*)?)['"]|import\(['"](firebase(?:\/[^'"]*)?)['"]\)/g;
+  const importPattern = /(?:import|export)\s+(?:[^'";]+\s+from\s+)?['"]((?:@\/firebase|firebase)(?:\/[^'"]*)?)['"]|import\(['"]((?:@\/firebase|firebase)(?:\/[^'"]*)?)['"]\)/g;
   for (const abs of collectSourceFiles('src')) {
     const repoPath = toRepoPath(abs);
     if (repoPath.startsWith('src/infrastructure/')) continue;
@@ -62,7 +62,7 @@ function validateFirebaseImports(issues) {
     if (ALLOWED_FIREBASE_IMPORT_FILES.has(repoPath)) continue;
     const source = readFileSync(abs, 'utf8');
     for (const match of source.matchAll(importPattern)) {
-      addIssue(issues, 'firebase-imports', repoPath, `Import directo de Firebase no permitido fuera de src/infrastructure: ${match[1] || match[2]}. Usa el facade de infraestructura/API.`);
+      addIssue(issues, 'firebase-imports', repoPath, `Import directo/alternativo de Firebase no permitido fuera de src/infrastructure: ${match[1] || match[2]}. Usa el facade de infraestructura/API.`);
     }
   }
 }
