@@ -1,1 +1,1 @@
-export { default } from './components/CompanySwitcher';
+export { CompanyProvider, useCompany } from './components/CompanySwitcher';

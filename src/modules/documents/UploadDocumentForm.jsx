@@ -1,1 +1,1 @@
-export { default } from './components/UploadDocumentForm';
+export { uploadDocument } from './components/UploadDocumentForm';

@@ -81,7 +81,7 @@ src/infrastructure/firebase/      # repositorios, colecciones, normalización y 
 src/api/firebaseClient.js         # fachada pública de compatibilidad
 ```
 
-Los módulos internos deben usar la convención `pages/`, `components/` y `services/`. Durante la migración, las rutas heredadas en la raíz de cada módulo se conservan como shims de compatibilidad y reexportan las implementaciones nuevas para no romper imports existentes.
+Esta convención describe la dirección de la migración modular, pero la arquitectura aún es incremental: parte de la lógica heredada sigue en `src/pages`, `src/lib` y `src/features`. Durante la transición, las rutas heredadas en la raíz de cada módulo se conservan como shims de compatibilidad y reexportan las implementaciones disponibles para no romper imports existentes.
 
 ## Arquitectura de documentos
 
