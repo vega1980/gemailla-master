@@ -1,6 +1,7 @@
 // @ts-check
 
 import firebase from '@/api/firebaseClient';
+import { auth } from '@/infrastructure/firebase/auth';
 
 function compareMembershipsByCreation(a, b) {
   return String(a?.createdAt || '').localeCompare(String(b?.createdAt || ''))
@@ -16,16 +17,17 @@ function uniqueById(records) {
   return Array.from(recordsById.values()).sort(compareMembershipsByCreation);
 }
 
-async function getActiveCompanyClaim(user) {
-  if (!user?.getIdTokenResult) return null;
-  const tokenResult = await user.getIdTokenResult().catch(() => null);
+async function getActiveCompanyClaim() {
+  const currentUser = auth?.currentUser;
+  if (!currentUser?.getIdTokenResult) return null;
+  const tokenResult = await currentUser.getIdTokenResult().catch(() => null);
   const companyId = tokenResult?.claims?.companyId;
   return typeof companyId === 'string' && companyId.trim() ? companyId.trim() : null;
 }
 
 export async function loadCompanyMemberships(user) {
   const userUid = user?.uid || user?.id;
-  const activeCompanyId = await getActiveCompanyClaim(user);
+  const activeCompanyId = await getActiveCompanyClaim();
   if (userUid && activeCompanyId) {
     const [byId, byEmail] = await Promise.all([
       firebase.entities.CompanyMember.get(`${activeCompanyId}_${userUid}`).catch(() => null),

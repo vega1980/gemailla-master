@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 export const TEST_PASSWORD = 'Gemailla-e2e-12345';
 
 let adminAppPromise;
-const requireFromFunctions = createRequire(fileURLToPath(new URL('../../../functions/package.json', import.meta.url)));
 
 async function getAdminAuth() {
   if (!adminAppPromise) {
@@ -13,6 +12,7 @@ async function getAdminAuth() {
       process.env.FIRESTORE_EMULATOR_HOST ||= '127.0.0.1:8080';
       process.env.GCLOUD_PROJECT ||= process.env.VITE_FIREBASE_PROJECT_ID || 'demo-gemailla-e2e';
 
+      const requireFromFunctions = createRequire(fileURLToPath(new URL('../../../functions/package.json', import.meta.url)));
       const admin = requireFromFunctions('firebase-admin');
       const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'demo-gemailla-e2e';
 
