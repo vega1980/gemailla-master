@@ -4,6 +4,7 @@ import { useCompany } from '@/lib/companyContext';
 import { Link } from 'react-router-dom';
 import { Building2, Search, Bell, HelpCircle, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, Zap, FileText, Calculator, Shield, TrendingUp, Users, Briefcase, PieChart as PieChartIcon } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import LoadingState from '@/components/shared/LoadingState';
 
 export default function Dashboard() {
   const { activeCompany, loading: companyLoading, companies = [] } = useCompany();
@@ -40,13 +41,7 @@ export default function Dashboard() {
     return buckets.map((bucket) => ({ value: Math.max(bucket.value, 0) }));
   }, [transactions]);
 
-  if (companyLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen" style={{ background: '#050505' }}>
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>);
-
-  }
+  if (companyLoading) return <LoadingState variant="screen" style={{ background: '#050505' }} />;
 
   const totalIngresos = transactions.filter((t) => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
   const alertCount = kpis.filter((k) => k.status === 'critico' || k.status === 'en_riesgo').length;
