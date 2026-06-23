@@ -28,25 +28,17 @@ async function getActiveCompanyClaim() {
 export async function loadCompanyMemberships(user) {
   const userUid = user?.uid || user?.id;
   const activeCompanyId = await getActiveCompanyClaim();
-  if (userUid && activeCompanyId) {
-    const [byId, byEmail] = await Promise.all([
-      firebase.entities.CompanyMember.get(`${activeCompanyId}_${userUid}`).catch(() => null),
-      user?.email
-        ? firebase.entities.CompanyMember.filter({
-          companyId: activeCompanyId,
-          userEmail: user.email,
-          status: 'active',
-        }).catch(() => [])
-        : [],
-    ]);
-
-    return uniqueById([
-      byId?.status === 'active' ? byId : null,
-      ...byEmail,
-    ].filter(Boolean));
-  }
-
-  const [byUid, byEmail] = await Promise.all([
+  const [byActiveId, byActiveEmail, byUid, byEmail] = await Promise.all([
+    userUid && activeCompanyId
+      ? firebase.entities.CompanyMember.get(`${activeCompanyId}_${userUid}`).catch(() => null)
+      : null,
+    activeCompanyId && user?.email
+      ? firebase.entities.CompanyMember.filter({
+        companyId: activeCompanyId,
+        userEmail: user.email,
+        status: 'active',
+      }).catch(() => [])
+      : [],
     userUid
       ? firebase.entities.CompanyMember.filter({ userUid, status: 'active' }).catch(() => [])
       : [],
@@ -55,7 +47,12 @@ export async function loadCompanyMemberships(user) {
       : [],
   ]);
 
-  return uniqueById([...byUid, ...byEmail]);
+  return uniqueById([
+    byActiveId?.status === 'active' ? byActiveId : null,
+    ...byActiveEmail,
+    ...byUid,
+    ...byEmail,
+  ].filter(Boolean));
 }
 
 export async function loadCompaniesForMemberships(memberships) {
