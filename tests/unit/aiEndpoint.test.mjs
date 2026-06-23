@@ -411,6 +411,15 @@ describe('endpoint IA', () => {
     assert.equal(costLogs[0].costo, 0.000036);
     assert.equal(costLogs[0].integration, 'ellmer');
     assert.match(costLogs[0].timestamp, /^\d{4}-\d{2}-\d{2}T/);
+
+
+    const auditLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiAuditLogs/')).map(([, value]) => value);
+    assert.equal(auditLogs.length, 2);
+    assert.deepEqual(auditLogs.map((log) => log.eventName).sort(), ['ai_request_completed', 'ai_request_started']);
+    assert.equal(auditLogs.every((log) => log.companyId === 'validCompany'), true);
+    assert.equal(auditLogs.every((log) => log.userUid === 'owner-uid'), true);
+    assert.equal(auditLogs.every((log) => log.prompt === undefined), true);
+    assert.equal(auditLogs.every((log) => log.content === undefined), true);
   });
 
 
@@ -506,6 +515,14 @@ describe('endpoint IA', () => {
     assert.equal(res.statusCode, 429);
     assert.match(res.payload.error, /Límite de frecuencia/);
     assert.equal(openAiCalls, 0);
+
+
+    const auditLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiAuditLogs/')).map(([, value]) => value);
+    assert.equal(auditLogs.length, 1);
+    assert.equal(auditLogs[0].eventName, 'ai_request_failed');
+    assert.equal(auditLogs[0].status, 429);
+    assert.equal(auditLogs[0].companyId, 'validCompany');
+    assert.equal(auditLogs[0].userUid, 'owner-uid');
   });
 
   it('bloquea por cuota diaria de tokens antes de llamar a OpenAI', async () => {
