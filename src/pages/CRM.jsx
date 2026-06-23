@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCompany } from '@/lib/companyContext';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 import PageHeader from '@/components/shared/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Users, PieChart, TrendingUp } from 'lucide-react';
@@ -12,13 +13,7 @@ import ClientImporter from '@/features/crm/components/ClientImporter';
 export default function CRM() {
   const { activeCompany, loading } = useCompany();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingState />;
 
   if (!activeCompany) {
     return (

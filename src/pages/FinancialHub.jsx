@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useCompanyAiConversations, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2 } from 'lucide-react';
 import { format, subMonths, startOfMonth } from 'date-fns';
@@ -56,13 +57,7 @@ export default function FinancialHub() {
     return buckets;
   }, [transactions]);
 
-  if (companyLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (companyLoading) return <LoadingState />;
 
   if (!activeCompany) {
     return (
