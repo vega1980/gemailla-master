@@ -17,11 +17,11 @@ const ModuleLoader = (Component) => (
 
 // Importaciones diferidas (Lazy Loading)
 const Dashboard = lazy(() => import('@/pages/Dashboard'));
-const Documents = lazy(() => import('@/pages/Documents'));
+const Documents = lazy(() => import('@/modules/documents/pages/DocumentsPage'));
 const ERP = lazy(() => import('@/pages/ERP'));
 const Audit = lazy(() => import('@/pages/Audit'));
 const AIAssistant = lazy(() => import('@/pages/AIAssistant'));
-const Companies = lazy(() => import('@/pages/Companies'));
+const Companies = lazy(() => import('@/modules/companies/pages/CompaniesPage'));
 const ActivityLog = lazy(() => import('@/pages/ActivityLog'));
 const Subscriptions = lazy(() => import('@/pages/Subscriptions'));
 const PredictiveAnalysis = lazy(() => import('@/pages/PredictiveAnalysis'));
