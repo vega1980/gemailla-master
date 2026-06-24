@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "scope": "production",
+  "alertPolicies": [
+    {
+      "id": "cloud-functions-errors",
+      "name": "Errores Cloud Functions",
+      "signal": "Cloud Logging / Cloud Monitoring",
+      "filter": "resource.type=\"cloud_function\" AND severity>=ERROR AND jsonPayload.deployEnv=\"production\"",
+      "threshold": "5 errores en 5 min o tasa 5xx > 1%",
+      "severity": "SEV1/SEV2",
+      "owner": "Equipo Plataforma",
+      "runbook": "docs/runbooks/AI_INCIDENT_RUNBOOK.md"
+    },
+    {
+      "id": "ai-failures",
+      "name": "Fallos IA",
+      "signal": "Cloud Logging",
+      "filter": "jsonPayload.eventName=\"ai_request_failed\" AND jsonPayload.deployEnv=\"production\"",
+      "threshold": "> 2% de ai_request_completed durante 5 min o cualquier pico de status>=500",
+      "severity": "SEV2",
+      "owner": "Equipo Plataforma/IA",
+      "runbook": "docs/runbooks/AI_INCIDENT_RUNBOOK.md"
+    },
+    {
+      "id": "ai-daily-token-cost-by-company",
+      "name": "Uso de tokens/costo diario por empresa",
+      "signal": "Firestore aiUsage + aiCostLogs",
+      "filter": "aiUsage.date=today agrupado por companyId; aiCostLogs.estimatedCostUsd acumulado por companyId",
+      "threshold": "tokensReserved >= 80% de AI_DAILY_TOKEN_LIMIT o estimatedCostUsd >= 80% de AI_DAILY_BUDGET_USD",
+      "severity": "SEV2/SEV3",
+      "owner": "Equipo Plataforma/FinOps",
+      "runbook": "docs/runbooks/AI_INCIDENT_RUNBOOK.md"
+    },
+    {
+      "id": "storage-errors",
+      "name": "Errores Storage",
+      "signal": "Cloud Logging + observabilityEvents",
+      "filter": "jsonPayload.eventName=(\"document_upload_failed\" OR \"document_storage_error\") OR resource.type=\"gcs_bucket\" AND severity>=ERROR",
+      "threshold": "> 5 fallos en 10 min por bucket/companyId",
+      "severity": "SEV2",
+      "owner": "Equipo Documentos",
+      "runbook": "docs/runbooks/DOCUMENT_UPLOAD_INCIDENT_RUNBOOK.md"
+    },
+    {
+      "id": "security-rules-denials-anomaly",
+      "name": "Denegaciones anómalas de reglas",
+      "signal": "Firebase Rules debug/audit logs",
+      "filter": "permission denied OR PERMISSION_DENIED agrupado por auth.uid, companyId, collection y deployEnv=production",
+      "threshold": "> 3x baseline de 7 días durante 10 min o > 20 denegaciones para un mismo uid/companyId",
+      "severity": "SEV2/SEV3",
+      "owner": "Equipo Plataforma/Seguridad",
+      "runbook": "docs/runbooks/ROLLBACK_CHECKLIST.md"
+    }
+  ],
+  "dashboard": {
+    "name": "GEMAILLA Observabilidad IA y Costos",
+    "widgets": [
+      {
+        "id": "aiUsage",
+        "collection": "aiUsage",
+        "metrics": ["tokensReserved", "tokensConsumed", "requestCount", "estimatedCostUsd"],
+        "groupBy": ["date", "companyId"],
+        "refresh": "15m"
+      },
+      {
+        "id": "aiCostLogs",
+        "collection": "aiCostLogs",
+        "metrics": ["estimatedCostUsd", "inputTokens", "outputTokens", "totalTokens"],
+        "groupBy": ["date", "companyId", "provider", "model"],
+        "refresh": "15m"
+      },
+      {
+        "id": "aiAuditLogs",
+        "collection": "aiAuditLogs",
+        "metrics": ["status", "eventName", "latencyMs"],
+        "groupBy": ["date", "companyId", "userUid", "correlationId"],
+        "refresh": "15m"
+      }
+    ]
+  },
+  "reviewedDefaults": {
+    "AI_DAILY_TOKEN_LIMIT": { "value": 50000, "decision": "mantener", "reason": "límite conservador por empresa para estabilización y control de abuso" },
+    "AI_DAILY_BUDGET_USD": { "value": 5, "decision": "mantener", "reason": "presupuesto diario bajo por empresa hasta observar demanda real" },
+    "AI_RATE_LIMIT_MAX_REQUESTS": { "value": 30, "windowMs": 60000, "decision": "mantener", "reason": "30 solicitudes/min por usuario/empresa permite uso interactivo y limita ráfagas" }
+  }
+}

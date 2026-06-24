@@ -320,6 +320,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /aiCostLogs/{id} {
+      allow read: if canReadAiFinancialData(resource.data);
+      allow create, update, delete: if false;
+    }
+
+    match /aiAuditLogs/{id} {
+      allow read: if canReadAiFinancialData(resource.data);
+      allow create, update, delete: if false;
+    }
+
     match /aiBudgets/{id} {
       allow read: if canReadAiFinancialData(resource.data);
       allow create: if canCreateAiBudget();
