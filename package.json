@@ -29,7 +29,9 @@
     "validate:env:all": "node scripts/validate-env.js --all",
     "validate:secrets": "node scripts/check-no-hardcoded-secrets.js",
     "validate:architecture": "node scripts/validate-architecture.js",
-    "budget:bundle": "node scripts/check-bundle-budgets.js"
+    "budget:bundle": "node scripts/check-bundle-budgets.js",
+    "deploy:staging": "bash scripts/deploy-staging.sh",
+    "smoke:staging": "node scripts/smoke-staging.mjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
