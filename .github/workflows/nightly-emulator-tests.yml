@@ -1,0 +1,50 @@
+name: Nightly Emulator Tests
+
+on:
+  schedule:
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  firebase-rules:
+    name: Firebase rules emulator tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Cache Firebase emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}
+      - name: Pre-download Firestore emulator
+        run: npx firebase-tools setup:emulators:firestore
+      - name: Run Firebase rules tests with emulators
+        run: npm run test:rules:emulators
+
+  e2e:
+    name: E2E emulator tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Cache Firebase emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}
+      - name: Install Playwright browser
+        run: npm run test:e2e:install
+      - name: Run E2E tests with emulators
+        run: npm run test:e2e:emulators

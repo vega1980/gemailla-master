@@ -42,8 +42,8 @@ jobs:
         run: |
           # Bloquear VITE_* sensibles que contengan ENDPOINT, URL o KEY en el cliente.
           # VITE_FIREBASE_API_KEY es configuración pública de Firebase y se permite explícitamente.
-          matches=$(grep -rE "VITE_.*(ENDPOINT|URL|KEY)" src/ --include="*.js" --include="*.jsx" || true)
-          sensitive_matches=$(printf '%s\n' "$matches" | grep -v "VITE_FIREBASE_API_KEY" || true)
+          matches=$(rg -n --glob '*.{js,jsx}' 'VITE_.*(ENDPOINT|URL|KEY)' src || true)
+          sensitive_matches=$(printf '%s\n' "$matches" | rg -v 'VITE_FIREBASE_API_KEY' || true)
           if [ -n "$sensitive_matches" ]; then
             printf '%s\n' "$sensitive_matches"
             echo "ERROR: Variables VITE_* sensibles detectadas en cliente"
@@ -52,6 +52,21 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Typecheck core
+        run: npm run typecheck:core
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Functions tests
+        run: npm run test:functions
+
+      - name: Validate architecture
+        run: npm run validate:architecture
+
+      - name: Validate secrets
+        run: npm run validate:secrets
 
       - name: Build
         run: npm run build
