@@ -59,6 +59,16 @@ Debe validarse como mínimo:
 - Aplicación de rate limiting, cuota diaria y presupuesto diario.
 - Respuesta exitosa desde backend seguro con correlación trazable.
 
+## Fase 4: Performance y presupuesto de bundle
+
+La optimización de carga inicial queda tratada como control de salida de la Fase 4. Antes de aprobar staging se debe:
+
+1. Ejecutar Lighthouse móvil contra staging y registrar el reporte en `docs/VERIFICACION.md`.
+2. Medir presupuestos de bundle con `npm run build` y `npm run budget:bundle`.
+3. Aplicar presupuestos gzip por ruta crítica definidos en `performance-budgets.json` para `/dashboard`, `/documents`, `/finance` y `/ai`.
+4. Mantener carga diferida para PDF/reportes, charts y submódulos Firebase; los vendors pesados solo pueden estar permitidos en las rutas que los usan de forma inmediata.
+5. Evitar imports estáticos de generadores PDF o librerías de charts desde rutas que no los necesitan en el primer render.
+
 ## Checklist formal de release
 
 Este documento es el checklist formal de release para la iteración de estabilización. Cada ítem debe quedar marcado y respaldado con evidencia fechada en `docs/VERIFICACION.md` antes de abrir el roadmap a features no críticas.

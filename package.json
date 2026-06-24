@@ -28,7 +28,8 @@
     "validate:env:functions": "node scripts/validate-env.js --functions",
     "validate:env:all": "node scripts/validate-env.js --all",
     "validate:secrets": "node scripts/check-no-hardcoded-secrets.js",
-    "validate:architecture": "node scripts/validate-architecture.js"
+    "validate:architecture": "node scripts/validate-architecture.js",
+    "budget:bundle": "node scripts/check-bundle-budgets.js"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

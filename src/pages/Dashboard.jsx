@@ -1,10 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { lazy, Suspense, useMemo } from 'react';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
 import { Link } from 'react-router-dom';
 import { Building2, Search, Bell, HelpCircle, AlertTriangle, CheckCircle, Clock, DollarSign, BarChart3, Zap, FileText, Calculator, Shield, TrendingUp, Users, Briefcase, PieChart as PieChartIcon } from 'lucide-react';
-import { LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import LoadingState from '@/components/shared/LoadingState';
+
+const DashboardSparkline = lazy(() => import('@/pages/dashboard/DashboardCharts').then((module) => ({ default: module.DashboardSparkline })));
+const DashboardRealtimePie = lazy(() => import('@/pages/dashboard/DashboardCharts').then((module) => ({ default: module.DashboardRealtimePie })));
+
+const ChartFallback = ({ height = 40 }) => (
+  <div className="w-full rounded-lg bg-black/20" style={{ height }} aria-hidden="true" />
+);
 
 export default function Dashboard() {
   const { activeCompany, loading: companyLoading, companies = [] } = useCompany();
@@ -128,11 +134,9 @@ export default function Dashboard() {
                 <card.icon className="w-4 h-4" style={{ color: card.color, opacity: 0.6 }} />
               </div>
               <p className="text-3xl font-bold mb-3" style={{ color: card.color }}>{card.value}</p>
-              <ResponsiveContainer width="100%" height={40}>
-                <LineChart data={monthlyData} className="text-[#ef1a1a]">
-                  <Line type="monotone" dataKey="value" stroke={card.color} dot={false} strokeWidth={2} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<ChartFallback />}>
+                <DashboardSparkline data={monthlyData} color={card.color} />
+              </Suspense>
               <div className="mt-3 flex justify-between items-center text-xs">
                 <span style={{ color: 'rgba(200,190,170,0.5)' }}>Este mes</span>
                 <span style={{ color: '#4caf50' }}>{card.change}</span>
@@ -188,14 +192,9 @@ export default function Dashboard() {
             }}>
               <h3 className="text-sm font-bold uppercase mb-4" style={{ color: '#f0d080', letterSpacing: '0.05em' }}>ANÁLISIS EN TIEMPO REAL</h3>
               <div className="flex flex-col items-center">
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie data={[{ value: 92 }, { value: 8 }]} innerRadius={60} outerRadius={90} startAngle={90} endAngle={-270} dataKey="value">
-                      <Cell fill="#f0d080" />
-                      <Cell fill="rgba(197,160,89,0.2)" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                <Suspense fallback={<ChartFallback height={180} />}>
+                  <DashboardRealtimePie />
+                </Suspense>
                 <p className="text-center text-3xl font-bold mt-3" style={{ color: '#f0d080', textShadow: '0 0 20px rgba(240,208,128,0.3)' }}>92%</p>
                 <p className="text-xs" style={{ color: 'rgba(200,190,170,0.7)' }}>Tiempo: 00:21:24</p>
               </div>
