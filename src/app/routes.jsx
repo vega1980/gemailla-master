@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { CompanyProvider } from '@/lib/companyContext';
 
 // Fuente única de rutas de la aplicación: no crear un router paralelo.
 
@@ -31,12 +32,16 @@ const Operations = lazy(() => import('@/pages/Operations'));
 const CRM = lazy(() => import('@/pages/CRM'));
 const HumanResources = lazy(() => import('@/pages/HumanResources'));
 
-// Pantalla estática de acceso denegado / requerido
-import AuthRequiredPage from '@/components/auth/AuthRequiredPage';
-
 // Definición de Rutas Públicas
 export const publicRoutes = [
-  { path: '/', element: <AuthRequiredPage /> },
+  {
+    path: '/',
+    element: (
+      <CompanyProvider>
+        {ModuleLoader(Dashboard)}
+      </CompanyProvider>
+    ),
+  },
 ];
 
 // Definición de Rutas Protegidas (Módulos de negocio)
