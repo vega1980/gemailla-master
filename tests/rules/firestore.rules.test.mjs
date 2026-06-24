@@ -91,6 +91,28 @@ async function seedFirestoreAcl() {
     tokens: 300,
   }), 'admin ai usage without company seed');
 
+  await assertAllowed(firestoreSet('aiCostLogs/company-cost-log', {
+    companyId,
+    estimatedCostUsd: 1.25,
+    totalTokens: 1200,
+  }), 'admin company ai cost log seed');
+
+  await assertAllowed(firestoreSet('aiAuditLogs/company-audit-log', {
+    companyId,
+    eventName: 'ai_request_completed',
+    status: 'ok',
+  }), 'admin company ai audit log seed');
+
+  await assertAllowed(firestoreSet('aiCostLogs/other-company-cost-log', {
+    companyId: otherCompanyId,
+    estimatedCostUsd: 2.25,
+  }), 'admin other company ai cost log seed');
+
+  await assertAllowed(firestoreSet('aiAuditLogs/audit-log-without-company', {
+    eventName: 'ai_request_completed',
+    status: 'ok',
+  }), 'admin ai audit log without company seed');
+
   await assertAllowed(firestoreSet('aiBudgets/company-budget', {
     companyId,
     dailyLimitUsd: 25,
@@ -109,11 +131,15 @@ async function seedFirestoreAcl() {
 async function assertAiFinancialReadAllowed(user, label) {
   await assertAllowed(firestoreGet('aiUsage/company-usage', user), `${label} ai usage read`);
   await assertAllowed(firestoreGet('aiBudgets/company-budget', user), `${label} ai budget read`);
+  await assertAllowed(firestoreGet('aiCostLogs/company-cost-log', user), `${label} ai cost log read`);
+  await assertAllowed(firestoreGet('aiAuditLogs/company-audit-log', user), `${label} ai audit log read`);
 }
 
 async function assertAiFinancialReadDenied(user, label) {
   await assertDenied(firestoreGet('aiUsage/company-usage', user), `${label} ai usage read`);
   await assertDenied(firestoreGet('aiBudgets/company-budget', user), `${label} ai budget read`);
+  await assertDenied(firestoreGet('aiCostLogs/company-cost-log', user), `${label} ai cost log read`);
+  await assertDenied(firestoreGet('aiAuditLogs/company-audit-log', user), `${label} ai audit log read`);
 }
 
 describe('Firestore security rules', () => {
@@ -138,6 +164,8 @@ describe('Firestore security rules', () => {
   it('denies AI financial reads for other companies and documents without companyId', async () => {
     await assertDenied(firestoreGet('aiUsage/other-company-usage', admin), 'admin other company ai usage read');
     await assertDenied(firestoreGet('aiBudgets/other-company-budget', admin), 'admin other company ai budget read');
+    await assertDenied(firestoreGet('aiCostLogs/other-company-cost-log', admin), 'admin other company ai cost log read');
+    await assertDenied(firestoreGet('aiAuditLogs/audit-log-without-company', admin), 'admin ai audit log without company read');
     await assertDenied(firestoreGet('aiUsage/usage-without-company', admin), 'admin ai usage without company read');
     await assertDenied(firestoreGet('aiBudgets/budget-without-company', admin), 'admin ai budget without company read');
   });
@@ -152,6 +180,14 @@ describe('Firestore security rules', () => {
       tokens: 150,
     }, admin), 'client ai usage update');
     await assertDenied(firestoreDelete('aiUsage/company-usage', admin), 'client ai usage delete');
+    await assertDenied(firestoreSet('aiCostLogs/client-created-cost-log', {
+      companyId,
+      estimatedCostUsd: 1,
+    }, admin), 'client ai cost log create');
+    await assertDenied(firestoreSet('aiAuditLogs/client-created-audit-log', {
+      companyId,
+      eventName: 'ai_request_completed',
+    }, admin), 'client ai audit log create');
 
     await assertDenied(firestoreSet('aiBudgets/viewer-created-budget', {
       companyId,

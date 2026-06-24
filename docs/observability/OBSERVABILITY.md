@@ -109,22 +109,39 @@ Crear alertas en Cloud Monitoring / Firebase con las siguientes condiciones por 
 
 | Alerta | Métrica / filtro | Umbral | Severidad | Owner |
 | --- | --- | --- | --- | --- |
-| AI error rate | Logs `eventName="ai_request_failed"` y `status>=500` / total `ai_request_completed` | > 2% durante 5 min | SEV2 | Equipo Plataforma/IA |
+| Cloud Functions errors | `resource.type="cloud_function"`, `severity>=ERROR`, `jsonPayload.deployEnv="production"` | 5 errores en 5 min o 5xx > 1% | SEV1/SEV2 | Equipo Plataforma |
+| AI failures | Logs `eventName="ai_request_failed"` y `status>=500` / total `ai_request_completed` | > 2% durante 5 min | SEV2 | Equipo Plataforma/IA |
 | AI latencia p95 | `latencyMs` en `ai_request_completed` | p95 > 8s durante 10 min | SEV2 | Equipo Plataforma/IA |
+| AI tokens/costo diario por empresa | `aiUsage` y `aiCostLogs` agrupados por `companyId` y fecha UTC | 80% de `AI_DAILY_TOKEN_LIMIT` o `AI_DAILY_BUDGET_USD` | SEV2/SEV3 | Equipo Plataforma/FinOps |
+| Storage errors | `eventName="document_upload_failed"` / `document_storage_error` o errores `gcs_bucket` | > 5 en 10 min | SEV2 | Equipo Documentos |
+| Security rules denials anomaly | `PERMISSION_DENIED` agrupado por `uid`, `companyId` y colección | > 3x baseline 7 días o > 20 por actor en 10 min | SEV2/SEV3 | Equipo Plataforma/Seguridad |
 | Frontend errors | `observabilityEvents.eventName="frontend_error"` | > 10 errores únicos en 10 min | SEV3 | Equipo Frontend |
-| Upload failures | `eventName="document_upload_failed"` o documentos `status="error"` | > 5 en 10 min | SEV2 | Equipo Documentos |
-| Backend unavailable | HTTP 5xx en función `ai` | > 1% durante 5 min | SEV1/SEV2 | Equipo Plataforma |
 | Log ingestion spike | Bytes/minuto por `deployEnv=production` | > 2x baseline durante 15 min | SEV3 | Equipo Plataforma |
 | PII leakage sentinel | Logs con patrones de email/token en `jsonPayload.message` o campos no permitidos | > 0 en 5 min | SEV2 | Equipo Plataforma/Seguridad |
 
 ## Dashboard mínimo
 
+La definición operativa versionada vive en [`monitoring-config.json`](./monitoring-config.json) e incluye los widgets obligatorios para `aiUsage`, `aiCostLogs` y `aiAuditLogs`. El tablero mínimo debe mostrar:
+
+- `aiUsage`: tokens reservados/consumidos, solicitudes y costo estimado por `companyId` y fecha UTC.
+- `aiCostLogs`: costo estimado, tokens de entrada/salida/totales por `companyId`, proveedor y modelo.
+- `aiAuditLogs`: estados, eventos, latencia y `correlationId` por empresa y usuario.
 - Error rate IA por release (`gitSha`, `buildId`).
 - Latencia p50/p95/p99 de función `ai`.
 - Top `correlationId` con fallos.
 - Conteo de errores frontend por ruta y release.
 - Uploads documentales por estado y empresa.
 - Ingesta de logs por `eventName`, `severity` y `deployEnv`.
+
+## Defaults IA revisados
+
+Los defaults permanecen conservadores para estabilización y están reflejados en `functions/handlers/aiHandler.js` y `monitoring-config.json`:
+
+| Variable | Default | Decisión | Motivo operativo |
+| --- | ---: | --- | --- |
+| `AI_DAILY_TOKEN_LIMIT` | `50000` tokens/día/empresa | Mantener | Acota abuso y costo mientras se obtiene baseline real por empresa. |
+| `AI_DAILY_BUDGET_USD` | `5` USD/día/empresa | Mantener | Presupuesto bajo suficiente para operación inicial y alertable al 80%. |
+| `AI_RATE_LIMIT_MAX_REQUESTS` | `30` solicitudes por `60000` ms | Mantener | Permite uso interactivo y limita ráfagas por usuario/empresa. |
 
 ## Runbooks
 
