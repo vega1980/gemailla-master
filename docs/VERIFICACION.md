@@ -69,3 +69,45 @@ Para CI o para otra máquina donde el JAR ya exista, restaurar/cachear el direct
 | P0 | PR creado | ✅ Commit `432e660` |
 | P1 | E2E Auth/Multiempresa/Documentos/IA | Pendiente |
 | P1 | Staging reproducible | Pendiente |
+
+## Evidencia de inicio de estabilización y freeze (2026-06-24)
+
+Se formaliza `docs/ITERACION_ESTABILIZACION.md` como checklist de release para la iteración de estabilización. A partir de esta evidencia queda congelada toda feature nueva no crítica hasta completar los criterios de salida.
+
+### Alcance permitido durante el freeze
+
+```text
+- Correcciones de seguridad, datos, autenticación, multiempresa, documentos e IA.
+- Pruebas automatizadas, Firebase Emulator Suite, Playwright E2E y validación staging.
+- Observabilidad, alertas, límites de costos y documentación de release.
+- Ajustes operativos necesarios para reproducir deploys o recopilar evidencia.
+```
+
+### Alcance bloqueado durante el freeze
+
+```text
+- Nuevos módulos de negocio.
+- Nuevas páginas o integraciones no requeridas por flujos críticos.
+- Cambios cosméticos sin impacto en validación, confiabilidad, seguridad u operación.
+- Cualquier ampliación funcional sin excepción registrada y aprobada.
+```
+
+### Checklist de release adoptado
+
+| Área | Estado inicial | Evidencia requerida antes de release |
+| --- | --- | --- |
+| Congelamiento de features no críticas | ✅ Activo | Mantener este registro y documentar excepciones si aparecen. |
+| Reglas Firestore y Storage | ⚠️ Pendiente/bloqueado previamente por descarga del emulador | Reejecutar `npm run test:rules:emulators` en entorno con emuladores disponibles. |
+| Auth y Multiempresa | Pendiente | Registrar salida Playwright E2E o validación staging. |
+| Documentos | Pendiente | Registrar salida Playwright E2E o validación staging. |
+| IA | Pendiente | Registrar validación backend/E2E con cuotas, rate limit y trazabilidad. |
+| Deploy staging | Pendiente | Registrar comando, identificador de deploy y configuración. |
+| Lighthouse móvil | Pendiente | Adjuntar o resumir reporte contra staging. |
+| Monitoreo y alertas | Pendiente | Registrar alertas activas y cobertura por componente. |
+| Costos operativos | Pendiente | Registrar límites de IA, Firestore, Storage, Functions y Hosting. |
+
+### Excepciones registradas
+
+```text
+Ninguna al inicio del freeze.
+```
