@@ -111,3 +111,47 @@ Se formaliza `docs/ITERACION_ESTABILIZACION.md` como checklist de release para l
 ```text
 Ninguna al inicio del freeze.
 ```
+
+## Reejecución de pruebas de reglas con emuladores (2026-06-24)
+
+Entorno utilizado:
+
+```text
+Java: OpenJDK 25.0.2
+Firebase CLI: 15.20.0 vía dependencia local del proyecto
+Proyecto de emuladores: demo-gemailla-test
+```
+
+Comandos ejecutados:
+
+```sh
+java -version
+npm run test:rules:emulators
+find ~/.cache/firebase -maxdepth 3 -type f
+npx firebase-tools --version
+```
+
+Resultado observado:
+
+```text
+java -version: OK, OpenJDK disponible.
+npx firebase-tools --version: OK, 15.20.0.
+npm run test:rules:emulators: bloqueado por entorno; Firebase CLI intentó descargar cloud-firestore-emulator-v1.21.0.jar y recibió 403 Forbidden.
+find ~/.cache/firebase -maxdepth 3 -type f: no encontró JARs de emulador disponibles para reutilizar en caché local.
+```
+
+Salida relevante de la prueba:
+
+```text
+i  firestore: downloading cloud-firestore-emulator-v1.21.0.jar...
+Error: download failed, status 403: Forbidden
+```
+
+Conclusión: las pruebas de reglas **no llegaron a ejecutar assertions contra Firestore/Storage** porque el entorno no pudo descargar el JAR del emulador de Firestore. Este resultado se clasifica como **bloqueo de infraestructura/entorno**, no como fallo funcional de las reglas.
+
+Acción requerida para desbloquear:
+
+```text
+1. Cachear/restaurar en el runner el contenido de ~/.cache/firebase/emulators con cloud-firestore-emulator-v1.21.0.jar disponible; o
+2. Mover npm run test:rules:emulators a un runner con acceso estable a la descarga de emuladores de Firebase.
+```
