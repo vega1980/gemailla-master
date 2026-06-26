@@ -1,6 +1,9 @@
 // @ts-check
 
-import firebase from '@/api/firebaseClient';
+import { firebase } from '@/api/firebaseClient';
+
+const ACTIVE_STATUS = 'active';
+const DEFAULT_INITIAL_OWNER_ROLE = 'director';
 
 function compareMembershipsByCreation(a, b) {
   return String(a?.createdAt || '').localeCompare(String(b?.createdAt || ''))
@@ -33,23 +36,23 @@ export async function loadCompanyMemberships(user) {
         ? firebase.entities.CompanyMember.filter({
           companyId: activeCompanyId,
           userEmail: user.email,
-          status: 'active',
+          status: ACTIVE_STATUS,
         }).catch(() => [])
         : [],
     ]);
 
     return uniqueById([
-      byId?.status === 'active' ? byId : null,
+      byId?.status === ACTIVE_STATUS ? byId : null,
       ...byEmail,
     ].filter(Boolean));
   }
 
   const [byUid, byEmail] = await Promise.all([
     userUid
-      ? firebase.entities.CompanyMember.filter({ userUid, status: 'active' }).catch(() => [])
+      ? firebase.entities.CompanyMember.filter({ userUid, status: ACTIVE_STATUS }).catch(() => [])
       : [],
     user?.email
-      ? firebase.entities.CompanyMember.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
+      ? firebase.entities.CompanyMember.filter({ userEmail: user.email, status: ACTIVE_STATUS }).catch(() => [])
       : [],
   ]);
 
@@ -67,4 +70,49 @@ export async function loadCompanyContextData(user) {
   const memberships = await loadCompanyMemberships(user);
   const companies = await loadCompaniesForMemberships(memberships);
   return { memberships, companies };
+}
+
+export async function loadActiveMembersForCompanies(companies = []) {
+  const companyIds = companies.map((company) => company?.id).filter(Boolean);
+  if (companyIds.length === 0) return [];
+
+  const memberLists = await Promise.all(
+    companyIds.map((companyId) => firebase.entities.CompanyMember.filter({
+      companyId,
+      status: ACTIVE_STATUS,
+    }).catch(() => [])),
+  );
+
+  return memberLists.flat();
+}
+
+export function groupMembersByCompany(members = []) {
+  return members.reduce((accumulator, member) => {
+    if (!member?.companyId || member.status !== ACTIVE_STATUS) return accumulator;
+    if (!accumulator[member.companyId]) accumulator[member.companyId] = [];
+    accumulator[member.companyId].push(member);
+    return accumulator;
+  }, {});
+}
+
+export async function createCompanyForCurrentUser(companyData = {}, user = {}) {
+  const company = await firebase.entities.Company.createCompanyWithInitialOwner(companyData, {
+    userEmail: user.email,
+    userName: user.fullName || user.displayName || user.email || '',
+    role: DEFAULT_INITIAL_OWNER_ROLE,
+    status: ACTIVE_STATUS,
+  });
+
+  return company;
+}
+
+export async function addCompanyMember(companyId, memberData = {}) {
+  if (!companyId) throw new Error('companyId es obligatorio para agregar miembros.');
+  return firebase.entities.CompanyMember.create({
+    companyId,
+    userEmail: memberData.userEmail,
+    userName: memberData.userName || '',
+    role: memberData.role,
+    status: ACTIVE_STATUS,
+  });
 }
