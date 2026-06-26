@@ -122,6 +122,8 @@
     "wait-on": "file:tools/wait-on"
   },
   "engines": {
-    "node": ">=18.19.0"
-  }
+    "node": ">=22",
+    "npm": ">=11 <12"
+  },
+  "packageManager": "npm@11.4.2"
 }
