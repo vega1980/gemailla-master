@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCompany } from '@/lib/companyContext';
 import { useAuth } from '@/lib/AuthContext';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { logAction } from '@/lib/auditLogger';
+import { addCompanyMember, createCompanyForCurrentUser, groupMembersByCompany, loadActiveMembersForCompanies } from '@/features/companies/services/companyMembershipService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +19,7 @@ import { motion } from 'framer-motion';
 const industries = ['tecnología', 'manufactura', 'servicios', 'comercio', 'construcción', 'salud', 'educación', 'finanzas', 'otro'];
 
 export default function Companies() {
-  const { companies, reloadCompanies, switchCompany } = useCompany();
+  const { companies, memberships, reloadCompanies, switchCompany } = useCompany();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -29,42 +29,35 @@ export default function Companies() {
   const [newMemberRole, setNewMemberRole] = useState('invitado');
   const [formData, setFormData] = useState({ name: '', rfc: '', industry: 'tecnología', address: '', phone: '', email: '', fiscalRegime: '' });
 
-  const { data: allMembers = [] } = useQuery({
-    queryKey: ['members', companies.map((company) => company.id).join('|')],
-    queryFn: async () => {
-      const memberLists = await Promise.all(
-        companies.map((company) => firebase.entities.CompanyMember.filter({ companyId: company.id, status: 'active' }).catch(() => [])),
-      );
-      return memberLists.flat();
-    },
-    enabled: companies.length > 0,
+  const manageableCompanies = useMemo(() => {
+    const managerRoles = new Set(['owner', 'director', 'admin']);
+    const manageableCompanyIds = new Set(
+      memberships
+        .filter((membership) => membership.status === 'active' && managerRoles.has(membership.role))
+        .map((membership) => membership.companyId),
+    );
+    return companies.filter((company) => manageableCompanyIds.has(company.id));
+  }, [companies, memberships]);
+
+  const manageableCompanyIdsKey = useMemo(
+    () => manageableCompanies.map((company) => company.id).sort().join('|'),
+    [manageableCompanies],
+  );
+
+  const { data: managedMembers = [] } = useQuery({
+    queryKey: ['companyMembers', manageableCompanyIdsKey],
+    queryFn: () => loadActiveMembersForCompanies(manageableCompanies),
+    enabled: manageableCompanies.length > 0,
   });
 
-  const membersByCompany = useMemo(() => {
-    return allMembers.reduce((accumulator, member) => {
-      if (!member?.companyId || member.status !== 'active') return accumulator;
-      if (!accumulator[member.companyId]) {
-        accumulator[member.companyId] = [];
-      }
-      accumulator[member.companyId].push(member);
-      return accumulator;
-    }, {});
-  }, [allMembers]);
+  const membersByCompany = useMemo(
+    () => groupMembersByCompany([...memberships, ...managedMembers]),
+    [managedMembers, memberships],
+  );
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const userUid = user?.uid || user?.id;
-      if (!userUid) throw new Error('Usuario sin UID válido.');
-
-      const company = await firebase.entities.Company.create(data);
-      await firebase.entities.CompanyMember.create({
-        companyId: company.id,
-        userUid,
-        userEmail: user.email,
-        userName: user.fullName || '',
-        role: 'director',
-        status: 'active'
-      });
+      const company = await createCompanyForCurrentUser(data, user);
       await logAction({
         companyId: company.id, userEmail: user.email, userName: user.fullName,
         action: 'company_create', entityType: 'Company', entityId: company.id, details: data.name
@@ -82,11 +75,9 @@ export default function Companies() {
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
-      await firebase.entities.CompanyMember.create({
-        companyId: showMembers.id,
+      await addCompanyMember(showMembers.id, {
         userEmail: newMemberEmail,
         role: newMemberRole,
-        status: 'active'
       });
       await logAction({
         companyId: showMembers.id, userEmail: user.email, userName: user.fullName,
@@ -94,7 +85,7 @@ export default function Companies() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
+      queryClient.invalidateQueries({ queryKey: ['companyMembers'] });
       setNewMemberEmail('');
       toast({ title: 'Miembro agregado' });
     },
@@ -229,7 +220,7 @@ export default function Companies() {
                   <SelectTrigger className="w-36 bg-secondary border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="director">Director</SelectItem>
-                    <SelectItem value="cliente_premium">Premium</SelectItem>
+                    <SelectItem value="viewer">Visualizador</SelectItem>
                     <SelectItem value="invitado">Invitado</SelectItem>
                   </SelectContent>
                 </Select>
