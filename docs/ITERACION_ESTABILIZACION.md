@@ -17,6 +17,7 @@ Durante esta iteración solo se trabajará en:
 5. Playwright para los tres flujos críticos.
 6. Monitoreo y alertas.
 7. Revisión de costos de IA y Firebase.
+8. Medición de arquitectura previa a refactorización: dependencias, acoplamiento y duplicación.
 
 ## Regla de bloqueo de roadmap
 
@@ -84,6 +85,7 @@ Este documento es el checklist formal de release para la iteración de estabiliz
 | [ ] | Lighthouse móvil | Reporte o resumen de métricas contra staging. |
 | [ ] | Monitoreo y alertas | Alertas configuradas para Cloud Functions, Auth, Storage y consumo de IA. |
 | [ ] | Costos operativos | Límites definidos para IA, Firestore, Storage, Functions y Hosting. |
+| [ ] | Línea base de arquitectura | `npm run measure:architecture` ejecutado y artefactos guardados antes de refactorizar. |
 | [ ] | Evidencia consolidada | `docs/VERIFICACION.md` actualizado con resultados, bloqueos y siguientes acciones. |
 
 ## Criterios de salida
@@ -96,6 +98,7 @@ La iteración solo se considera completa cuando:
 - Lighthouse móvil se ejecuta contra staging y los resultados quedan documentados.
 - Monitoreo y alertas cubren errores de Cloud Functions, autenticación, Storage y consumo de IA.
 - La revisión de costos define límites operativos para IA, Firestore, Storage, Functions y Hosting.
+- La línea base de arquitectura queda medida antes de refactorizar dependencias, acoplamiento o duplicación.
 - La evidencia queda registrada en `docs/VERIFICACION.md` o en el documento de release correspondiente.
 
 ## Política de excepciones al congelamiento
