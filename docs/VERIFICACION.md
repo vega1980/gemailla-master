@@ -155,3 +155,39 @@ Acción requerida para desbloquear:
 1. Cachear/restaurar en el runner el contenido de ~/.cache/firebase/emulators con cloud-firestore-emulator-v1.21.0.jar disponible; o
 2. Mover npm run test:rules:emulators a un runner con acceso estable a la descarga de emuladores de Firebase.
 ```
+
+## Línea base de arquitectura antes de refactorizar (2026-06-26)
+
+Se añade medición reproducible de arquitectura antes de iniciar refactors de acoplamiento o deduplicación.
+
+Comando local/CI:
+
+```sh
+npm run measure:architecture
+```
+
+Artefactos generados:
+
+```text
+docs/architecture/architecture-metrics.json
+docs/architecture/architecture-metrics.md
+```
+
+Resumen observado en esta medición:
+
+| Métrica | Valor |
+| --- | --- |
+| Archivos medidos | 227 |
+| Dependencias internas | 551 |
+| Paquetes externos importados | 50 |
+| Grupos de líneas duplicadas candidatas | 30 |
+
+Primeros hotspots detectados para análisis previo a refactor:
+
+| Categoría | Hallazgo |
+| --- | --- |
+| Acoplamiento entre módulos | `src:components -> src:lib` con 52 imports y `src:pages -> src:components` con 51 imports. |
+| Fan-in/fan-out | `src/components/ui/button.jsx`, `src/lib/utils.js`, `src/api/firebaseClient.js`, `src/lib/companyContext.jsx` y `src/modules/ai/aiService.js` concentran el score más alto. |
+| Duplicación textual | Patrones repetidos de contenedores UI, grids, select triggers y cálculos financieros aparecen como candidatos a revisión manual. |
+
+Interpretación: estas métricas son línea base y control de CI; no autorizan refactors automáticos sin revisar riesgo funcional, ownership y cobertura de pruebas.

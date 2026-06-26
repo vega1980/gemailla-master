@@ -65,6 +65,9 @@ jobs:
       - name: Validate architecture
         run: npm run validate:architecture
 
+      - name: Measure architecture baseline
+        run: npm run measure:architecture
+
       - name: Validate secrets
         run: npm run validate:secrets
 
