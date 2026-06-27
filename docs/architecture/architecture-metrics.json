@@ -1,23 +1,23 @@
 {
-  "generatedAt": "2026-06-26T02:25:47.646Z",
+  "generatedAt": "2026-06-27T14:02:26.591Z",
   "scope": [
     "src",
     "functions"
   ],
   "totals": {
-    "files": 227,
-    "internalDependencies": 551,
+    "files": 229,
+    "internalDependencies": 561,
     "externalPackages": 50,
     "duplicateLineGroups": 30
   },
   "externalPackages": [
     {
       "name": "react",
-      "count": 127
+      "count": 129
     },
     {
       "name": "lucide-react",
-      "count": 86
+      "count": 88
     },
     {
       "name": "date-fns",
@@ -32,6 +32,10 @@
       "count": 17
     },
     {
+      "name": "react-router-dom",
+      "count": 15
+    },
+    {
       "name": "recharts",
       "count": 15
     },
@@ -41,10 +45,6 @@
     },
     {
       "name": "react-markdown",
-      "count": 13
-    },
-    {
-      "name": "react-router-dom",
       "count": 13
     },
     {
@@ -214,20 +214,20 @@
   ],
   "moduleCoupling": [
     {
+      "edge": "src:pages -> src:components",
+      "count": 53
+    },
+    {
       "edge": "src:components -> src:lib",
       "count": 52
     },
     {
-      "edge": "src:pages -> src:components",
-      "count": 51
+      "edge": "src:pages -> src:lib",
+      "count": 31
     },
     {
       "edge": "feature:crm -> src:components",
       "count": 30
-    },
-    {
-      "edge": "src:pages -> src:lib",
-      "count": 29
     },
     {
       "edge": "src:components -> src:components",
@@ -290,6 +290,10 @@
       "count": 6
     },
     {
+      "edge": "src:pages -> src:pages",
+      "count": 6
+    },
+    {
       "edge": "feature:crm -> src:api",
       "count": 5
     },
@@ -307,10 +311,6 @@
     },
     {
       "edge": "src:lib -> src:lib",
-      "count": 5
-    },
-    {
-      "edge": "src:modules -> src:api",
       "count": 5
     },
     {
@@ -338,6 +338,10 @@
       "count": 4
     },
     {
+      "edge": "src:modules -> src:api",
+      "count": 4
+    },
+    {
       "edge": "src:pages -> feature:client",
       "count": 4
     },
@@ -355,6 +359,10 @@
     },
     {
       "edge": "src:pages -> feature:predictive",
+      "count": 4
+    },
+    {
+      "edge": "src:pages -> src:hooks",
       "count": 4
     },
     {
@@ -404,14 +412,6 @@
     {
       "edge": "src:pages -> feature:support",
       "count": 3
-    },
-    {
-      "edge": "src:shared -> src:components",
-      "count": 3
-    },
-    {
-      "edge": "src:shared -> src:hooks",
-      "count": 3
     }
   ],
   "hotspots": [
@@ -429,15 +429,15 @@
     },
     {
       "file": "src/api/firebaseClient.js",
-      "incoming": 32,
+      "incoming": 31,
       "outgoing": 10,
-      "score": 42
+      "score": 41
     },
     {
       "file": "src/lib/companyContext.jsx",
-      "incoming": 22,
+      "incoming": 24,
       "outgoing": 4,
-      "score": 26
+      "score": 28
     },
     {
       "file": "src/modules/ai/aiService.js",
@@ -524,15 +524,15 @@
       "score": 14
     },
     {
+      "file": "src/components/shared/LoadingState.jsx",
+      "incoming": 13,
+      "outgoing": 0,
+      "score": 13
+    },
+    {
       "file": "src/components/ui/label.jsx",
       "incoming": 11,
       "outgoing": 1,
-      "score": 12
-    },
-    {
-      "file": "src/features/hr/components/PerformanceManager.jsx",
-      "incoming": 1,
-      "outgoing": 11,
       "score": 12
     }
   ],
@@ -622,6 +622,18 @@
       ]
     },
     {
+      "line": "<div className=\"flex items-center justify-between mb-4\">",
+      "occurrences": 12,
+      "files": [
+        "src/features/client/components/ChurnPanel.jsx",
+        "src/features/client/components/StockAlerts.jsx",
+        "src/features/finance/components/BudgetPlanner.jsx",
+        "src/pages/Dashboard.backup.jsx",
+        "src/pages/Dashboard.jsx",
+        "src/pages/Dashboard.original.jsx"
+      ]
+    },
+    {
       "line": "<div className=\"flex items-center justify-between\">",
       "occurrences": 12,
       "files": [
@@ -647,6 +659,30 @@
         "src/features/crm/components/DealPipeline.jsx",
         "src/features/hr/components/EmployeeDirectory.jsx",
         "src/features/hr/components/PayrollManager.jsx"
+      ]
+    },
+    {
+      "line": "border: '1px solid rgba(197,160,89,0.2)',",
+      "occurrences": 11,
+      "files": [
+        "src/components/shared/StatCard.jsx",
+        "src/components/ui/card.jsx",
+        "src/features/operations/components/ProjectTracker.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx",
+        "src/pages/Dashboard.backup.jsx",
+        "src/pages/Dashboard.jsx",
+        "src/pages/Dashboard.original.jsx"
+      ]
+    },
+    {
+      "line": "border: '1px solid rgba(197,160,89,0.25)',",
+      "occurrences": 11,
+      "files": [
+        "src/components/layout/Sidebar.jsx",
+        "src/features/operations/components/ProcessOptimizer.jsx",
+        "src/pages/Dashboard.backup.jsx",
+        "src/pages/Dashboard.jsx",
+        "src/pages/Dashboard.original.jsx"
       ]
     },
     {
@@ -780,6 +816,15 @@
       ]
     },
     {
+      "line": "background: 'linear-gradient(135deg, rgba(197,160,89,0.08) 0%, rgba(197,160,89,0.03) 100%)',",
+      "occurrences": 9,
+      "files": [
+        "src/pages/Dashboard.backup.jsx",
+        "src/pages/Dashboard.jsx",
+        "src/pages/Dashboard.original.jsx"
+      ]
+    },
+    {
       "line": "<Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>",
       "occurrences": 8,
       "files": [
@@ -819,6 +864,14 @@
         "src/features/hr/components/EmployeeDirectory.jsx",
         "src/features/operations/components/ProjectTracker.jsx",
         "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "boxShadow: '0 4px 24px rgba(197,160,89,0.1)'",
+      "occurrences": 8,
+      "files": [
+        "src/pages/Dashboard.backup.jsx",
+        "src/pages/Dashboard.original.jsx"
       ]
     },
     {
@@ -872,65 +925,6 @@
         "src/features/hr/components/EmployeeDirectory.jsx",
         "src/features/hr/components/PayrollManager.jsx",
         "src/features/hr/components/PerformanceManager.jsx"
-      ]
-    },
-    {
-      "line": "<SelectTrigger className=\"bg-secondary border-border\"><SelectValue /></SelectTrigger>",
-      "occurrences": 7,
-      "files": [
-        "src/features/erp/components/TransactionFormDialog.jsx",
-        "src/features/support/components/AutoReports.jsx",
-        "src/modules/companies/pages/CompaniesPage.jsx"
-      ]
-    },
-    {
-      "line": "border: '1px solid rgba(197,160,89,0.2)',",
-      "occurrences": 7,
-      "files": [
-        "src/components/shared/StatCard.jsx",
-        "src/components/ui/card.jsx",
-        "src/features/operations/components/ProjectTracker.jsx",
-        "src/features/operations/components/StrategicKPIs.jsx",
-        "src/pages/Dashboard.jsx"
-      ]
-    },
-    {
-      "line": "const [aiLoading, setAiLoading] = useState(false);",
-      "occurrences": 7,
-      "files": [
-        "src/features/crm/components/ClientDirectory.jsx",
-        "src/features/crm/components/DealPipeline.jsx",
-        "src/features/finance/components/BudgetPlanner.jsx",
-        "src/features/hr/components/PayrollManager.jsx",
-        "src/features/hr/components/PerformanceManager.jsx",
-        "src/features/operations/components/StrategicKPIs.jsx",
-        "src/features/support/components/SupportChatbot.jsx"
-      ]
-    },
-    {
-      "line": "const [editing, setEditing] = useState(null);",
-      "occurrences": 7,
-      "files": [
-        "src/features/crm/components/ClientDirectory.jsx",
-        "src/features/crm/components/DealPipeline.jsx",
-        "src/features/crm/components/InteractionHistory.jsx",
-        "src/features/hr/components/EmployeeDirectory.jsx",
-        "src/features/hr/components/PayrollManager.jsx",
-        "src/features/hr/components/PerformanceManager.jsx",
-        "src/features/operations/components/StrategicKPIs.jsx"
-      ]
-    },
-    {
-      "line": "const [form, setForm] = useState(EMPTY);",
-      "occurrences": 7,
-      "files": [
-        "src/features/crm/components/ClientDirectory.jsx",
-        "src/features/crm/components/DealPipeline.jsx",
-        "src/features/crm/components/InteractionHistory.jsx",
-        "src/features/hr/components/EmployeeDirectory.jsx",
-        "src/features/hr/components/PayrollManager.jsx",
-        "src/features/hr/components/PerformanceManager.jsx",
-        "src/features/operations/components/StrategicKPIs.jsx"
       ]
     }
   ]
