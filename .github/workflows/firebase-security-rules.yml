@@ -30,13 +30,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: Cache Firebase emulators
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/firebase/emulators
-          key: firebase-emulators-${{ runner.os }}
-      - name: Pre-download Firestore emulator
-        run: npx firebase-tools setup:emulators:firestore
       - run: npm run test:rules:emulators
       - name: Authenticate Firebase service account
         if: ${{ env.FIREBASE_PROJECT_ID != '' && env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}

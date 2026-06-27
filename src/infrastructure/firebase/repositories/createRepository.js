@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   doc,
   getDoc,
@@ -7,28 +6,34 @@ import {
   limit as firestoreLimit,
   orderBy,
   query,
-  setDoc,
-  startAfter,
-  updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
-import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/filterValidation';
 
-const DEFAULT_PAGE_SIZE = 50;
-const MAX_PAGE_SIZE = 100;
-const MAX_BATCH_SIZE = 450;
-
-function normalizeLimit(value) {
-  const parsed = Number(value || DEFAULT_PAGE_SIZE);
-  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_PAGE_SIZE;
-  return Math.min(parsed, MAX_PAGE_SIZE);
+function serializeDocument(snapshot) {
+  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
 }
 
-function chunkArray(items, size) {
-  const chunks = [];
+export function createRepository({
+  db,
+  entityName,
+  collectionName,
+  getCurrentUser,
+  getCurrentUserUid,
+  isArchivedRecord,
+  keepVisibleRecords,
+  normalizeData,
+  normalizeFilters,
+  normalizeKey,
+  nowIso,
+}) {
+  const col = () => collection(db, collectionName);
+  const mutations = createAuditMutationMiddleware({ getCurrentUserUid, nowIso });
+
+  function newId() {
+    return doc(col()).id;
+  }
 
   for (let index = 0; index < items.length; index += size) {
     chunks.push(items.slice(index, index + size));
@@ -66,25 +71,20 @@ function buildQuery(collectionRef, options = {}) {
     constraints.push(startAfter(options.cursor));
   }
 
-  constraints.push(firestoreLimit(normalizeLimit(options.limit)));
+  async function create(data = {}) {
+    const user = getCurrentUser();
+    const userUid = getCurrentUserUid();
+    const normalized = normalizeData(data);
+    const payload = {
+      ...normalized,
+      ownerUid: normalized.ownerUid || userUid || null,
+      status: normalized.status || 'active',
+    };
 
-  return query(collectionRef, ...constraints);
-}
-
-export const createRepository = (collectionName) => {
-  const collectionRef = collection(db, collectionName);
-  const auditMiddleware = createAuditMutationMiddleware({
-    getCurrentUserUid: () => auth.currentUser?.uid || null,
-    nowIso: () => new Date().toISOString(),
-  });
-
-  const newId = () => doc(collectionRef).id;
-
-  const getById = async (id) => {
-    const snapshot = await getDoc(doc(db, collectionName, id));
-
-    if (!snapshot.exists()) {
-      return null;
+    if (entityName === 'User' && (payload.uid || userUid)) {
+      const id = payload.uid || userUid;
+      const { payload: auditedPayload } = await mutations.set(doc(db, collectionName, id), { ...payload, uid: id }, { merge: true });
+      return { id, ...auditedPayload, uid: id };
     }
 
     return serializeDocSnapshot(snapshot);
@@ -96,26 +96,22 @@ export const createRepository = (collectionName) => {
       return serializeQuerySnapshot(snapshot);
     }
 
-    const snapshot = await getDocs(buildQuery(collectionRef, options));
-    const pageSize = normalizeLimit(options.limit);
+    if (entityName === 'CompanyMember') {
+      payload.userEmail = payload.userEmail || user?.email || '';
+      payload.userUid = payload.userUid || (payload.userEmail === user?.email ? userUid : null);
+      payload.role = payload.role || 'invitado';
+      payload.companyId = payload.companyId || null;
+      payload.status = payload.status || 'active';
 
-    return {
-      items: serializeQuerySnapshot(snapshot),
-      lastCursor: snapshot.docs.at(-1) || null,
-      hasMore: snapshot.docs.length === pageSize,
-    };
-  };
+      const docId = payload.companyId && payload.userUid
+        ? `${payload.companyId}_${payload.userUid}`
+        : payload.companyId && payload.userEmail
+          ? `${payload.companyId}_${payload.userEmail.toLowerCase().replace(/[^a-z0-9._-]/g, '_')}`
+          : null;
 
-  const filter = async (field, operator, value) => {
-    if (field && typeof field === 'object' && !Array.isArray(field)) {
-      const normalizedFilters = normalizeObjectFilters(field, collectionName);
-      /** @type {import('firebase/firestore').QueryConstraint[]} */
-      const constraints = normalizedFilters
-        .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
-
-      if (operator) {
-        const direction = String(operator).startsWith('-') ? 'desc' : 'asc';
-        constraints.push(orderBy(String(operator).replace(/^-/, ''), direction));
+      if (docId) {
+        const { payload: auditedPayload } = await mutations.set(doc(db, collectionName, docId), payload, { merge: true });
+        return { id: docId, ...auditedPayload };
       }
 
       if (value) constraints.push(firestoreLimit(value));
@@ -124,79 +120,60 @@ export const createRepository = (collectionName) => {
       return serializeQuerySnapshot(snapshot);
     }
 
-    const q = query(collectionRef, where(field, operator, value));
-    const snapshot = await getDocs(q);
-    return serializeQuerySnapshot(snapshot);
-  };
+    const { refDoc, payload: auditedPayload } = await mutations.add(col(), payload);
+    return { id: refDoc.id, ...auditedPayload };
+  }
 
-  const create = async (data, id = null) => {
-    const dataWithAudit = auditMiddleware.withCreateAuditFields(data);
+  async function createWithId(id, data = {}) {
+    const safeId = String(id || '').trim();
+    if (!safeId) throw new Error('No se puede crear el registro sin ID.');
 
-    if (id) {
-      const documentRef = doc(db, collectionName, id);
-      await setDoc(documentRef, dataWithAudit);
+    const userUid = getCurrentUserUid();
+    const normalized = normalizeData(data);
+    const payload = {
+      ...normalized,
+      ownerUid: normalized.ownerUid || userUid || null,
+      status: normalized.status || 'active',
+    };
 
-      return {
-        id,
-        ...dataWithAudit,
+    const { payload: auditedPayload } = await mutations.set(doc(db, collectionName, safeId), payload);
+    return { id: safeId, ...auditedPayload };
+  }
+
+  async function bulkCreate(items = []) {
+    if (!Array.isArray(items) || items.length === 0) return [];
+    const batch = writeBatch(db);
+    const created = [];
+    const userUid = getCurrentUserUid();
+
+    items.forEach((item) => {
+      const refDoc = doc(col());
+      const payload = {
+        ...normalizeData(item),
+        ownerUid: item.ownerUid || userUid,
+        status: item.status || 'active',
       };
-    }
+      const auditedPayload = mutations.batchSet(batch, refDoc, payload);
+      created.push({ id: refDoc.id, ...auditedPayload });
+    });
 
     const documentRef = await addDoc(collectionRef, dataWithAudit);
 
-    return {
-      id: documentRef.id,
-      ...dataWithAudit,
+  async function update(id, data = {}) {
+    const { payload } = await mutations.update(doc(db, collectionName, id), normalizeData(data));
+    return { id, ...payload };
+  }
+
+  async function softDelete(id) {
+    const userUid = getCurrentUserUid();
+    const payload = {
+      status: 'archived',
+      deletedAt: nowIso(),
+      deletedBy: userUid,
     };
-  };
-
-  const createWithId = (id, data) => create(data, id);
-
-  const update = async (id, data) => {
-    const documentRef = doc(db, collectionName, id);
-    const dataWithAudit = auditMiddleware.withUpdateAuditFields(data);
-    await updateDoc(documentRef, dataWithAudit);
-
-    return {
-      id,
-      ...dataWithAudit,
-    };
-  };
-
-  const bulkCreate = async (items = []) => {
-    if (!Array.isArray(items)) {
-      throw new TypeError('bulkCreate espera un arreglo');
-    }
-
-    if (items.length === 0) return [];
-
-    const created = [];
-
-    for (const chunk of chunkArray(items, MAX_BATCH_SIZE)) {
-      const batch = writeBatch(db);
-
-      for (const item of chunk) {
-        const documentRef = doc(collectionRef);
-        const dataWithAudit = auditMiddleware.withCreateAuditFields(item);
-        batch.set(documentRef, dataWithAudit);
-        created.push({ id: documentRef.id, ...dataWithAudit });
-      }
-
-      await batch.commit();
-    }
-
-    return created;
-  };
-
-  const softDelete = async (id) => {
-    const deleteData = auditMiddleware.withUpdateAuditFields({
-      deleted: true,
-      deletedAt: new Date().toISOString(),
-    });
-
-    await updateDoc(doc(db, collectionName, id), deleteData);
-    return { id, ...deleteData };
-  };
+    const { payload: auditedPayload } = await mutations.update(doc(db, collectionName, id), payload);
+    return { id, ...auditedPayload };
+  }
 
   return {
     get: getById,

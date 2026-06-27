@@ -148,10 +148,18 @@ export async function assertDenied(promiseOrResponse, message) {
 }
 
 export async function seedCompany({ companyId, ownerUid, memberships = [] }) {
+  const auditFixture = {
+    createdAt: '2026-01-01T00:00:00.000Z',
+    createdBy: ownerUid,
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    updatedBy: ownerUid,
+  };
+
   await assertAllowed(firestoreSet(`companies/${companyId}`, {
     name: `Empresa ${companyId}`,
     ownerUid,
     status: 'active',
+    ...auditFixture,
   }), 'admin company seed');
 
   for (const membership of memberships) {
@@ -162,6 +170,10 @@ export async function seedCompany({ companyId, ownerUid, memberships = [] }) {
       status: membership.status || 'active',
       ...(membership.userUid ? { userUid: membership.userUid } : {}),
       ...(membership.userEmail ? { userEmail: membership.userEmail } : {}),
+      createdAt: auditFixture.createdAt,
+      createdBy: membership.userUid || ownerUid,
+      updatedAt: auditFixture.updatedAt,
+      updatedBy: membership.userUid || ownerUid,
     }), `admin membership seed for ${memberId}`);
   }
 }

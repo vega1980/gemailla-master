@@ -2,7 +2,7 @@ import { auth, db } from '@/firebase';
 export { default as app, auth, db, storage } from '@/firebase';
 import { DOCUMENT_STATUSES, AI_DISABLED_RESPONSE_STATUSES } from '@/features/documents/constants/documentStatuses';
 import { ENTITY_COLLECTIONS } from '@/infrastructure/firebase/repositories/entityCollections';
-import { normalizeData } from '@/infrastructure/firebase/repositories/normalization';
+import { normalizeData, normalizeFilters, normalizeKey } from '@/infrastructure/firebase/repositories/normalization';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { createRepository } from '@/infrastructure/firebase/repositories/createRepository';
 import { getDocumentAccessUrl, uploadFile } from '@/infrastructure/firebase/storage/documentStorage';
@@ -14,7 +14,6 @@ import {
   doc,
   getDoc,
   onSnapshot,
-  runTransaction,
 } from 'firebase/firestore';
 export function isAiDisabledResponse(response = {}) {
   if (!response || typeof response !== 'object') return false;
@@ -41,6 +40,8 @@ function getCurrentUserUid() {
   const user = getCurrentUser();
   return user?.uid || user?.id || null;
 }
+
+const mutations = createAuditMutationMiddleware({ getCurrentUserUid, nowIso });
 
 const mutations = createAuditMutationMiddleware({ getCurrentUserUid, nowIso });
 
@@ -109,11 +110,14 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
   };
 }
 
-export async function invokeLLM(params = {}) {
-  const correlationId = ensureCorrelationId(params.correlationId, 'ai');
-  const companyId = typeof params.companyId === 'string' ? params.companyId.trim() : '';
-  if (!companyId) throw new Error('companyId es obligatorio para usar IA.');
-  const endpoint = getSafeAiEndpoint();
+async function invokeLLM(params = {}) {
+  const endpoint = import.meta.env.VITE_LLM_ENDPOINT || '/api/ai';
+  const frontendOpenAiKey = import.meta.env.VITE_OPENAI_API_KEY;
+
+  if (frontendOpenAiKey) {
+    return aiDisabledPayload('IA no configurada: no se permite exponer claves privadas directamente en el navegador. Usa un backend seguro.');
+  }
+
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {

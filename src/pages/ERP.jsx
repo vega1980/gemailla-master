@@ -43,10 +43,14 @@ export default function ERP() {
   const [filterType, setFilterType] = useState('all');
   const [formData, setFormData] = useState(createEmptyTransactionForm);
 
-  const transactionsQueryKey = companyEntityQueryKey('transactions', activeCompany);
+  const transactionsQueryKey = ['transactions', activeCompany?.id];
   const invalidateTransactions = () => queryClient.invalidateQueries({ queryKey: transactionsQueryKey });
 
-  const { data: transactions = [], isLoading } = useCompanyTransactions(activeCompany);
+  const { data: transactions = [], isLoading } = useQuery({
+    queryKey: transactionsQueryKey,
+    queryFn: () => firebase.entities.Transaction.filter({ companyId: activeCompany.id }, '-date'),
+    enabled: !!activeCompany,
+  });
 
   const createMutation = useMutation({
     mutationFn: (data) => firebase.entities.Transaction.create(data),
