@@ -1,0 +1,102 @@
+.executive-dashboard {
+  position: relative;
+}
+
+.executive-dashboard::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(248, 231, 162, 0.06), transparent 28%),
+    radial-gradient(circle at 84% 0%, rgba(207, 166, 58, 0.08), transparent 36%);
+  z-index: 0;
+}
+
+.executive-main-grid,
+.executive-header-shell,
+.executive-dashboard footer {
+  position: relative;
+  z-index: 1;
+}
+
+.executive-header-shell {
+  backdrop-filter: blur(4px);
+  background: linear-gradient(180deg, rgba(8, 8, 8, 0.9) 0%, rgba(8, 8, 8, 0.68) 100%);
+}
+
+.executive-search {
+  background: linear-gradient(160deg, rgba(20, 20, 20, 0.9) 0%, rgba(12, 12, 12, 0.96) 100%);
+  transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.executive-search:focus {
+  border-color: rgba(248, 231, 162, 0.45);
+  box-shadow: 0 0 0 1px rgba(248, 231, 162, 0.15), 0 0 0 4px rgba(207, 166, 58, 0.08);
+  outline: none;
+}
+
+.executive-section-title {
+  background: linear-gradient(120deg, #f8e7a2 0%, #e8c76a 48%, #cfa63a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.executive-gold-orb {
+  box-shadow: 0 0 10px rgba(207, 166, 58, 0.28), inset 0 1px 1px rgba(255, 243, 195, 0.55);
+}
+
+.executive-chart-fallback {
+  background: linear-gradient(100deg, rgba(24, 24, 24, 0.95), rgba(14, 14, 14, 0.88));
+  border: 1px solid rgba(207, 166, 58, 0.18);
+}
+
+.executive-action-btn {
+  transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.executive-action-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.executive-hover-lift {
+  transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+.executive-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(248, 231, 162, 0.1);
+  border-color: rgba(232, 199, 106, 0.4) !important;
+}
+
+@keyframes executiveFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.executive-subtle-fade {
+  animation: executiveFadeUp 420ms ease both;
+}
+
+@keyframes executiveMetricPulse {
+  0% {
+    opacity: 0.82;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.executive-metric-value {
+  animation: executiveMetricPulse 520ms ease both;
+}
