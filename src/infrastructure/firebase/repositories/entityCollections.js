@@ -21,4 +21,5 @@ export const ENTITY_COLLECTIONS = Object.freeze({
   ProjectTask: 'projectTasks',
   SupportTicket: 'supportTickets',
   ObservabilityEvent: 'observabilityEvents',
+  ImportLog: 'importLogs',
 });

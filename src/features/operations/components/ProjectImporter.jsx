@@ -6,6 +6,7 @@ import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from 'luc
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCompany } from '@/lib/companyContext';
+import { createImportLog, parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
 
 export default function ProjectImporter() {
   const [uploading, setUploading] = useState(false);
@@ -27,57 +28,63 @@ export default function ProjectImporter() {
         throw new Error('Selecciona una empresa antes de importar proyectos.');
       }
 
-      // Upload file
-      const { storagePath } = await firebase.integrations.Core.UploadFile({ file, companyId: activeCompany.id });
+      const parsedRows = await parseSpreadsheetFile(file);
+      const columnErrors = validateRequiredColumns(parsedRows, ['name']);
+      if (columnErrors.length) throw new Error(columnErrors.join(' '));
 
-      // Define expected schema for projects
-      const schema = {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          description: { type: 'string' },
-          status: { type: 'string' },
-          priority: { type: 'string' },
-          owner: { type: 'string' },
-          startDate: { type: 'string' },
-          endDate: { type: 'string' },
-          budget: { type: 'number' },
-          team: { type: 'array', items: { type: 'string' } },
-          tags: { type: 'array', items: { type: 'string' } }
-        },
-        required: ['name']
+      const rowErrors = [];
+      const parseList = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value;
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return String(value).split(';').map(item => item.trim()).filter(Boolean);
+        }
       };
+      const projectsToCreate = parsedRows.reduce((valid, project, index) => {
+        const name = String(project.name || '').trim();
+        if (!name) {
+          rowErrors.push(`Fila ${index + 2}: name es requerido.`);
+          return valid;
+        }
+        valid.push({
+          name,
+          description: project.description || '',
+          status: project.status || 'planificado',
+          priority: project.priority || 'media',
+          owner: project.owner || '',
+          startDate: project.startdate || project.startDate || '',
+          endDate: project.enddate || project.endDate || '',
+          budget: Number(project.budget || 0),
+          team: parseList(project.team),
+          tags: parseList(project.tags),
+          companyId: activeCompany.id,
+          progress: 0,
+          spent: 0,
+        });
+        return valid;
+      }, []);
 
-      // Extract data from file
-      const extraction = await firebase.integrations.Core.ExtractDataFromUploadedFile({
-        storagePath,
-        json_schema: schema
-      });
-
-      if (extraction.status === 'error') {
-        throw new Error(extraction.details);
+      if (!projectsToCreate.length) {
+        await createImportLog({ firebase, companyId: activeCompany.id, type: 'projects', file, validCount: 0, errorCount: rowErrors.length, status: 'failed', errors: rowErrors });
+        throw new Error(`No hay proyectos válidos para importar. ${rowErrors.slice(0, 3).join(' ')}`);
       }
 
-      const projectsData = Array.isArray(extraction.output) ? extraction.output : [extraction.output];
-
-      // Bulk create projects
-      const projectsToCreate = projectsData.map(project => ({
-        ...project,
-        companyId: activeCompany.id,
-        status: project.status || 'planificado',
-        priority: project.priority || 'media',
-        progress: 0,
-        spent: 0
-      }));
-
       const created = await firebase.entities.Project.bulkCreate(projectsToCreate);
+
+      await createImportLog({ firebase, companyId: activeCompany.id, type: 'projects', file, validCount: created.length, errorCount: rowErrors.length, status: rowErrors.length ? 'partial' : 'success', errors: rowErrors });
 
       setImported(created.length);
       toast({
         title: 'Importación exitosa',
-        description: `${created.length} proyecto(s) importado(s) correctamente`,
+        description: `${created.length} proyecto(s) importado(s) correctamente${rowErrors.length ? `; ${rowErrors.length} fila(s) omitida(s)` : ''}`,
       });
     } catch (err) {
+      if (activeCompany?.id) {
+        await createImportLog({ firebase, companyId: activeCompany.id, type: 'projects', file, validCount: 0, errorCount: 1, status: 'failed', errors: [err.message] }).catch(() => null);
+      }
       setError(err.message);
       toast({
         title: 'Error en la importación',
