@@ -44,8 +44,16 @@ function serializeDocSnapshot(snapshot) {
   };
 }
 
+function isArchivedRecord(record) {
+  return record?.status === 'archived' || record?.deleted === true;
+}
+
+function filterActiveRecords(records) {
+  return records.filter((record) => !isArchivedRecord(record));
+}
+
 function serializeQuerySnapshot(snapshot) {
-  return snapshot.docs.map(serializeDocSnapshot);
+  return filterActiveRecords(snapshot.docs.map(serializeDocSnapshot));
 }
 
 function buildQuery(collectionRef, options = {}) {
@@ -188,14 +196,14 @@ export const createRepository = (collectionName) => {
     return created;
   };
 
-  const softDelete = async (id) => {
-    const deleteData = auditMiddleware.withUpdateAuditFields({
-      deleted: true,
-      deletedAt: new Date().toISOString(),
+  const archive = async (id) => {
+    const archiveData = auditMiddleware.withUpdateAuditFields({
+      status: 'archived',
+      archivedAt: new Date().toISOString(),
     });
 
-    await updateDoc(doc(db, collectionName, id), deleteData);
-    return { id, ...deleteData };
+    await updateDoc(doc(db, collectionName, id), archiveData);
+    return { id, ...archiveData };
   };
 
   return {
@@ -207,8 +215,7 @@ export const createRepository = (collectionName) => {
     createWithId,
     bulkCreate,
     update,
-    softDelete,
+    archive,
     newId,
-    delete: softDelete,
   };
 };

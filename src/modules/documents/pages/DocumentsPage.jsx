@@ -75,7 +75,7 @@ export default function Documents() {
   const invalidateDocuments = () => queryClient.invalidateQueries({ queryKey: documentsQueryKey });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => firebase.entities.Document.delete(id),
+    mutationFn: (id) => firebase.entities.Document.archive(id),
     onSuccess: invalidateDocuments,
     onError: (error) => {
       toast({

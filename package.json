@@ -32,7 +32,8 @@
     "budget:bundle": "node scripts/check-bundle-budgets.js",
     "deploy:staging": "bash scripts/deploy-staging.sh",
     "smoke:staging": "node scripts/smoke-staging.mjs",
-    "measure:architecture": "node scripts/measure-architecture.js"
+    "measure:architecture": "node scripts/measure-architecture.js",
+    "migrate:archived": "node scripts/migrate-deleted-to-archived.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.14",

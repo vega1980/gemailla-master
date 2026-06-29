@@ -60,7 +60,7 @@ export default function PerformanceManager({ company }) {
   });
 
   const del = useMutation({
-    mutationFn: (id) => firebase.entities.PerformanceReview.delete(id),
+    mutationFn: (id) => firebase.entities.PerformanceReview.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('performanceReviews', company) }); if (selectedReview?.id === editing?.id) setSelectedReview(null); },
   });
 
