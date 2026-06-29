@@ -343,6 +343,12 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /importLogs/{importLogId} {
+      allow create: if canCreateCompanyRecord();
+      allow read: if canReadCompanyRecord();
+      allow update, delete: if false;
+    }
+
     match /documents/{documentId} {
       allow create: if validDocumentCreate();
       allow read: if canReadCompanyRecord();

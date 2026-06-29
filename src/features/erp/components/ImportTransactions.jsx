@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Download, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
+import { createImportLog, parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
 
 const EXPECTED_COLUMNS = ['tipo', 'monto', 'descripcion', 'fecha', 'categoria', 'metodo_pago'];
 
@@ -23,15 +24,6 @@ const PAYMENT_MAP = {
   'tarjeta debito': 'tarjeta_debito', cheque: 'cheque',
 };
 
-function parseCSV(text) {
-  const lines = text.trim().split('\n').filter(Boolean);
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, ' '));
-  return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-    return Object.fromEntries(headers.map((h, i) => [h, vals[i] || '']));
-  });
-}
 
 function normalizeRow(row, companyId) {
   const tipo = row.tipo?.toLowerCase().includes('gasto') ? 'gasto' : 'ingreso';
@@ -86,53 +78,31 @@ export default function ImportTransactions({ companyId, onSuccess }) {
       toast({ title: 'Empresa requerida', description: 'Selecciona una empresa antes de importar transacciones.', variant: 'destructive' });
       return;
     }
-    const ext = file.name.split('.').pop().toLowerCase();
-
-    if (ext === 'csv') {
-      const text = await file.text();
-      const parsed = parseCSV(text);
-      processRows(parsed);
-    } else if (ext === 'xlsx' || ext === 'xls') {
-      // Use LLM to extract from Excel via UploadFile + ExtractDataFromUploadedFile
-      setStep('processing');
-      const { storagePath } = await firebase.integrations.Core.UploadFile({ file, companyId });
-      const result = await firebase.integrations.Core.ExtractDataFromUploadedFile({
-        storagePath,
-        json_schema: {
-          type: 'object',
-          properties: {
-            rows: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  tipo: { type: 'string' },
-                  monto: { type: 'string' },
-                  descripcion: { type: 'string' },
-                  fecha: { type: 'string' },
-                  categoria: { type: 'string' },
-                  metodo_pago: { type: 'string' },
-                }
-              }
-            }
-          }
-        }
-      });
-      const extracted = result?.output?.rows || (Array.isArray(result?.output) ? result.output : []);
-      processRows(extracted);
-    } else {
-      toast({ title: 'Formato no soportado', description: 'Usa CSV o Excel (.xlsx)', variant: 'destructive' });
+    setStep('processing');
+    try {
+      const parsed = await parseSpreadsheetFile(file);
+      const columnErrors = validateRequiredColumns(parsed, ['monto']);
+      if (columnErrors.length) throw new Error(columnErrors.join(' '));
+      await processRows(parsed, file);
+    } catch (err) {
+      setStep('upload');
+      toast({ title: 'Error en la importación', description: err.message, variant: 'destructive' });
+      await createImportLog({ firebase, companyId, type: 'transactions', file, validCount: 0, errorCount: 1, status: 'failed', errors: [err.message] });
     }
   };
 
-  const processRows = (parsed) => {
+  const processRows = async (parsed, file) => {
     const valid = [];
     const errs = [];
     parsed.forEach((row, i) => {
       const monto = parseFloat((row.monto || '').replace(/[$,\s]/g, '') || '0');
       if (monto <= 0) { errs.push(`Fila ${i + 2}: Monto inválido (${row.monto})`); return; }
+      if (!row.descripcion) errs.push(`Fila ${i + 2}: descripción vacía; se importará sin descripción.`);
       valid.push(normalizeRow(row, companyId));
     });
+    if (!valid.length) {
+      await createImportLog({ firebase, companyId, type: 'transactions', file, validCount: 0, errorCount: errs.length, status: 'failed', errors: errs });
+    }
     setRows(valid);
     setErrors(errs);
     setStep('preview');
@@ -141,8 +111,9 @@ export default function ImportTransactions({ companyId, onSuccess }) {
   const handleImport = async () => {
     if (!rows.length) return;
     setImporting(true);
-    await firebase.entities.Transaction.bulkCreate(rows);
-    setImportedCount(rows.length);
+    const created = await firebase.entities.Transaction.bulkCreate(rows);
+    await createImportLog({ firebase, companyId, type: 'transactions', file: fileRef.current?.files?.[0], validCount: created.length, errorCount: errors.length, status: errors.length ? 'partial' : 'success', errors });
+    setImportedCount(created.length);
     setImporting(false);
     setStep('done');
     onSuccess?.();
@@ -193,7 +164,7 @@ export default function ImportTransactions({ companyId, onSuccess }) {
                   <>
                     <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-sm font-medium text-foreground mb-1">Arrastra tu archivo aquí o haz clic para seleccionar</p>
-                    <p className="text-xs text-muted-foreground">Soporta CSV y Excel (.xlsx)</p>
+                    <p className="text-xs text-muted-foreground">Soporta CSV y Excel (.xlsx/.xls)</p>
                   </>
                 )}
                 <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
