@@ -68,7 +68,7 @@ export default function ProjectTracker({ company }) {
   });
 
   const delProj = useMutation({
-    mutationFn: (id) => firebase.entities.Project.delete(id),
+    mutationFn: (id) => firebase.entities.Project.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('projects', company) }); toast.success('Proyecto eliminado'); },
   });
 
@@ -81,7 +81,7 @@ export default function ProjectTracker({ company }) {
   });
 
   const delTask = useMutation({
-    mutationFn: (id) => firebase.entities.ProjectTask.delete(id),
+    mutationFn: (id) => firebase.entities.ProjectTask.archive(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: companyEntityQueryKey('projectTasks', company) }),
   });
 
