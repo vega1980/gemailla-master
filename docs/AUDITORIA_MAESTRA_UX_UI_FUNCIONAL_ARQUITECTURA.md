@@ -176,7 +176,7 @@ Orden sugerido:
 
 ### Fase D — Gobernanza y limpieza
 
-- [ ] Eliminar duplicados legacy (`Dashboard.backup.jsx`, `Dashboard.original.jsx`) si ya no son necesarios.
+- [x] Eliminar duplicados legacy (`Dashboard.backup.jsx`, `Dashboard.original.jsx`) si ya no son necesarios.
 - [ ] Convertir `measure:architecture` en quality gate con umbrales máximos de acoplamiento/duplicación.
 - [ ] Documentar patrón para crear un módulo nuevo.
 - [ ] Actualizar runbooks y checklist de release.
