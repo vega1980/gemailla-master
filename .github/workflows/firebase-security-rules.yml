@@ -68,5 +68,5 @@ jobs:
       - name: Fail deploy without Firebase secrets outside pull requests
         if: ${{ github.event_name != 'pull_request' && (env.FIREBASE_PROJECT_ID == '' || env.FIREBASE_SERVICE_ACCOUNT_JSON == '') }}
         run: |
-          echo "FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT are required to deploy Firebase rules on ${GITHUB_EVENT_NAME}."
+          echo "FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT are required to deploy Firebase rules on ${{ github.event_name }}."
           exit 1
