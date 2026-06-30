@@ -48,6 +48,10 @@ if (useFirebaseEmulators && !firebaseConfig.projectId) {
   firebaseConfig.projectId = 'demo-gemailla-local';
 }
 
+if (useFirebaseEmulators && !firebaseConfig.apiKey) {
+  firebaseConfig.apiKey = 'fake-api-key';
+}
+
 const requiredConfigKeys = useFirebaseEmulators
   ? ['projectId']
   : ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
