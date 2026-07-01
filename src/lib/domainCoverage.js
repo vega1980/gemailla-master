@@ -18,6 +18,11 @@ export const DOMAIN_COVERAGE = Object.freeze({
     entities: Object.freeze(['Document']),
     companyQueries: Object.freeze(['documents']),
   }),
+  imports: Object.freeze({
+    label: 'Importaciones de hojas de cálculo',
+    entities: Object.freeze(['ImportLog']),
+    companyQueries: Object.freeze([]),
+  }),
   finance: Object.freeze({
     label: 'Finanzas y suscripciones',
     entities: Object.freeze(['Transaction', 'Subscription', 'PredictionLog']),

@@ -48,7 +48,7 @@ export default function InteractionHistory({ company }) {
   });
 
   const del = useMutation({
-    mutationFn: (id) => firebase.entities.CRMInteraction.delete(id),
+    mutationFn: (id) => firebase.entities.CRMInteraction.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmInteractions', company) }); toast.success('Interacción eliminada'); },
   });
 

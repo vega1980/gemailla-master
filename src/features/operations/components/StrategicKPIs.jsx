@@ -50,7 +50,7 @@ export default function StrategicKPIs({ company }) {
   });
 
   const del = useMutation({
-    mutationFn: (id) => firebase.entities.KPI.delete(id),
+    mutationFn: (id) => firebase.entities.KPI.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('kpis', company) }); toast.success('KPI eliminado'); },
   });
 

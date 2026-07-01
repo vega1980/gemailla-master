@@ -320,6 +320,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /aiCostLogs/{id} {
+      allow read: if canReadAiFinancialData(resource.data);
+      allow create, update, delete: if false;
+    }
+
+    match /aiAuditLogs/{id} {
+      allow read: if canReadAiFinancialData(resource.data);
+      allow create, update, delete: if false;
+    }
+
     match /aiBudgets/{id} {
       allow read: if canReadAiFinancialData(resource.data);
       allow create: if canCreateAiBudget();
@@ -330,6 +340,12 @@ service cloud.firestore {
     match /observabilityEvents/{eventId} {
       allow create: if canCreateOwnedOrCompanyRecord();
       allow read: if canReadOwnedOrCompanyRecord();
+      allow update, delete: if false;
+    }
+
+    match /importLogs/{importLogId} {
+      allow create: if canCreateCompanyRecord();
+      allow read: if canReadCompanyRecord();
       allow update, delete: if false;
     }
 

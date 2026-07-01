@@ -68,7 +68,7 @@ export default function ERP() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => firebase.entities.Transaction.delete(id),
+    mutationFn: (id) => firebase.entities.Transaction.archive(id),
     onSuccess: invalidateTransactions,
   });
 

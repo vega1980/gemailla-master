@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCompany } from '@/lib/companyContext';
 import EmptyState from '@/components/shared/EmptyState';
+import LoadingState from '@/components/shared/LoadingState';
 import { Building2, Target, GitBranch, FolderKanban } from 'lucide-react';
 import StrategicKPIs from '@/features/operations/components/StrategicKPIs';
 import ProcessOptimizer from '@/features/operations/components/ProcessOptimizer';
@@ -11,13 +12,7 @@ export default function Operations() {
   const [activeTab, setActiveTab] = useState('kpis');
   const { activeCompany, loading } = useCompany();
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingState />;
 
   return (
     <div className="animate-fade-in" style={{background: '#050505', minHeight: '100vh'}}>

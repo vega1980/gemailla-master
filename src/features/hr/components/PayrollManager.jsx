@@ -86,7 +86,7 @@ export default function PayrollManager({ company }) {
   });
 
   const del = useMutation({
-    mutationFn: (id) => firebase.entities.Payroll.delete(id),
+    mutationFn: (id) => firebase.entities.Payroll.archive(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: companyEntityQueryKey('payrolls', company) }),
   });
 

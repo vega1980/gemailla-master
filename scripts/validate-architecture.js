@@ -23,6 +23,13 @@ const PUBLIC_VITE_ALLOWLIST = new Set([
 ]);
 const SENSITIVE_VITE_PATTERN = /VITE_[A-Z0-9_]*(SECRET|PRIVATE|TOKEN|PASSWORD|PASS|OPENAI|STRIPE_SECRET|SERVICE_ACCOUNT|CLIENT_SECRET|WEBHOOK_SECRET|ADMIN|CREDENTIAL)[A-Z0-9_]*/g;
 
+const LEGACY_DUPLICATE_FILES = new Map([
+  ['src/App.jsx', 'El bootstrap debe importar src/app/App.jsx directamente; no mantener un segundo App raíz.'],
+  ['src/pages/Dashboard.backup.jsx', 'No conservar snapshots legacy de Dashboard dentro de src/pages. Usa control de versiones.'],
+  ['src/pages/Dashboard.original.jsx', 'No conservar snapshots legacy de Dashboard dentro de src/pages. Usa control de versiones.'],
+]);
+const LEGACY_PAGE_COPY_PATTERN = /(?:^|\/)[A-Z][^/]*\.(?:backup|original|old|legacy)\.[jt]sx?$/i;
+
 function walk(dir, files = []) {
   for (const entry of readdirSync(dir)) {
     if (['node_modules', '.git', 'dist', 'coverage', '.firebase'].includes(entry)) continue;
@@ -51,6 +58,20 @@ function collectSourceFiles(base = 'src') {
 
 function addIssue(issues, check, file, message) {
   issues.push({ check, file, message });
+}
+
+
+function validateLegacyDuplicateArchitecture(issues) {
+  for (const [file, message] of LEGACY_DUPLICATE_FILES) {
+    if (existsSync(resolve(ROOT, file))) addIssue(issues, 'legacy-duplicates', file, message);
+  }
+
+  for (const abs of collectSourceFiles('src/pages')) {
+    const repoPath = toRepoPath(abs);
+    if (LEGACY_PAGE_COPY_PATTERN.test(repoPath)) {
+      addIssue(issues, 'legacy-duplicates', repoPath, 'Archivo de página con sufijo legacy/backup/original detectado. Mantén una sola implementación activa por página.');
+    }
+  }
 }
 
 function validateFirebaseImports(issues) {
@@ -156,6 +177,7 @@ function parseArgs(argv) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const issues = [];
+  validateLegacyDuplicateArchitecture(issues);
   validateFirebaseImports(issues);
   validateFeatureCompanyGuards(issues);
   validateSensitiveViteVariables(issues);
@@ -168,7 +190,7 @@ function main() {
   }
 
   const remoteText = options.project ? ` e índices remotos del proyecto ${options.project}` : ' (índices remotos omitidos; usa --project=<id> en CI con credenciales)';
-  console.log(`✅ Arquitectura validada: imports Firebase, guards company.id, VITE sensibles e índices Firestore${remoteText}.`);
+  console.log(`✅ Arquitectura validada: duplicados legacy, imports Firebase, guards company.id, VITE sensibles e índices Firestore${remoteText}.`);
 }
 
 main();

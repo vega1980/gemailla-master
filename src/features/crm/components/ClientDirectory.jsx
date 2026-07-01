@@ -48,7 +48,7 @@ export default function ClientDirectory({ company }) {
   });
 
   const del = useMutation({
-    mutationFn: (id) => firebase.entities.CRMClient.delete(id),
+    mutationFn: (id) => firebase.entities.CRMClient.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); toast.success('Cliente eliminado'); },
   });
 

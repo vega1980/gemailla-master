@@ -59,6 +59,24 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck core
+        run: npm run typecheck:core
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Functions tests
+        run: npm run test:functions
+
+      - name: Validate architecture
+        run: npm run validate:architecture
+
+      - name: Measure architecture baseline
+        run: npm run measure:architecture
+
+      - name: Validate secrets
+        run: npm run validate:secrets
+
       - name: Build
         run: npm run build
 

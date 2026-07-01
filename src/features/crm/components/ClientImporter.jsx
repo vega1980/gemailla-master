@@ -6,6 +6,7 @@ import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from 'luc
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCompany } from '@/lib/companyContext';
+import { createImportLog, parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
 
 export default function ClientImporter() {
   const [uploading, setUploading] = useState(false);
@@ -27,55 +28,52 @@ export default function ClientImporter() {
         throw new Error('Selecciona una empresa antes de importar clientes.');
       }
 
-      // Upload file
-      const { storagePath } = await firebase.integrations.Core.UploadFile({ file, companyId: activeCompany.id });
+      const parsedRows = await parseSpreadsheetFile(file);
+      const columnErrors = validateRequiredColumns(parsedRows, ['name']);
+      if (columnErrors.length) throw new Error(columnErrors.join(' '));
 
-      // Define expected schema for clients
-      const schema = {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          email: { type: 'string' },
-          phone: { type: 'string' },
-          rfc: { type: 'string' },
-          segment: { type: 'string' },
-          industry: { type: 'string' },
-          address: { type: 'string' },
-          assignedTo: { type: 'string' },
-          total_revenue: { type: 'number' },
-          notes: { type: 'string' }
-        },
-        required: ['name']
-      };
+      const rowErrors = [];
+      const clientsToCreate = parsedRows.reduce((valid, client, index) => {
+        const name = String(client.name || '').trim();
+        if (!name) {
+          rowErrors.push(`Fila ${index + 2}: name es requerido.`);
+          return valid;
+        }
+        valid.push({
+          name,
+          email: client.email || '',
+          phone: client.phone || '',
+          rfc: client.rfc || '',
+          segment: client.segment || 'potencial',
+          industry: client.industry || '',
+          address: client.address || '',
+          assignedTo: client.assignedto || client.assignedTo || '',
+          total_revenue: Number(client.total_revenue || 0),
+          notes: client.notes || '',
+          companyId: activeCompany.id,
+          status: 'activo',
+        });
+        return valid;
+      }, []);
 
-      // Extract data from file
-      const extraction = await firebase.integrations.Core.ExtractDataFromUploadedFile({
-        storagePath,
-        json_schema: schema
-      });
-
-      if (extraction.status === 'error') {
-        throw new Error(extraction.details);
+      if (!clientsToCreate.length) {
+        await createImportLog({ firebase, companyId: activeCompany.id, type: 'clients', file, validCount: 0, errorCount: rowErrors.length, status: 'failed', errors: rowErrors });
+        throw new Error(`No hay clientes válidos para importar. ${rowErrors.slice(0, 3).join(' ')}`);
       }
 
-      const clientsData = Array.isArray(extraction.output) ? extraction.output : [extraction.output];
-
-      // Bulk create clients
-      const clientsToCreate = clientsData.map(client => ({
-        ...client,
-        companyId: activeCompany.id,
-        status: 'activo',
-        segment: client.segment || 'potencial'
-      }));
-
       const created = await firebase.entities.CRMClient.bulkCreate(clientsToCreate);
+
+      await createImportLog({ firebase, companyId: activeCompany.id, type: 'clients', file, validCount: created.length, errorCount: rowErrors.length, status: rowErrors.length ? 'partial' : 'success', errors: rowErrors });
 
       setImported(created.length);
       toast({
         title: 'Importación exitosa',
-        description: `${created.length} cliente(s) importado(s) correctamente`,
+        description: `${created.length} cliente(s) importado(s) correctamente${rowErrors.length ? `; ${rowErrors.length} fila(s) omitida(s)` : ''}`,
       });
     } catch (err) {
+      if (activeCompany?.id) {
+        await createImportLog({ firebase, companyId: activeCompany.id, type: 'clients', file, validCount: 0, errorCount: 1, status: 'failed', errors: [err.message] }).catch(() => null);
+      }
       setError(err.message);
       toast({
         title: 'Error en la importación',

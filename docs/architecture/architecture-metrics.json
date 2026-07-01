@@ -1,0 +1,937 @@
+{
+  "generatedAt": "2026-06-30T13:26:53.250Z",
+  "scope": [
+    "src",
+    "functions"
+  ],
+  "totals": {
+    "files": 227,
+    "internalDependencies": 553,
+    "externalPackages": 51,
+    "duplicateLineGroups": 30
+  },
+  "externalPackages": [
+    {
+      "name": "react",
+      "count": 127
+    },
+    {
+      "name": "lucide-react",
+      "count": 86
+    },
+    {
+      "name": "date-fns",
+      "count": 49
+    },
+    {
+      "name": "@tanstack/react-query",
+      "count": 17
+    },
+    {
+      "name": "framer-motion",
+      "count": 17
+    },
+    {
+      "name": "recharts",
+      "count": 15
+    },
+    {
+      "name": "firebase",
+      "count": 14
+    },
+    {
+      "name": "react-markdown",
+      "count": 13
+    },
+    {
+      "name": "react-router-dom",
+      "count": 13
+    },
+    {
+      "name": "sonner",
+      "count": 12
+    },
+    {
+      "name": "class-variance-authority",
+      "count": 9
+    },
+    {
+      "name": "@radix-ui/react-slot",
+      "count": 4
+    },
+    {
+      "name": "jspdf",
+      "count": 3
+    },
+    {
+      "name": "zod",
+      "count": 3
+    },
+    {
+      "name": "@radix-ui/react-dialog",
+      "count": 2
+    },
+    {
+      "name": "@radix-ui/react-accordion",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-alert-dialog",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-aspect-ratio",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-avatar",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-checkbox",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-collapsible",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-context-menu",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-dropdown-menu",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-hover-card",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-label",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-menubar",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-navigation-menu",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-popover",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-progress",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-radio-group",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-scroll-area",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-select",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-separator",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-slider",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-switch",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-tabs",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-toggle",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-toggle-group",
+      "count": 1
+    },
+    {
+      "name": "@radix-ui/react-tooltip",
+      "count": 1
+    },
+    {
+      "name": "clsx",
+      "count": 1
+    },
+    {
+      "name": "cmdk",
+      "count": 1
+    },
+    {
+      "name": "embla-carousel-react",
+      "count": 1
+    },
+    {
+      "name": "fflate",
+      "count": 1
+    },
+    {
+      "name": "input-otp",
+      "count": 1
+    },
+    {
+      "name": "next-themes",
+      "count": 1
+    },
+    {
+      "name": "react-day-picker",
+      "count": 1
+    },
+    {
+      "name": "react-dom",
+      "count": 1
+    },
+    {
+      "name": "react-hook-form",
+      "count": 1
+    },
+    {
+      "name": "react-resizable-panels",
+      "count": 1
+    },
+    {
+      "name": "tailwind-merge",
+      "count": 1
+    }
+  ],
+  "moduleCoupling": [
+    {
+      "edge": "src:components -> src:lib",
+      "count": 52
+    },
+    {
+      "edge": "src:pages -> src:components",
+      "count": 51
+    },
+    {
+      "edge": "feature:crm -> src:components",
+      "count": 30
+    },
+    {
+      "edge": "src:pages -> src:lib",
+      "count": 29
+    },
+    {
+      "edge": "src:components -> src:components",
+      "count": 26
+    },
+    {
+      "edge": "feature:hr -> src:components",
+      "count": 21
+    },
+    {
+      "edge": "feature:operations -> src:components",
+      "count": 21
+    },
+    {
+      "edge": "src:modules -> src:components",
+      "count": 19
+    },
+    {
+      "edge": "feature:finance -> src:components",
+      "count": 16
+    },
+    {
+      "edge": "feature:erp -> src:components",
+      "count": 14
+    },
+    {
+      "edge": "src:modules -> src:modules",
+      "count": 14
+    },
+    {
+      "edge": "feature:dashboard -> src:components",
+      "count": 12
+    },
+    {
+      "edge": "src:app -> src:pages",
+      "count": 12
+    },
+    {
+      "edge": "src:infrastructure -> src:infrastructure",
+      "count": 8
+    },
+    {
+      "edge": "src:modules -> src:lib",
+      "count": 8
+    },
+    {
+      "edge": "feature:client -> src:components",
+      "count": 7
+    },
+    {
+      "edge": "feature:crm -> src:lib",
+      "count": 6
+    },
+    {
+      "edge": "src:app -> src:components",
+      "count": 6
+    },
+    {
+      "edge": "src:infrastructure -> src:firebase.js",
+      "count": 6
+    },
+    {
+      "edge": "feature:crm -> src:api",
+      "count": 5
+    },
+    {
+      "edge": "feature:predictive -> src:components",
+      "count": 5
+    },
+    {
+      "edge": "feature:support -> src:components",
+      "count": 5
+    },
+    {
+      "edge": "src:api -> src:infrastructure",
+      "count": 5
+    },
+    {
+      "edge": "src:lib -> src:lib",
+      "count": 5
+    },
+    {
+      "edge": "src:pages -> feature:erp",
+      "count": 5
+    },
+    {
+      "edge": "feature:documents -> src:lib",
+      "count": 4
+    },
+    {
+      "edge": "feature:predictive -> src:modules",
+      "count": 4
+    },
+    {
+      "edge": "src:app -> src:lib",
+      "count": 4
+    },
+    {
+      "edge": "src:lib -> src:api",
+      "count": 4
+    },
+    {
+      "edge": "src:modules -> feature:documents",
+      "count": 4
+    },
+    {
+      "edge": "src:modules -> src:api",
+      "count": 4
+    },
+    {
+      "edge": "src:pages -> feature:client",
+      "count": 4
+    },
+    {
+      "edge": "src:pages -> feature:crm",
+      "count": 4
+    },
+    {
+      "edge": "src:pages -> feature:finance",
+      "count": 4
+    },
+    {
+      "edge": "src:pages -> feature:operations",
+      "count": 4
+    },
+    {
+      "edge": "src:pages -> feature:predictive",
+      "count": 4
+    },
+    {
+      "edge": "src:pages -> src:modules",
+      "count": 4
+    },
+    {
+      "edge": "feature:client -> src:modules",
+      "count": 3
+    },
+    {
+      "edge": "feature:crm -> src:modules",
+      "count": 3
+    },
+    {
+      "edge": "feature:hr -> src:api",
+      "count": 3
+    },
+    {
+      "edge": "feature:hr -> src:lib",
+      "count": 3
+    },
+    {
+      "edge": "feature:operations -> src:api",
+      "count": 3
+    },
+    {
+      "edge": "feature:operations -> src:lib",
+      "count": 3
+    },
+    {
+      "edge": "feature:reports -> src:components",
+      "count": 3
+    },
+    {
+      "edge": "feature:support -> src:hooks",
+      "count": 3
+    },
+    {
+      "edge": "src:lib -> src:infrastructure",
+      "count": 3
+    },
+    {
+      "edge": "src:pages -> feature:hr",
+      "count": 3
+    },
+    {
+      "edge": "src:pages -> feature:support",
+      "count": 3
+    },
+    {
+      "edge": "src:shared -> src:components",
+      "count": 3
+    },
+    {
+      "edge": "src:shared -> src:hooks",
+      "count": 3
+    }
+  ],
+  "hotspots": [
+    {
+      "file": "src/components/ui/button.jsx",
+      "incoming": 55,
+      "outgoing": 1,
+      "score": 56
+    },
+    {
+      "file": "src/lib/utils.js",
+      "incoming": 45,
+      "outgoing": 0,
+      "score": 45
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "incoming": 31,
+      "outgoing": 10,
+      "score": 41
+    },
+    {
+      "file": "src/lib/companyContext.jsx",
+      "incoming": 22,
+      "outgoing": 4,
+      "score": 26
+    },
+    {
+      "file": "src/modules/ai/aiService.js",
+      "incoming": 24,
+      "outgoing": 2,
+      "score": 26
+    },
+    {
+      "file": "src/components/ui/badge.jsx",
+      "incoming": 21,
+      "outgoing": 1,
+      "score": 22
+    },
+    {
+      "file": "src/lib/companyEntityQueries.js",
+      "incoming": 20,
+      "outgoing": 1,
+      "score": 21
+    },
+    {
+      "file": "src/components/ui/input.jsx",
+      "incoming": 19,
+      "outgoing": 1,
+      "score": 20
+    },
+    {
+      "file": "src/components/ui/select.jsx",
+      "incoming": 18,
+      "outgoing": 1,
+      "score": 19
+    },
+    {
+      "file": "src/modules/documents/pages/DocumentsPage.jsx",
+      "incoming": 3,
+      "outgoing": 16,
+      "score": 19
+    },
+    {
+      "file": "src/components/ui/dialog.jsx",
+      "incoming": 17,
+      "outgoing": 1,
+      "score": 18
+    },
+    {
+      "file": "src/pages/AIAssistant.jsx",
+      "incoming": 2,
+      "outgoing": 15,
+      "score": 17
+    },
+    {
+      "file": "src/app/routes.jsx",
+      "incoming": 1,
+      "outgoing": 15,
+      "score": 16
+    },
+    {
+      "file": "src/modules/companies/pages/CompaniesPage.jsx",
+      "incoming": 3,
+      "outgoing": 13,
+      "score": 16
+    },
+    {
+      "file": "src/components/shared/EmptyState.jsx",
+      "incoming": 15,
+      "outgoing": 0,
+      "score": 15
+    },
+    {
+      "file": "src/lib/AuthContext.jsx",
+      "incoming": 14,
+      "outgoing": 1,
+      "score": 15
+    },
+    {
+      "file": "src/pages/ERP.jsx",
+      "incoming": 1,
+      "outgoing": 14,
+      "score": 15
+    },
+    {
+      "file": "src/components/shared/PageHeader.jsx",
+      "incoming": 14,
+      "outgoing": 0,
+      "score": 14
+    },
+    {
+      "file": "src/components/ui/label.jsx",
+      "incoming": 11,
+      "outgoing": 1,
+      "score": 12
+    },
+    {
+      "file": "src/features/hr/components/PerformanceManager.jsx",
+      "incoming": 1,
+      "outgoing": 11,
+      "score": 12
+    }
+  ],
+  "duplicatedLines": [
+    {
+      "line": "<div className=\"bg-card border border-border rounded-2xl p-5\">",
+      "occurrences": 21,
+      "files": [
+        "src/features/client/components/ChurnPanel.jsx",
+        "src/features/client/components/StockAlerts.jsx",
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/finance/components/BudgetPlanner.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx"
+      ]
+    },
+    {
+      "line": "<div className=\"grid grid-cols-2 gap-3\">",
+      "occurrences": 19,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/dashboard/components/AlertNotifications.jsx",
+        "src/features/dashboard/components/WelcomeTutorial.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx"
+      ]
+    },
+    {
+      "line": "<SelectTrigger className=\"mt-1 bg-secondary border-border\"><SelectValue /></SelectTrigger>",
+      "occurrences": 19,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/ProjectTracker.jsx"
+      ]
+    },
+    {
+      "line": "<div className=\"flex items-center gap-3\">",
+      "occurrences": 18,
+      "files": [
+        "src/components/layout/MobileHeader.jsx",
+        "src/features/client/components/MyPlan.jsx",
+        "src/features/crm/components/ClientImporter.jsx",
+        "src/features/dashboard/components/ProactiveAlerts.jsx",
+        "src/features/dashboard/components/WeeklyInsights.jsx",
+        "src/features/dashboard/components/WelcomeTutorial.jsx",
+        "src/features/dashboard/components/WhatIfScenario.jsx",
+        "src/features/erp/components/ImportTransactions.jsx"
+      ]
+    },
+    {
+      "line": "const [loading, setLoading] = useState(false);",
+      "occurrences": 16,
+      "files": [
+        "src/features/client/components/ChurnPanel.jsx",
+        "src/features/client/components/StockAlerts.jsx",
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/dashboard/components/WeeklyInsights.jsx",
+        "src/features/dashboard/components/WelcomeAnalysis.jsx",
+        "src/features/finance/components/ReportDownloader.jsx",
+        "src/features/finance/components/RiskManagement.jsx"
+      ]
+    },
+    {
+      "line": "<div className=\"flex items-center gap-2\">",
+      "occurrences": 12,
+      "files": [
+        "src/features/client/components/StockAlerts.jsx",
+        "src/features/dashboard/components/CategoryBreakdown.jsx",
+        "src/features/dashboard/components/WeeklyInsights.jsx",
+        "src/features/finance/components/RiskManagement.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/predictive/components/AnomalyDetector.jsx",
+        "src/features/predictive/components/WhatIfAdvanced.jsx",
+        "src/features/support/components/AutoReports.jsx"
+      ]
+    },
+    {
+      "line": "<div className=\"flex items-center justify-between\">",
+      "occurrences": 12,
+      "files": [
+        "src/features/client/components/ChurnPanel.jsx",
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/dashboard/components/WhatIfScenario.jsx",
+        "src/features/finance/components/FinancialStatements.jsx",
+        "src/features/finance/components/GoogleSheetsExporter.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/operations/components/ProjectTracker.jsx"
+      ]
+    },
+    {
+      "line": "const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;",
+      "occurrences": 12,
+      "files": [
+        "src/features/client/components/ChurnPanel.jsx",
+        "src/features/client/components/StockAlerts.jsx",
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx"
+      ]
+    },
+    {
+      "line": "const [open, setOpen] = useState(false);",
+      "occurrences": 11,
+      "files": [
+        "src/components/layout/MobileHeader.jsx",
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/dashboard/components/AlertNotifications.jsx",
+        "src/features/dashboard/components/ConsultorVirtual.jsx",
+        "src/features/erp/components/ImportTransactions.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx"
+      ]
+    },
+    {
+      "line": "<div key={label} className=\"bg-card border border-border rounded-2xl p-4\">",
+      "occurrences": 10,
+      "files": [
+        "src/features/client/components/ChurnPanel.jsx",
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/finance/components/BudgetPlanner.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx"
+      ]
+    },
+    {
+      "line": "background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',",
+      "occurrences": 10,
+      "files": [
+        "src/features/operations/components/ProcessOptimizer.jsx",
+        "src/features/operations/components/ProjectTracker.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "border: '1px solid rgba(197,160,89,0.15)',",
+      "occurrences": 10,
+      "files": [
+        "src/features/operations/components/ProcessOptimizer.jsx",
+        "src/features/operations/components/ProjectTracker.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);",
+      "occurrences": 10,
+      "files": [
+        "src/features/dashboard/components/ConsultorVirtual.jsx",
+        "src/features/dashboard/components/WeeklyInsights.jsx",
+        "src/features/dashboard/components/WelcomeAnalysis.jsx",
+        "src/features/finance/components/RiskManagement.jsx",
+        "src/features/reports/components/ReportGenerator.jsx",
+        "src/features/support/components/ClientDashboardShare.jsx",
+        "src/features/support/components/SupportChatbot.jsx",
+        "src/pages/Audit.jsx"
+      ]
+    },
+    {
+      "line": "const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);",
+      "occurrences": 10,
+      "files": [
+        "src/features/dashboard/components/ConsultorVirtual.jsx",
+        "src/features/dashboard/components/WeeklyInsights.jsx",
+        "src/features/dashboard/components/WelcomeAnalysis.jsx",
+        "src/features/finance/components/RiskManagement.jsx",
+        "src/features/reports/components/ReportGenerator.jsx",
+        "src/features/support/components/ClientDashboardShare.jsx",
+        "src/features/support/components/SupportChatbot.jsx",
+        "src/pages/Audit.jsx"
+      ]
+    },
+    {
+      "line": "if (!active || !payload?.length) return null;",
+      "occurrences": 10,
+      "files": [
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/dashboard/components/WhatIfScenario.jsx",
+        "src/features/finance/components/BudgetPlanner.jsx",
+        "src/features/finance/components/CashFlowVsBudgetChart.jsx",
+        "src/features/operations/components/ProcessOptimizer.jsx",
+        "src/features/predictive/components/DemandForecast.jsx"
+      ]
+    },
+    {
+      "line": "<CartesianGrid strokeDasharray=\"3 3\" stroke=\"hsl(0 0% 14%)\" />",
+      "occurrences": 9,
+      "files": [
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/finance/components/BudgetPlanner.jsx",
+        "src/features/operations/components/ProcessOptimizer.jsx",
+        "src/features/predictive/components/DemandForecast.jsx",
+        "src/features/predictive/components/WhatIfAdvanced.jsx",
+        "src/features/support/components/ClientDashboardShare.jsx"
+      ]
+    },
+    {
+      "line": "<div className=\"flex justify-center py-12\"><Loader2 className=\"w-6 h-6 animate-spin text-primary\" /></div>",
+      "occurrences": 9,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/ProjectTracker.jsx"
+      ]
+    },
+    {
+      "line": "<div className=\"grid grid-cols-2 sm:grid-cols-4 gap-3\">",
+      "occurrences": 9,
+      "files": [
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/ProjectTracker.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "<Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>",
+      "occurrences": 8,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/ProjectTracker.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx",
+        "src/features/support/components/SupportChatbot.jsx"
+      ]
+    },
+    {
+      "line": "<Dialog open={open} onOpenChange={setOpen}>",
+      "occurrences": 8,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/dashboard/components/AlertNotifications.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "<div className=\"text-center py-16 text-muted-foreground\">",
+      "occurrences": 8,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/operations/components/ProjectTracker.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "const [result, setResult] = useState(null);",
+      "occurrences": 8,
+      "files": [
+        "src/features/client/components/ChurnPanel.jsx",
+        "src/features/dashboard/components/AlertNotifications.jsx",
+        "src/features/finance/components/RiskManagement.jsx",
+        "src/features/operations/components/ProcessOptimizer.jsx",
+        "src/features/predictive/components/AnomalyDetector.jsx",
+        "src/features/predictive/components/ChurnPredictor.jsx",
+        "src/features/predictive/components/DemandForecast.jsx",
+        "src/features/predictive/components/WhatIfAdvanced.jsx"
+      ]
+    },
+    {
+      "line": "{save.isPending && <Loader2 className=\"w-4 h-4 animate-spin\" />}",
+      "occurrences": 7,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "<p className=\"font-semibold text-foreground mb-1\">{label}</p>",
+      "occurrences": 7,
+      "files": [
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/finance/components/BudgetPlanner.jsx",
+        "src/features/operations/components/ProcessOptimizer.jsx",
+        "src/features/predictive/components/DemandForecast.jsx",
+        "src/features/predictive/components/WhatIfAdvanced.jsx",
+        "src/features/support/components/ClientDashboardShare.jsx"
+      ]
+    },
+    {
+      "line": "<p className=\"text-xs text-muted-foreground mb-1\">{label}</p>",
+      "occurrences": 7,
+      "files": [
+        "src/features/client/components/TrendsPanel.jsx",
+        "src/features/crm/components/ClientList.jsx",
+        "src/features/crm/components/ClientSegments.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx"
+      ]
+    },
+    {
+      "line": "<SelectTrigger className=\"bg-secondary border-border\"><SelectValue /></SelectTrigger>",
+      "occurrences": 7,
+      "files": [
+        "src/features/erp/components/TransactionFormDialog.jsx",
+        "src/features/support/components/AutoReports.jsx",
+        "src/modules/companies/pages/CompaniesPage.jsx"
+      ]
+    },
+    {
+      "line": "border: '1px solid rgba(197,160,89,0.2)',",
+      "occurrences": 7,
+      "files": [
+        "src/components/shared/StatCard.jsx",
+        "src/components/ui/card.jsx",
+        "src/features/operations/components/ProjectTracker.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx",
+        "src/pages/Dashboard.jsx"
+      ]
+    },
+    {
+      "line": "const [aiLoading, setAiLoading] = useState(false);",
+      "occurrences": 7,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/finance/components/BudgetPlanner.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx",
+        "src/features/support/components/SupportChatbot.jsx"
+      ]
+    },
+    {
+      "line": "const [editing, setEditing] = useState(null);",
+      "occurrences": 7,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    },
+    {
+      "line": "const [form, setForm] = useState(EMPTY);",
+      "occurrences": 7,
+      "files": [
+        "src/features/crm/components/ClientDirectory.jsx",
+        "src/features/crm/components/DealPipeline.jsx",
+        "src/features/crm/components/InteractionHistory.jsx",
+        "src/features/hr/components/EmployeeDirectory.jsx",
+        "src/features/hr/components/PayrollManager.jsx",
+        "src/features/hr/components/PerformanceManager.jsx",
+        "src/features/operations/components/StrategicKPIs.jsx"
+      ]
+    }
+  ]
+}

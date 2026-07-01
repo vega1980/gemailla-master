@@ -52,7 +52,7 @@ export default function EmployeeDirectory({ company }) {
   });
 
   const del = useMutation({
-    mutationFn: (id) => firebase.entities.Employee.delete(id),
+    mutationFn: (id) => firebase.entities.Employee.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('employees', company) }); toast.success('Empleado eliminado'); },
   });
 

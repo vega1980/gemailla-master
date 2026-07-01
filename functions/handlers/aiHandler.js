@@ -27,6 +27,7 @@ const DEFAULT_DAILY_BUDGET_USD = 5;
 const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
 const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
 const AI_COST_LOG_COLLECTION = 'aiCostLogs';
+const AI_AUDIT_LOG_COLLECTION = 'aiAuditLogs';
 const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'openai', 'gemini.R', 'groqR']);
 const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const TOKEN_PATTERN = /(bearer\s+|token['"\s:=]+|api[_-]?key['"\s:=]+|secret['"\s:=]+)[A-Za-z0-9._~+/=-]{12,}/gi;
@@ -79,6 +80,40 @@ function getUsageTokens(usage = {}) {
 
 function calculateCostUsd(totalTokens, costPer1kTokensUsd = getAiLimitConfig().costPer1kTokensUsd) {
   return Number(((toCounterNumber(totalTokens) / 1000) * costPer1kTokensUsd).toFixed(8));
+}
+
+async function writeAiAuditLog({ eventName, status, user, authorization, correlationId, provider, model, requestMetadata = {}, errorMessage }) {
+  const timestamp = new Date().toISOString();
+  const safeCorrelationId = String(correlationId || createCorrelationId('audit')).replace(/[^A-Za-z0-9_-]/g, '_');
+  const logId = `${timestamp.replace(/[^0-9A-Za-z]/g, '')}_${safeCorrelationId}_${String(eventName || 'ai_event').replace(/[^A-Za-z0-9_-]/g, '_')}`.slice(0, 220);
+  const companyId = authorization?.companyId || (COMPANY_ID_PATTERN.test(String(requestMetadata.companyId || '')) ? String(requestMetadata.companyId) : null);
+  const payload = sanitizeLogPayload({
+    timestamp,
+    eventName,
+    status,
+    correlationId,
+    companyId,
+    userUid: user?.uid || null,
+    role: authorization?.role || null,
+    provider: provider || null,
+    model: model || null,
+    release: RELEASE_METADATA,
+    requestedDocumentCount: Number(requestMetadata.requestedDocumentCount || 0),
+    promptLength: Number(requestMetadata.promptLength || 0),
+    estimatedTokens: requestMetadata.estimatedTokens,
+    estimatedCostUsd: requestMetadata.estimatedCostUsd,
+    errorMessage: errorMessage || null,
+  });
+
+  await admin.firestore().collection(AI_AUDIT_LOG_COLLECTION).doc(logId).set(payload, { merge: true });
+  structuredLog(status >= 500 ? 'ERROR' : status >= 400 ? 'WARNING' : 'INFO', 'ai_audit_logged', {
+    correlationId,
+    eventName,
+    status,
+    companyId,
+    firebaseUid: user?.uid || null,
+  });
+  return payload;
 }
 
 async function writeAiCostLog({ user, authorization, correlationId, integration = 'openai', provider = 'openai', model, usage, estimatedTokens, estimatedCostUsd }) {
@@ -656,6 +691,22 @@ async function aiHandler(req, res) {
     reservation = await enforceAiLimits({ user, authorization, prompt, correlationId });
     providerName = getLlmProvider();
     modelName = getLlmModel(providerName);
+    await writeAiAuditLog({
+      eventName: 'ai_request_started',
+      status: 102,
+      user,
+      authorization,
+      correlationId,
+      provider: providerName,
+      model: modelName,
+      requestMetadata: {
+        requestedDocumentCount: authorization.documents.length,
+        promptLength: prompt.length,
+        estimatedTokens: reservation.estimatedTokens,
+        estimatedCostUsd: Number(reservation.estimatedCostUsd.toFixed(8)),
+      },
+    });
+
     structuredLog('INFO', 'ai_request_started', {
       correlationId,
       firebaseUid: user.uid || 'unknown',
@@ -692,6 +743,22 @@ async function aiHandler(req, res) {
       usage,
       estimatedTokens: reservation.estimatedTokens,
       estimatedCostUsd: reservation.estimatedCostUsd,
+    });
+
+    await writeAiAuditLog({
+      eventName: 'ai_request_completed',
+      status: 200,
+      user,
+      authorization,
+      correlationId,
+      provider,
+      model,
+      requestMetadata: {
+        requestedDocumentCount: authorization.documents.length,
+        promptLength: prompt.length,
+        estimatedTokens: reservation.estimatedTokens,
+        estimatedCostUsd: Number(reservation.estimatedCostUsd.toFixed(8)),
+      },
     });
 
     res.status(200).json({
@@ -736,6 +803,32 @@ async function aiHandler(req, res) {
         });
       }
     }
+    try {
+      await writeAiAuditLog({
+        eventName: 'ai_request_failed',
+        status,
+        user,
+        authorization,
+        correlationId,
+        provider: providerName || null,
+        model: modelName || null,
+        requestMetadata: {
+          companyId: req.body?.companyId,
+          requestedDocumentCount: authorization?.documents?.length || 0,
+          promptLength: typeof req.body?.prompt === 'string' ? req.body.prompt.length : 0,
+          estimatedTokens: reservation?.estimatedTokens,
+          estimatedCostUsd: reservation?.estimatedCostUsd,
+        },
+        errorMessage: error.message || 'No se pudo completar la consulta de IA.',
+      });
+    } catch (auditError) {
+      structuredLog('ERROR', 'ai_audit_log_failed', {
+        correlationId,
+        status: Number(auditError.status) || 500,
+        message: auditError.message || 'No se pudo registrar auditoría IA.',
+      });
+    }
+
     structuredLog(status >= 500 ? 'ERROR' : 'WARNING', 'ai_request_failed', {
       correlationId,
       status,
@@ -761,6 +854,7 @@ module.exports = {
   getUsageTokens,
   calculateCostUsd,
   writeAiCostLog,
+  writeAiAuditLog,
   reconcileAiReservation,
   calculateActualAiUsage,
   validateCompanyAccess,

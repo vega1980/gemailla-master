@@ -59,7 +59,7 @@ export default function DealPipeline({ company }) {
   });
 
   const del = useMutation({
-    mutationFn: (id) => firebase.entities.CRMDeal.delete(id),
+    mutationFn: (id) => firebase.entities.CRMDeal.archive(id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmDeals', company) }); toast.success('Oportunidad eliminada'); },
   });
 
