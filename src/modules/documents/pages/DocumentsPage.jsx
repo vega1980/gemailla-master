@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { FileText, Upload, Search, Eye, Brain, Loader2, Trash2, Filter } from 'lucide-react';
+import { FileText, Upload, Search, Eye, Brain, Loader2, Trash2, Filter, ShieldCheck, LockKeyhole, ServerCog } from 'lucide-react';
 import ReportGenerator from '@/features/reports/components/ReportGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadDocumentFlow } from '@/features/documents/services/uploadDocumentFlow';
@@ -172,7 +172,7 @@ export default function Documents() {
     <div className="animate-fade-in">
       <PageHeader
         title="Documentos"
-        description="Sube, analiza y gestiona tus documentos fiscales."
+        description="ERP Zero-Knowledge: sube, analiza y gestiona documentos fiscales sin URLs públicas persistidas."
         actions={
           <div className="flex items-center gap-3">
             <ReportGenerator company={activeCompany} transactions={[]} documents={documents} />
@@ -191,6 +191,38 @@ export default function Documents() {
           </div>
         }
       />
+
+      <section className="mb-6 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm" aria-label="Privacidad Zero-Knowledge">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-primary">
+              <ShieldCheck className="h-5 w-5" />
+              <p className="text-sm font-semibold uppercase tracking-[0.2em]">Privacidad grado militar</p>
+            </div>
+            <h2 className="text-xl font-display font-semibold text-foreground">Tus PDFs nunca se publican: solo viven como rutas internas seguras.</h2>
+            <p className="max-w-3xl text-sm text-muted-foreground">
+              GEMAILLA bloquea URLs públicas persistidas, guarda únicamente <code className="rounded bg-background/80 px-1 py-0.5 text-xs text-primary">storagePath</code> y envía el análisis por el endpoint interno <code className="rounded bg-background/80 px-1 py-0.5 text-xs text-primary">/api/ai</code> para mantener facturas, contratos y finanzas bajo el control de la empresa activa.
+            </p>
+          </div>
+          <div className="grid gap-2 text-sm sm:grid-cols-3 md:min-w-[32rem]">
+            <div className="rounded-xl border border-border bg-card/80 p-3">
+              <LockKeyhole className="mb-2 h-4 w-4 text-primary" />
+              <p className="font-medium text-foreground">Sin enlaces públicos</p>
+              <p className="text-xs text-muted-foreground">Los documentos se abren con acceso temporal autorizado.</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card/80 p-3">
+              <ServerCog className="mb-2 h-4 w-4 text-primary" />
+              <p className="font-medium text-foreground">IA same-origin</p>
+              <p className="text-xs text-muted-foreground">El navegador solo llama rutas internas del backend seguro.</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card/80 p-3">
+              <Brain className="mb-2 h-4 w-4 text-primary" />
+              <p className="font-medium text-foreground">Procesamiento mínimo</p>
+              <p className="text-xs text-muted-foreground">La IA recibe contexto controlado y permisos validados.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

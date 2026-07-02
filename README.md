@@ -94,6 +94,12 @@ El flujo documental está diseñado para evitar archivos huérfanos y URLs públ
 5. Los archivos en Storage son inmutables desde cliente: se permite `create`, pero no `update` ni `delete`.
 6. La app no persiste `fileUrl`, `downloadUrl`, `downloadURL` ni `publicUrl`; solo guarda `storagePath`.
 
+### ERP Zero-Knowledge
+
+La propuesta de privacidad de GEMAILLA se basa en que el cliente conserva el control operativo del documento: la interfaz y las reglas no tratan el PDF/XML como un enlace público reutilizable, sino como un recurso privado referenciado por `storagePath`. El frontend solicita acceso solo cuando el usuario autorizado lo necesita y el análisis de IA se enruta por `/api/ai`, un endpoint same-origin protegido por Firebase Auth, validación de empresa/documentos, límites de uso y secretos cargados únicamente en backend.
+
+Este posicionamiento permite comunicar el módulo documental como un ERP "Zero-Knowledge" para empresas que no quieren exponer facturas, contratos o finanzas en URLs públicas ni en variables de navegador. La implementación reduce superficie de fuga al evitar URLs públicas persistidas, exigir Storage privado por empresa y mantener la llamada a modelos detrás de Functions/Hosting.
+
 ## IA
 
 No configures claves privadas de OpenAI/LLM en el frontend ni las hardcodees en código, pruebas o documentación. `OPENAI_API_KEY` solo debe existir en backend/Firebase Functions y debe cargarse con variables de entorno/secrets; no declares variantes con prefijo `VITE_` porque Vite puede exponerlas al navegador. El validador falla si detecta `VITE_OPENAI_API_KEY`.
