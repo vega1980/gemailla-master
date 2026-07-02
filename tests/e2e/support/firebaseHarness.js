@@ -1,15 +1,18 @@
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+
 export const TEST_PASSWORD = 'Gemailla-e2e-12345';
 
 let adminAppPromise;
 
 async function getAdminAuth() {
   if (!adminAppPromise) {
-    adminAppPromise = import('node:module').then(({ createRequire }) => {
+    adminAppPromise = Promise.resolve().then(() => {
       process.env.FIREBASE_AUTH_EMULATOR_HOST ||= '127.0.0.1:9099';
       process.env.FIRESTORE_EMULATOR_HOST ||= '127.0.0.1:8080';
       process.env.GCLOUD_PROJECT ||= process.env.VITE_FIREBASE_PROJECT_ID || 'demo-gemailla-e2e';
 
-      const requireFromFunctions = createRequire(`${process.cwd()}/functions/package.json`);
+      const requireFromFunctions = createRequire(fileURLToPath(new URL('../../../functions/package.json', import.meta.url)));
       const admin = requireFromFunctions('firebase-admin');
       const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'demo-gemailla-e2e';
 
