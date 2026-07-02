@@ -51,10 +51,24 @@ function parseDelimited(text, delimiter = ',') {
   return rows;
 }
 
+function normalizeHeader(header) {
+  return String(header || '')
+    .replace(/^\uFEFF/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
 function rowsToObjects(rows) {
   if (rows.length < 2) return [];
-  const headers = rows[0].map(header => String(header || '').trim().toLowerCase().replace(/\s+/g, ' '));
-  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || ''])));
+  const headers = rows[0].map(normalizeHeader);
+  const indexedHeaders = headers
+    .map((header, index) => ({ header, index }))
+    .filter(({ header }) => header);
+
+  return rows.slice(1).map((values) => Object.fromEntries(
+    indexedHeaders.map(({ header, index }) => [header, values[index] || '']),
+  ));
 }
 
 function parseXml(text, mimeType = 'application/xml') {
