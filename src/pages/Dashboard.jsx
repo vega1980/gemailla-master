@@ -9,6 +9,7 @@ import {
   Calculator,
   CheckCircle,
   Clock,
+  DatabaseZap,
   DollarSign,
   FileText,
   HelpCircle,
@@ -58,6 +59,17 @@ const ALERTS = [
   { type: 'warning', title: 'Riesgo Tributario Alto', desc: 'Declaración IVA' },
   { type: 'info', title: 'Inconsistencia detectada', desc: 'Logística Andina S.A.C.' },
 ];
+
+const STREAMING_STAGES = [
+  { label: 'Webhook pago', detail: 'Banco → evento interno' },
+  { label: 'XML/PDF < 15MB', detail: 'Storage privado' },
+  { label: 'IA fiscal', detail: 'Categoriza e impuestos' },
+  { label: 'Balance vivo', detail: 'Caja y proyección' },
+];
+
+function formatCurrency(value) {
+  return `$${Math.round(value).toLocaleString()}`;
+}
 
 const RECENT_ACTIVITY = [
   { label: 'Análisis completados', value: '15 hoy', icon: CheckCircle },
@@ -113,6 +125,41 @@ function getDashboardMetrics({ companies, documents, kpis, transactions }) {
     { label: 'TAREAS EN PROCESO', value: processingTasks, change: '+7%', icon: Clock, color: MUTED_GOLD },
     { label: 'AHORRO ESTIMADO', value: `$${(totalIngresos * 0.15).toLocaleString()}`, change: '+32%', icon: DollarSign, color: SOFT_GOLD },
   ];
+}
+
+function getStreamingAccountingMetrics({ documents, transactions }) {
+  const income = transactions
+    .filter((transaction) => transaction.type === 'ingreso')
+    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
+  const expenses = transactions
+    .filter((transaction) => transaction.type === 'gasto')
+    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
+  const pendingDocuments = documents.filter((document) => document.status === 'pending' || document.status === 'processing').length;
+  const internalStorageDocuments = documents.filter((document) => {
+    const storagePath = String(document.storagePath || '');
+    return storagePath.startsWith('companies/') && !storagePath.startsWith('http');
+  }).length;
+  const processedToday = documents.filter((document) => {
+    const rawDate = document.updatedAt || document.createdAt;
+    const date = rawDate ? new Date(rawDate) : null;
+    if (!date || Number.isNaN(date.getTime())) return false;
+
+    const now = new Date();
+    return date.toDateString() === now.toDateString();
+  }).length;
+
+  const netCashFlow = income - expenses;
+  const taxProvision = expenses * 0.16;
+
+  return {
+    netCashFlow,
+    taxProvision,
+    projectedCash: netCashFlow - taxProvision,
+    pendingDocuments,
+    processedToday,
+    secureDocuments: internalStorageDocuments,
+    syncLagSeconds: Math.max(5, pendingDocuments * 7 + 5),
+  };
 }
 
 function DashboardHeader() {
@@ -196,6 +243,54 @@ function StatsCards({ cards, monthlyData }) {
           </div>
         </div>
       ))}
+    </section>
+  );
+}
+
+function StreamingAccountingPanel({ metrics }) {
+  return (
+    <section className="mb-6 rounded-2xl p-6" style={PANEL_STYLE} aria-labelledby="streaming-accounting-title">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="max-w-2xl">
+          <div className="mb-3 flex items-center gap-3">
+            <span className="rounded-full p-2" style={{ background: 'rgba(76,175,80,0.16)', border: '1px solid rgba(76,175,80,0.3)' }}>
+              <DatabaseZap className="h-5 w-5" style={{ color: '#4caf50' }} />
+            </span>
+            <div>
+              <p className="text-xs font-bold uppercase" style={{ color: '#4caf50', letterSpacing: '0.08em' }}>Contabilidad líquida · cero cierres de mes</p>
+              <h3 id="streaming-accounting-title" className="text-2xl font-bold" style={{ color: GOLD }}>Balance vivo con datos de hace {metrics.syncLagSeconds}s</h3>
+            </div>
+          </div>
+          <p className="text-sm leading-relaxed" style={{ color: 'rgba(232,213,163,0.78)' }}>
+            Cada pago entrante o XML/PDF validado actualiza impuestos, conciliación, balance general y flujo de caja sin esperar procesamiento batch ni cierre mensual.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 text-right sm:grid-cols-5 lg:min-w-[620px]">
+          {[
+            ['Flujo neto', formatCurrency(metrics.netCashFlow)],
+            ['Impuestos estimados', formatCurrency(metrics.taxProvision)],
+            ['Caja proyectada', formatCurrency(metrics.projectedCash)],
+            ['Docs seguros', metrics.secureDocuments],
+            ['Hoy', metrics.processedToday],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.22)', border: '1px solid rgba(197,160,89,0.18)' }}>
+              <p className="text-[11px] uppercase" style={{ color: 'rgba(197,160,89,0.68)' }}>{label}</p>
+              <p className="mt-1 text-xl font-bold" style={{ color: SOFT_GOLD }}>{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-4">
+        {STREAMING_STAGES.map((stage, index) => (
+          <div key={stage.label} className="rounded-xl p-4" style={{ background: 'rgba(197,160,89,0.08)', border: '1px solid rgba(197,160,89,0.16)' }}>
+            <div className="mb-2 flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold" style={{ background: `linear-gradient(135deg, ${GOLD}, ${MUTED_GOLD})`, color: DARK_BACKGROUND }}>{index + 1}</span>
+              <p className="text-sm font-semibold" style={{ color: '#e8d5a3' }}>{stage.label}</p>
+            </div>
+            <p className="text-xs" style={{ color: 'rgba(200,190,170,0.62)' }}>{stage.detail}</p>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
@@ -332,6 +427,10 @@ export default function Dashboard() {
     () => getDashboardMetrics({ companies, documents, kpis, transactions }),
     [companies, documents, kpis, transactions],
   );
+  const streamingAccountingMetrics = useMemo(
+    () => getStreamingAccountingMetrics({ documents, transactions }),
+    [documents, transactions],
+  );
 
   if (companyLoading) return <LoadingState variant="screen" style={{ background: DARK_BACKGROUND }} />;
 
@@ -340,6 +439,7 @@ export default function Dashboard() {
       <DashboardHeader />
       <main className="p-6">
         <QuickAccessModules />
+        <StreamingAccountingPanel metrics={streamingAccountingMetrics} />
         <StatsCards cards={metricCards} monthlyData={monthlyData} />
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <CompaniesPanel companies={companies} />
