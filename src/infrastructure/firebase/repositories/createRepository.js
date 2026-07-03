@@ -22,6 +22,7 @@ const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 const MAX_BATCH_SIZE = 450;
 const MAX_IN_QUERY_VALUES = 30;
+const ABORT_ERROR_NAME = 'AbortError';
 
 function normalizeLimit(value) {
   const parsed = Number(value || DEFAULT_PAGE_SIZE);
@@ -37,6 +38,15 @@ export function chunkArray(items, size) {
   }
 
   return chunks;
+}
+
+function throwIfAborted(signal) {
+  if (!signal?.aborted) return;
+  throw new DOMException('Firestore batch query aborted', ABORT_ERROR_NAME);
+}
+
+function isAbortError(error) {
+  return error?.name === ABORT_ERROR_NAME || error?.message === 'Aborted';
 }
 
 function serializeDocSnapshot(snapshot) {
@@ -101,7 +111,7 @@ export const createRepository = (collectionName) => {
   };
 
 
-  const getMany = async (ids = []) => {
+  const getMany = async (ids = [], options = {}) => {
     if (!Array.isArray(ids)) {
       throw new TypeError('getMany espera un arreglo de ids');
     }
@@ -109,17 +119,26 @@ export const createRepository = (collectionName) => {
     const uniqueIds = [...new Set(ids.filter(Boolean).map(String))];
     if (uniqueIds.length === 0) return [];
 
+    const { signal } = options;
     const results = [];
-    for (const idChunk of chunkArray(uniqueIds, MAX_IN_QUERY_VALUES)) {
-      const snapshot = await getDocs(query(collectionRef, where(documentId(), 'in', idChunk)));
-      results.push(...serializeQuerySnapshot(snapshot));
+
+    try {
+      for (const idChunk of chunkArray(uniqueIds, MAX_IN_QUERY_VALUES)) {
+        throwIfAborted(signal);
+        const snapshot = await getDocs(query(collectionRef, where(documentId(), 'in', idChunk)));
+        throwIfAborted(signal);
+        results.push(...serializeQuerySnapshot(snapshot));
+      }
+    } catch (error) {
+      if (isAbortError(error)) return [];
+      throw error;
     }
 
     const resultsById = new Map(results.map((record) => [record.id, record]));
     return uniqueIds.map((id) => resultsById.get(id)).filter(Boolean);
   };
 
-  const filterIn = async (field, values = [], filters = {}) => {
+  const filterIn = async (field, values = [], filters = {}, options = {}) => {
     if (!Array.isArray(values)) {
       throw new TypeError('filterIn espera un arreglo de valores');
     }
@@ -129,15 +148,23 @@ export const createRepository = (collectionName) => {
 
     const extraFilters = normalizeObjectFilters(filters, collectionName)
       .filter(([filterField]) => filterField !== field);
+    const { signal } = options;
     const results = [];
 
-    for (const valueChunk of chunkArray(uniqueValues, MAX_IN_QUERY_VALUES)) {
-      const constraints = [where(field, 'in', valueChunk)];
-      extraFilters.forEach(([filterField, filterValue]) => {
-        constraints.push(where(filterField, '==', filterValue));
-      });
-      const snapshot = await getDocs(query(collectionRef, ...constraints));
-      results.push(...serializeQuerySnapshot(snapshot));
+    try {
+      for (const valueChunk of chunkArray(uniqueValues, MAX_IN_QUERY_VALUES)) {
+        throwIfAborted(signal);
+        const constraints = [where(field, 'in', valueChunk)];
+        extraFilters.forEach(([filterField, filterValue]) => {
+          constraints.push(where(filterField, '==', filterValue));
+        });
+        const snapshot = await getDocs(query(collectionRef, ...constraints));
+        throwIfAborted(signal);
+        results.push(...serializeQuerySnapshot(snapshot));
+      }
+    } catch (error) {
+      if (isAbortError(error)) return [];
+      throw error;
     }
 
     const resultsById = new Map(results.map((record) => [record.id, record]));

@@ -13,12 +13,14 @@ export function CompanyProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [memberships, setMemberships] = useState([]);
   const mountedRef = useRef(true);
+  const syncInProgressRef = useRef(false);
+  const pendingSyncCompanyRef = useRef(null);
 
   useEffect(() => () => {
     mountedRef.current = false;
   }, []);
 
-  const loadCompanies = useCallback(async () => {
+  const loadCompanies = useCallback(async (options = {}) => {
     if (!user) {
       setCompanies([]);
       setActiveCompany(null);
@@ -27,11 +29,12 @@ export function CompanyProvider({ children }) {
       return;
     }
 
+    const { signal } = options;
     setLoading(true);
     try {
-      const { memberships: members, companies: validCompanies } = await loadCompanyContextData(user);
+      const { memberships: members, companies: validCompanies } = await loadCompanyContextData(user, { signal });
 
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal?.aborted) return;
       setMemberships(members);
       setCompanies(validCompanies);
 
@@ -40,26 +43,42 @@ export function CompanyProvider({ children }) {
       setActiveCompany(saved || validCompanies[0] || null);
     } catch (error) {
       console.error('Error loading companies:', error);
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || signal?.aborted) return;
       setCompanies([]);
       setActiveCompany(null);
       setMemberships([]);
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (mountedRef.current && !signal?.aborted) setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    loadCompanies();
+    const abortController = new AbortController();
+    loadCompanies({ signal: abortController.signal });
+    return () => {
+      abortController.abort();
+    };
   }, [loadCompanies]);
 
   const syncActiveCompanyClaims = useCallback(async (company) => {
     if (!company?.id || !user) return;
+    if (syncInProgressRef.current) {
+      pendingSyncCompanyRef.current = company;
+      return;
+    }
+    syncInProgressRef.current = true;
     try {
       await firebase.functions.invoke('syncCompanyClaims', { companyId: company.id });
       await user.getIdToken(true);
     } catch (error) {
       console.warn('No se pudieron sincronizar los claims de empresa activa:', error);
+    } finally {
+      syncInProgressRef.current = false;
+      const pendingCompany = pendingSyncCompanyRef.current;
+      pendingSyncCompanyRef.current = null;
+      if (pendingCompany?.id && pendingCompany.id !== company.id) {
+        syncActiveCompanyClaims(pendingCompany);
+      }
     }
   }, [user]);
 
@@ -68,6 +87,7 @@ export function CompanyProvider({ children }) {
   }, [activeCompany, syncActiveCompanyClaims]);
 
   const switchCompany = useCallback((company) => {
+    if (!company?.id) return;
     setActiveCompany(company);
     saveActiveCompanyId(company.id);
     syncActiveCompanyClaims(company);
