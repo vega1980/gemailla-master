@@ -61,6 +61,10 @@ export async function loadCompanyMemberships(user) {
 
 export async function loadCompaniesForMemberships(memberships) {
   const companyIds = [...new Set(memberships.map((member) => member.companyId).filter(Boolean))];
+  if (firebase.entities.Company.getMany) {
+    return firebase.entities.Company.getMany(companyIds).catch(() => []);
+  }
+
   return (
     await Promise.all(companyIds.map((companyId) => firebase.entities.Company.get(companyId).catch(() => null)))
   ).filter(Boolean);
@@ -75,6 +79,12 @@ export async function loadCompanyContextData(user) {
 export async function loadActiveMembersForCompanies(companies = []) {
   const companyIds = companies.map((company) => company?.id).filter(Boolean);
   if (companyIds.length === 0) return [];
+
+  if (firebase.entities.CompanyMember.filterIn) {
+    return firebase.entities.CompanyMember.filterIn('companyId', companyIds, {
+      status: ACTIVE_STATUS,
+    }).catch(() => []);
+  }
 
   const memberLists = await Promise.all(
     companyIds.map((companyId) => firebase.entities.CompanyMember.filter({

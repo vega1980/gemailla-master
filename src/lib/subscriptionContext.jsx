@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from 'react';
 import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -39,14 +39,13 @@ export function SubscriptionProvider({ children }) {
   const [subscription, setSubscription] = useState(null);
   const [predictionCount, setPredictionCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    const userUid = user?.uid || user?.id;
-    if (!userUid && !user?.email) { setLoading(false); return; }
-    loadSubscription();
-  }, [user?.uid, user?.id, user?.email]);
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
 
-  const loadSubscription = async () => {
+  const loadSubscription = useCallback(async () => {
     setLoading(true);
     try {
       const userUid = user?.uid || user?.id;
@@ -66,6 +65,7 @@ export function SubscriptionProvider({ children }) {
         if (sub?.id) subsById.set(sub.id, sub);
       });
       const subs = Array.from(subsById.values());
+      if (!mountedRef.current) return;
       setSubscription(subs[0] || null);
       const thisMonth = new Date().toISOString().slice(0, 7);
       const monthLogs = logs.filter(l => l.fecha_generacion?.startsWith(thisMonth));
@@ -73,9 +73,21 @@ export function SubscriptionProvider({ children }) {
     } catch (error) {
       console.error('Error loading subscription:', error);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
-  };
+  }, [user]);
+
+
+  useEffect(() => {
+    const userUid = user?.uid || user?.id;
+    if (!userUid && !user?.email) {
+      setSubscription(null);
+      setPredictionCount(0);
+      setLoading(false);
+      return;
+    }
+    loadSubscription();
+  }, [loadSubscription, user?.email, user?.id, user?.uid]);
 
   const plan = subscription?.plan || 'basic';
   const planCfg = PLAN_CONFIG[plan] || PLAN_CONFIG.basic;
@@ -85,7 +97,7 @@ export function SubscriptionProvider({ children }) {
   const predictionsRemaining = planCfg.predictionLimit === Infinity ? '∞' : Math.max(0, planCfg.predictionLimit - predictionCount);
   const isAtLimit = planCfg.predictionLimit !== Infinity && predictionCount >= planCfg.predictionLimit;
 
-  const logPrediction = async (companyId, tipo = 'general', resultado = '') => {
+  const logPrediction = useCallback(async (companyId, tipo = 'general', resultado = '') => {
     if (!canUsePredictions) return false;
     try {
       await firebase.entities.PredictionLog.create({
@@ -96,21 +108,42 @@ export function SubscriptionProvider({ children }) {
         resultado_ia: resultado.slice(0, 500),
         plan_al_momento: plan,
       });
-      setPredictionCount(c => c + 1);
+      if (mountedRef.current) setPredictionCount(c => c + 1);
       return true;
     } catch (error) {
       console.error('Error logging prediction:', error);
       return false;
     }
-  };
+  }, [canUsePredictions, plan, user?.email]);
+
+  const value = useMemo(() => ({
+    subscription,
+    plan,
+    planCfg,
+    loading,
+    canUsePredictions,
+    canAccessAI,
+    predictionsRemaining,
+    predictionCount,
+    isAtLimit,
+    logPrediction,
+    reload: loadSubscription,
+  }), [
+    canAccessAI,
+    canUsePredictions,
+    isAtLimit,
+    loadSubscription,
+    loading,
+    logPrediction,
+    plan,
+    planCfg,
+    predictionCount,
+    predictionsRemaining,
+    subscription,
+  ]);
 
   return (
-    <SubscriptionContext.Provider value={{
-      subscription, plan, planCfg, loading,
-      canUsePredictions, canAccessAI,
-      predictionsRemaining, predictionCount, isAtLimit,
-      logPrediction, reload: loadSubscription,
-    }}>
+    <SubscriptionContext.Provider value={value}>
       {children}
     </SubscriptionContext.Provider>
   );

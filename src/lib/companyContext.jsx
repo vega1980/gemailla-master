@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { getSavedActiveCompanyId, saveActiveCompanyId } from '@/features/companies/services/activeCompanyStorage';
 import { loadCompanyContextData } from '@/features/companies/services/companyMembershipService';
@@ -12,6 +12,11 @@ export function CompanyProvider({ children }) {
   const [activeCompany, setActiveCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [memberships, setMemberships] = useState([]);
+  const mountedRef = useRef(true);
+
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
 
   const loadCompanies = useCallback(async () => {
     if (!user) {
@@ -26,6 +31,7 @@ export function CompanyProvider({ children }) {
     try {
       const { memberships: members, companies: validCompanies } = await loadCompanyContextData(user);
 
+      if (!mountedRef.current) return;
       setMemberships(members);
       setCompanies(validCompanies);
 
@@ -34,11 +40,12 @@ export function CompanyProvider({ children }) {
       setActiveCompany(saved || validCompanies[0] || null);
     } catch (error) {
       console.error('Error loading companies:', error);
+      if (!mountedRef.current) return;
       setCompanies([]);
       setActiveCompany(null);
       setMemberships([]);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [user]);
 

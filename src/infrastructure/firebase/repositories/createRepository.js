@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  documentId,
   getDoc,
   getDocs,
   limit as firestoreLimit,
@@ -20,6 +21,7 @@ import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/f
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 const MAX_BATCH_SIZE = 450;
+const MAX_IN_QUERY_VALUES = 30;
 
 function normalizeLimit(value) {
   const parsed = Number(value || DEFAULT_PAGE_SIZE);
@@ -27,7 +29,7 @@ function normalizeLimit(value) {
   return Math.min(parsed, MAX_PAGE_SIZE);
 }
 
-function chunkArray(items, size) {
+export function chunkArray(items, size) {
   const chunks = [];
 
   for (let index = 0; index < items.length; index += size) {
@@ -96,6 +98,50 @@ export const createRepository = (collectionName) => {
     }
 
     return serializeDocSnapshot(snapshot);
+  };
+
+
+  const getMany = async (ids = []) => {
+    if (!Array.isArray(ids)) {
+      throw new TypeError('getMany espera un arreglo de ids');
+    }
+
+    const uniqueIds = [...new Set(ids.filter(Boolean).map(String))];
+    if (uniqueIds.length === 0) return [];
+
+    const results = [];
+    for (const idChunk of chunkArray(uniqueIds, MAX_IN_QUERY_VALUES)) {
+      const snapshot = await getDocs(query(collectionRef, where(documentId(), 'in', idChunk)));
+      results.push(...serializeQuerySnapshot(snapshot));
+    }
+
+    const resultsById = new Map(results.map((record) => [record.id, record]));
+    return uniqueIds.map((id) => resultsById.get(id)).filter(Boolean);
+  };
+
+  const filterIn = async (field, values = [], filters = {}) => {
+    if (!Array.isArray(values)) {
+      throw new TypeError('filterIn espera un arreglo de valores');
+    }
+
+    const uniqueValues = [...new Set(values.filter(Boolean))];
+    if (uniqueValues.length === 0) return [];
+
+    const extraFilters = normalizeObjectFilters(filters, collectionName)
+      .filter(([filterField]) => filterField !== field);
+    const results = [];
+
+    for (const valueChunk of chunkArray(uniqueValues, MAX_IN_QUERY_VALUES)) {
+      const constraints = [where(field, 'in', valueChunk)];
+      extraFilters.forEach(([filterField, filterValue]) => {
+        constraints.push(where(filterField, '==', filterValue));
+      });
+      const snapshot = await getDocs(query(collectionRef, ...constraints));
+      results.push(...serializeQuerySnapshot(snapshot));
+    }
+
+    const resultsById = new Map(results.map((record) => [record.id, record]));
+    return Array.from(resultsById.values());
   };
 
   const list = async (options) => {
@@ -209,6 +255,8 @@ export const createRepository = (collectionName) => {
   return {
     get: getById,
     getById,
+    getMany,
+    filterIn,
     list,
     filter,
     create,
