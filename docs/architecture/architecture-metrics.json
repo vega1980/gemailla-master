@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-06-30T13:26:53.250Z",
+  "generatedAt": "2026-07-03T01:50:53.916Z",
   "scope": [
     "src",
     "functions"
   ],
   "totals": {
-    "files": 227,
-    "internalDependencies": 553,
+    "files": 228,
+    "internalDependencies": 555,
     "externalPackages": 51,
     "duplicateLineGroups": 30
   },
@@ -310,6 +310,10 @@
       "count": 5
     },
     {
+      "edge": "src:modules -> src:api",
+      "count": 5
+    },
+    {
       "edge": "src:pages -> feature:erp",
       "count": 5
     },
@@ -331,10 +335,6 @@
     },
     {
       "edge": "src:modules -> feature:documents",
-      "count": 4
-    },
-    {
-      "edge": "src:modules -> src:api",
       "count": 4
     },
     {
@@ -429,9 +429,9 @@
     },
     {
       "file": "src/api/firebaseClient.js",
-      "incoming": 31,
+      "incoming": 32,
       "outgoing": 10,
-      "score": 41
+      "score": 42
     },
     {
       "file": "src/lib/companyContext.jsx",

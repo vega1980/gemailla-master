@@ -1,13 +1,13 @@
 # Métricas de arquitectura
 
-Generado: 2026-06-30T13:26:53.250Z
+Generado: 2026-07-03T01:50:53.916Z
 
 ## Resumen
 
 | Métrica | Valor |
 | --- | --- |
-| Archivos medidos | 227 |
-| Dependencias internas | 553 |
+| Archivos medidos | 228 |
+| Dependencias internas | 555 |
 | Paquetes externos importados | 51 |
 | Grupos de líneas duplicadas | 30 |
 
@@ -37,7 +37,7 @@ Generado: 2026-06-30T13:26:53.250Z
 | --- | --- | --- | --- |
 | src/components/ui/button.jsx | 55 | 1 | 56 |
 | src/lib/utils.js | 45 | 0 | 45 |
-| src/api/firebaseClient.js | 31 | 10 | 41 |
+| src/api/firebaseClient.js | 32 | 10 | 42 |
 | src/lib/companyContext.jsx | 22 | 4 | 26 |
 | src/modules/ai/aiService.js | 24 | 2 | 26 |
 | src/components/ui/badge.jsx | 21 | 1 | 22 |
