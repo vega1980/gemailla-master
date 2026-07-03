@@ -13,7 +13,7 @@ import { Plus, Target, Sparkles, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const statusConfig = {
   alcanzado:  { label: 'Alcanzado',  color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
   en_curso:   { label: 'En curso',   color: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },

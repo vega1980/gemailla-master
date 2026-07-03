@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const REPORT_TYPES = [
   { id: 'executive',    label: 'Informe Ejecutivo Mensual',        icon: BarChart3,  desc: 'Resumen completo de KPIs financieros, tendencias y alertas.' },
   { id: 'fiscal',       label: 'Reporte Fiscal / Cumplimiento',    icon: Shield,      desc: 'Estado fiscal, obligaciones pendientes y recomendaciones.' },

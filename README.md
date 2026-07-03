@@ -81,7 +81,7 @@ src/infrastructure/firebase/      # repositorios, colecciones, normalización y 
 src/api/firebaseClient.js         # fachada pública de compatibilidad
 ```
 
-Esta convención describe la dirección de la migración modular, pero la arquitectura aún es incremental: parte de la lógica heredada sigue en `src/pages`, `src/lib` y `src/features`. Durante la transición, las rutas heredadas en la raíz de cada módulo se conservan como shims de compatibilidad y reexportan las implementaciones disponibles para no romper imports existentes.
+Esta convención describe la dirección de la migración modular, pero la arquitectura aún es incremental: parte de la lógica heredada sigue en `src/pages`, `src/lib` y `src/features`. Desde el 2026-07-03, los imports hacia módulos deben usar el alias canónico `@modules/<dominio>/...`; no se aceptan nuevos shims que reexporten implementaciones desde `src/pages`, `src/lib` o la raíz de un módulo. La fecha límite para eliminar los shims heredados restantes en `src/pages` y `src/lib` es el 2026-08-31; cualquier excepción debe registrarse en el plan de migración con owner, reemplazo canónico y criterio de eliminación.
 
 ## Arquitectura de documentos
 

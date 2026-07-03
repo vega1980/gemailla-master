@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sparkles, Loader2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 import { AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShieldAlert, Loader2, Brain, AlertTriangle, CheckCircle2, TrendingDown, Scale, RefreshCw, Lock, CalendarDays, CalendarRange, CalendarCheck, Zap } from 'lucide-react';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const RISK_COLORS = {
   alto: { bg: 'bg-red-500/10', border: 'border-red-500/30', text: 'text-red-400', badge: 'bg-red-500/20 text-red-400 border-red-500/30' },
   medio: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },

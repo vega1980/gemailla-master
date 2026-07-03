@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 export function useCashFlowPrediction() {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);

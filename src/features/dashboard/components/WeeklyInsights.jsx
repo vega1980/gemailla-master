@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { format, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const CACHE_KEY = 'gemailla_weekly_insight';
 const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 

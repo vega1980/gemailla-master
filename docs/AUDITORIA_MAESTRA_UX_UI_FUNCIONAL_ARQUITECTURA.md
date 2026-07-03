@@ -34,9 +34,9 @@ Hotspots principales detectados:
 | --- | --- |
 | `src/api/firebaseClient.js` | Fachada crítica con alto fan-in/fan-out; cualquier cambio puede romper módulos completos. |
 | `src/lib/companyContext.jsx` | Estado multiempresa transversal; riesgo de inconsistencias entre rutas públicas/protegidas. |
-| `src/modules/ai/aiService.js` | Servicio de IA muy consumido; requiere contrato estable y degradación segura. |
+| `src/modules/ai/services/aiService.js` | Servicio de IA muy consumido; requiere contrato estable y degradación segura. |
 | `src/modules/documents/pages/DocumentsPage.jsx` | Página con muchas dependencias salientes; candidata a adelgazar hacia hooks/servicios. |
-| `src/pages/AIAssistant.jsx` | Página con alta composición funcional; debe separarse presentación, estado y servicio. |
+| `src/modules/ai/pages/AIAssistantPage.jsx` | Página con alta composición funcional; debe separarse presentación, estado y servicio. |
 
 ## 3. Auditoría UX/UI
 

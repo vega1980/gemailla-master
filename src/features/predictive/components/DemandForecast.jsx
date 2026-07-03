@@ -5,7 +5,7 @@ import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const trendIcon = { positiva: TrendingUp, negativa: TrendingDown, estable: Minus };
 const trendColor = { positiva: 'text-green-400', negativa: 'text-red-400', estable: 'text-yellow-400' };
 

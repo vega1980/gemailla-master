@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, TrendingDown, Loader2, Sparkles, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
 export default function StockAlerts({ transactions, monthlyData }) {

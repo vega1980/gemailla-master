@@ -12,7 +12,7 @@ import { Plus, Users, Search, Pencil, Trash2, Loader2, Sparkles, Phone, Mail, Bu
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const segmentConfig = {
   premium:    { label: 'Premium',    color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
   recurrente: { label: 'Recurrente', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },

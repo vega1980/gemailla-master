@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const ratingConfig = {
   excepcional:       { label: 'Excepcional',       color: 'bg-amber-500/15 text-amber-400 border-amber-500/30',     score: 5 },
   bueno:             { label: 'Bueno',              color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', score: 4 },

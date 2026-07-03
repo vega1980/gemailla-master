@@ -4,7 +4,7 @@ import { Sparkles, X, TrendingUp, AlertTriangle, Calendar, ChevronRight, Loader2
 import { format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const LOCAL_KEY = 'gemailla_welcome_dismissed';
 
 // Checks if we should show the welcome banner this session

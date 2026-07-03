@@ -15,7 +15,7 @@ import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const stageConfig = {
   prospecto:       { label: 'Prospecto',       color: 'bg-secondary text-muted-foreground border-border',          prob: 10 },
   contactado:      { label: 'Contactado',      color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',           prob: 25 },

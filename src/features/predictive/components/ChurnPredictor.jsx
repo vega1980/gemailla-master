@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { UserX, Sparkles, Loader2, Shield, User } from 'lucide-react';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const riskConfig = {
   alto: { color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30', bar: 'bg-red-500', label: 'RIESGO ALTO' },
   medio: { color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30', bar: 'bg-yellow-500', label: 'RIESGO MEDIO' },

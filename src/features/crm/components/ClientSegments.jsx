@@ -5,7 +5,7 @@ import { Sparkles, Loader2, PieChart } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import ReactMarkdown from 'react-markdown';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const SEGMENT_COLORS = {
   premium: '#f59e0b', recurrente: '#3b82f6', nuevo: '#10b981', inactivo: '#6b7280', prospecto: '#8b5cf6',
 };
