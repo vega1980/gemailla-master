@@ -45,8 +45,8 @@ async function signInOwnerWithCompanies(page) {
 }
 
 test.describe('flujos críticos multi-capa', () => {
-  test.beforeEach(async ({ request }) => {
-    await clearFirebaseEmulators(request);
+  test.beforeEach(async () => {
+    await clearFirebaseEmulators();
   });
 
   test('login y cambio de empresa activa', async ({ page }) => {

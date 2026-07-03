@@ -20,10 +20,10 @@
     "typecheck:core": "tsc -p ./jsconfig.core.json",
     "test:unit": "node --test tests/unit/*.test.mjs",
     "test:functions": "npm --prefix functions test",
-    "test:e2e": "npx --yes @playwright/test@1.56.1 test",
-    "test:e2e:headed": "npx --yes @playwright/test@1.56.1 test --headed",
-    "test:e2e:install": "npx --yes @playwright/test@1.56.1 install --with-deps chromium",
-    "test:e2e:emulators": "firebase emulators:exec --only auth,firestore,storage --project demo-gemailla-e2e \"wait-on http://localhost:8080 http://localhost:9099 http://localhost:9199 && npm run test:e2e\"",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install chromium",
+    "test:e2e:emulators": "firebase emulators:exec --only auth,firestore,storage --project demo-gemailla-e2e \"wait-on http://127.0.0.1:8080 http://127.0.0.1:9099 http://127.0.0.1:9199 && npm run test:e2e\"",
     "validate:env": "node scripts/validate-env.js",
     "validate:env:functions": "node scripts/validate-env.js --functions",
     "validate:env:all": "node scripts/validate-env.js --all",
@@ -69,6 +69,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.5.2",
+    "fflate": "^0.8.2",
     "firebase": "^12.15.0",
     "framer-motion": "^11.16.4",
     "input-otp": "^1.4.2",
@@ -87,12 +88,11 @@
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "^3.24.2",
-    "fflate": "^0.8.2"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "@playwright/test": "^1.61.0",
+    "@playwright/test": "1.56.1",
     "@types/node": "^22.20.0",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
@@ -115,5 +115,12 @@
     "node": ">=22 <23",
     "npm": ">=11 <12"
   },
-  "packageManager": "npm@11.4.2"
+  "packageManager": "npm@11.4.2",
+  "allowScripts": {
+    "@firebase/util@1.15.1": true,
+    "core-js@3.49.0": true,
+    "esbuild@0.25.12": true,
+    "protobufjs@7.6.4": true,
+    "re2@1.25.0": true
+  }
 }
