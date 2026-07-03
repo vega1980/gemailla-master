@@ -46,6 +46,7 @@ function MessageBubble({ message }) {
 }
 
 export default function ConsultorVirtual({ company, transactions, monthlyData }) {
+  const mountedRef = useRef(true);
   const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [conversation, setConversation] = useState(null);
@@ -54,6 +55,10 @@ export default function ConsultorVirtual({ company, transactions, monthlyData })
   const [sending, setSending] = useState(false);
   const [initializing, setInitializing] = useState(false);
   const bottomRef = useRef(null);
+
+  useEffect(() => () => {
+    mountedRef.current = false;
+  }, []);
 
   // Build context string from company data
   const buildContext = useCallback(() => {
@@ -67,31 +72,38 @@ export default function ConsultorVirtual({ company, transactions, monthlyData })
   const initConversation = useCallback(async () => {
     if (conversation || initializing) return;
     setInitializing(true);
-    const ctx = buildContext();
-    const conv = await firebase.agents.createConversation({
-      agent_name: 'financial_advisor',
-      companyId: company?.id,
-      metadata: { name: `Asesoría - ${company?.name || 'Mi Empresa'}` },
-    });
-    setConversation(conv);
-
-    // Send initial context silently via first message
-    if (ctx) {
-      await firebase.agents.addMessage(conv, {
-        role: 'user',
-        content: `Hola, soy el dueño de ${company?.name || 'mi empresa'}. Por favor analiza mi situación financiera actual y dame un diagnóstico inicial.${ctx}`,
+    try {
+      const ctx = buildContext();
+      const conv = await firebase.agents.createConversation({
+        agent_name: 'financial_advisor',
+        companyId: company?.id,
+        metadata: { name: `Asesoría - ${company?.name || 'Mi Empresa'}` },
       });
+      if (!mountedRef.current) return;
+      setConversation(conv);
+
+      // Send initial context silently via first message
+      if (ctx) {
+        await firebase.agents.addMessage(conv, {
+          role: 'user',
+          content: `Hola, soy el dueño de ${company?.name || 'mi empresa'}. Por favor analiza mi situación financiera actual y dame un diagnóstico inicial.${ctx}`,
+        });
+      }
+    } finally {
+      if (mountedRef.current) setInitializing(false);
     }
-    setInitializing(false);
   }, [conversation, initializing, buildContext, company]);
 
   useEffect(() => {
     if (!conversation) return;
-    const unsub = firebase.agents.subscribeToConversation(conversation.id, (data) => {
+    const unsubscribe = firebase.agents.subscribeToConversation(conversation.id, (data) => {
+      if (!mountedRef.current) return;
       setMessages(data.messages || []);
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     });
-    return unsub;
+    return () => {
+      unsubscribe?.();
+    };
   }, [conversation]);
 
   const handleOpen = async () => {
@@ -103,8 +115,11 @@ export default function ConsultorVirtual({ company, transactions, monthlyData })
     if (!text.trim() || sending || !conversation) return;
     setSending(true);
     setInput('');
-    await firebase.agents.addMessage(conversation, { role: 'user', content: text });
-    setSending(false);
+    try {
+      await firebase.agents.addMessage(conversation, { role: 'user', content: text });
+    } finally {
+      if (mountedRef.current) setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {

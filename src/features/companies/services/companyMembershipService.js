@@ -11,11 +11,37 @@ function compareMembershipsByCreation(a, b) {
     || String(a?.id || '').localeCompare(String(b?.id || ''));
 }
 
+const MEMBERSHIP_SOURCE_PRIORITY = Object.freeze({
+  claim: 0,
+  uid: 1,
+  email: 2,
+});
+
+function withMembershipSource(record, source) {
+  return record ? { ...record, __source: source } : null;
+}
+
+function stripMembershipSource(record) {
+  if (!record) return record;
+  const { __source, ...membership } = record;
+  return membership;
+}
+
+function compareMembershipsBySource(a, b) {
+  const priorityA = MEMBERSHIP_SOURCE_PRIORITY[a?.__source] ?? 99;
+  const priorityB = MEMBERSHIP_SOURCE_PRIORITY[b?.__source] ?? 99;
+  return priorityA - priorityB || compareMembershipsByCreation(a, b);
+}
+
 function uniqueById(records) {
   const recordsById = new Map();
-  records.forEach((record) => {
-    if (record?.id) recordsById.set(record.id, record);
-  });
+  [...records]
+    .filter((record) => record?.id)
+    .sort(compareMembershipsBySource)
+    .forEach((record) => {
+      if (!recordsById.has(record.id)) recordsById.set(record.id, stripMembershipSource(record));
+    });
+
   return Array.from(recordsById.values()).sort(compareMembershipsByCreation);
 }
 
@@ -42,8 +68,8 @@ export async function loadCompanyMemberships(user) {
     ]);
 
     return uniqueById([
-      byId?.status === ACTIVE_STATUS ? byId : null,
-      ...byEmail,
+      withMembershipSource(byId?.status === ACTIVE_STATUS ? byId : null, 'claim'),
+      ...byEmail.map((member) => withMembershipSource(member, 'email')),
     ].filter(Boolean));
   }
 
@@ -56,25 +82,38 @@ export async function loadCompanyMemberships(user) {
       : [],
   ]);
 
-  return uniqueById([...byUid, ...byEmail]);
+  return uniqueById([
+    ...byUid.map((member) => withMembershipSource(member, 'uid')),
+    ...byEmail.map((member) => withMembershipSource(member, 'email')),
+  ]);
 }
 
-export async function loadCompaniesForMemberships(memberships) {
+export async function loadCompaniesForMemberships(memberships, options = {}) {
   const companyIds = [...new Set(memberships.map((member) => member.companyId).filter(Boolean))];
+  if (firebase.entities.Company.getMany) {
+    return firebase.entities.Company.getMany(companyIds, options).catch(() => []);
+  }
+
   return (
     await Promise.all(companyIds.map((companyId) => firebase.entities.Company.get(companyId).catch(() => null)))
   ).filter(Boolean);
 }
 
-export async function loadCompanyContextData(user) {
+export async function loadCompanyContextData(user, options = {}) {
   const memberships = await loadCompanyMemberships(user);
-  const companies = await loadCompaniesForMemberships(memberships);
+  const companies = await loadCompaniesForMemberships(memberships, options);
   return { memberships, companies };
 }
 
-export async function loadActiveMembersForCompanies(companies = []) {
+export async function loadActiveMembersForCompanies(companies = [], options = {}) {
   const companyIds = companies.map((company) => company?.id).filter(Boolean);
   if (companyIds.length === 0) return [];
+
+  if (firebase.entities.CompanyMember.filterIn) {
+    return firebase.entities.CompanyMember.filterIn('companyId', companyIds, {
+      status: ACTIVE_STATUS,
+    }, options).catch(() => []);
+  }
 
   const memberLists = await Promise.all(
     companyIds.map((companyId) => firebase.entities.CompanyMember.filter({

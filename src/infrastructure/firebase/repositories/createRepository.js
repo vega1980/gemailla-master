@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   doc,
+  documentId,
   getDoc,
   getDocs,
   limit as firestoreLimit,
@@ -16,10 +17,13 @@ import {
 import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/filterValidation';
+import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
 const MAX_BATCH_SIZE = 450;
+const MAX_IN_QUERY_VALUES = 30;
+const ABORT_ERROR_NAME = 'AbortError';
 
 function normalizeLimit(value) {
   const parsed = Number(value || DEFAULT_PAGE_SIZE);
@@ -27,7 +31,7 @@ function normalizeLimit(value) {
   return Math.min(parsed, MAX_PAGE_SIZE);
 }
 
-function chunkArray(items, size) {
+export function chunkArray(items, size) {
   const chunks = [];
 
   for (let index = 0; index < items.length; index += size) {
@@ -35,6 +39,61 @@ function chunkArray(items, size) {
   }
 
   return chunks;
+}
+
+function throwIfAborted(signal) {
+  if (!signal?.aborted) return;
+  throw new DOMException('Firestore batch query aborted', ABORT_ERROR_NAME);
+}
+
+function isAbortError(error) {
+  return error?.name === ABORT_ERROR_NAME || error?.message === 'Aborted';
+}
+
+function nowMs() {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
+function createBatchQueryMetrics(collectionName, operation, requestedCount, chunkCount, correlationId) {
+  const startTime = nowMs();
+  const normalizedCorrelationId = ensureCorrelationId(correlationId, 'batch');
+
+  return {
+    completed(returnedCount) {
+      logFrontendEvent('batch_query_completed', {
+        correlationId: normalizedCorrelationId,
+        collection: collectionName,
+        operation,
+        requestedCount,
+        returnedCount,
+        durationMs: Math.round(nowMs() - startTime),
+        chunks: chunkCount,
+      });
+    },
+    failed(error) {
+      logFrontendEvent('batch_query_failed', {
+        correlationId: normalizedCorrelationId,
+        collection: collectionName,
+        operation,
+        requestedCount,
+        durationMs: Math.round(nowMs() - startTime),
+        chunks: chunkCount,
+        error: error?.message || 'Unknown batch query error',
+      }, 'error');
+    },
+    aborted() {
+      logFrontendEvent('batch_query_aborted', {
+        correlationId: normalizedCorrelationId,
+        collection: collectionName,
+        operation,
+        requestedCount,
+        durationMs: Math.round(nowMs() - startTime),
+        chunks: chunkCount,
+      }, 'warn');
+    },
+  };
 }
 
 function serializeDocSnapshot(snapshot) {
@@ -96,6 +155,83 @@ export const createRepository = (collectionName) => {
     }
 
     return serializeDocSnapshot(snapshot);
+  };
+
+
+  const getMany = async (ids = [], options = {}) => {
+    if (!Array.isArray(ids)) {
+      throw new TypeError('getMany espera un arreglo de ids');
+    }
+
+    const uniqueIds = [...new Set(ids.filter(Boolean).map(String))];
+    if (uniqueIds.length === 0) return [];
+
+    const { correlationId, signal } = options;
+    const idChunks = chunkArray(uniqueIds, MAX_IN_QUERY_VALUES);
+    const metrics = createBatchQueryMetrics(collectionName, 'getMany', uniqueIds.length, idChunks.length, correlationId);
+    const results = [];
+
+    try {
+      for (const idChunk of idChunks) {
+        throwIfAborted(signal);
+        const snapshot = await getDocs(query(collectionRef, where(documentId(), 'in', idChunk)));
+        throwIfAborted(signal);
+        results.push(...serializeQuerySnapshot(snapshot));
+      }
+    } catch (error) {
+      if (isAbortError(error)) {
+        metrics.aborted();
+        return [];
+      }
+      metrics.failed(error);
+      throw error;
+    }
+
+    const resultsById = new Map(results.map((record) => [record.id, record]));
+    const orderedResults = uniqueIds.map((id) => resultsById.get(id)).filter(Boolean);
+    metrics.completed(orderedResults.length);
+    return orderedResults;
+  };
+
+  const filterIn = async (field, values = [], filters = {}, options = {}) => {
+    if (!Array.isArray(values)) {
+      throw new TypeError('filterIn espera un arreglo de valores');
+    }
+
+    const uniqueValues = [...new Set(values.filter(Boolean))];
+    if (uniqueValues.length === 0) return [];
+
+    const extraFilters = normalizeObjectFilters(filters, collectionName)
+      .filter(([filterField]) => filterField !== field);
+    const { correlationId, signal } = options;
+    const valueChunks = chunkArray(uniqueValues, MAX_IN_QUERY_VALUES);
+    const metrics = createBatchQueryMetrics(collectionName, 'filterIn', uniqueValues.length, valueChunks.length, correlationId);
+    const results = [];
+
+    try {
+      for (const valueChunk of valueChunks) {
+        throwIfAborted(signal);
+        const constraints = [where(field, 'in', valueChunk)];
+        extraFilters.forEach(([filterField, filterValue]) => {
+          constraints.push(where(filterField, '==', filterValue));
+        });
+        const snapshot = await getDocs(query(collectionRef, ...constraints));
+        throwIfAborted(signal);
+        results.push(...serializeQuerySnapshot(snapshot));
+      }
+    } catch (error) {
+      if (isAbortError(error)) {
+        metrics.aborted();
+        return [];
+      }
+      metrics.failed(error);
+      throw error;
+    }
+
+    const resultsById = new Map(results.map((record) => [record.id, record]));
+    const dedupedResults = Array.from(resultsById.values());
+    metrics.completed(dedupedResults.length);
+    return dedupedResults;
   };
 
   const list = async (options) => {
@@ -209,6 +345,8 @@ export const createRepository = (collectionName) => {
   return {
     get: getById,
     getById,
+    getMany,
+    filterIn,
     list,
     filter,
     create,
