@@ -1,10 +1,9 @@
 const admin = require('firebase-admin');
 require('../contracts/aiContracts');
 const { applyCors, enforceAllowedOrigin, fail, getAllowedOrigins } = require('../policies/httpPolicy');
+const { DEFAULT_COST_PER_1K_TOKENS_USD, getAiRuntimeConfig } = require('../config');
 
 const openAiApiKey = { value: () => process.env.OPENAI_API_KEY };
-const DEFAULT_LLM_PROVIDER = 'openai';
-const DEFAULT_MODEL = 'gpt-4o-mini';
 const MAX_PROMPT_LENGTH = 12000;
 const RELEASE_METADATA = Object.freeze({
   appVersion: process.env.APP_VERSION || '1.0.0',
@@ -20,12 +19,6 @@ const MAX_REQUESTED_DOCUMENTS = 25;
 const MAX_CORRELATION_ID_LENGTH = 160;
 const MAX_LOG_STRING_LENGTH = 500;
 const MAX_LOG_DEPTH = 5;
-const DEFAULT_RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const DEFAULT_RATE_LIMIT_MAX_REQUESTS = 30;
-const DEFAULT_DAILY_TOKEN_LIMIT = 50000;
-const DEFAULT_DAILY_BUDGET_USD = 5;
-const DEFAULT_RESERVED_OUTPUT_TOKENS = 1200;
-const DEFAULT_COST_PER_1K_TOKENS_USD = 0.002;
 const AI_COST_LOG_COLLECTION = 'aiCostLogs';
 const AI_AUDIT_LOG_COLLECTION = 'aiAuditLogs';
 const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'openai', 'gemini.R', 'groqR']);
@@ -34,20 +27,8 @@ const TOKEN_PATTERN = /(bearer\s+|token['"\s:=]+|api[_-]?key['"\s:=]+|secret['"\
 const SENSITIVE_KEY_PATTERN = /(authorization|api[_-]?key|secret|token|password|prompt|content|document(Content|Text)?|raw(Document)?|file(Name)?|storagePath|downloadUrl|url|query|response|rfc|email)$/i;
 
 
-function getPositiveNumberEnv(name, fallback) {
-  const value = Number(process.env[name]);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
-
-function getAiLimitConfig() {
-  return {
-    rateLimitWindowMs: getPositiveNumberEnv('AI_RATE_LIMIT_WINDOW_MS', DEFAULT_RATE_LIMIT_WINDOW_MS),
-    rateLimitMaxRequests: getPositiveNumberEnv('AI_RATE_LIMIT_MAX_REQUESTS', DEFAULT_RATE_LIMIT_MAX_REQUESTS),
-    dailyTokenLimit: getPositiveNumberEnv('AI_DAILY_TOKEN_LIMIT', DEFAULT_DAILY_TOKEN_LIMIT),
-    dailyBudgetUsd: getPositiveNumberEnv('AI_DAILY_BUDGET_USD', DEFAULT_DAILY_BUDGET_USD),
-    reservedOutputTokens: getPositiveNumberEnv('AI_RESERVED_OUTPUT_TOKENS', DEFAULT_RESERVED_OUTPUT_TOKENS),
-    costPer1kTokensUsd: getPositiveNumberEnv('AI_COST_PER_1K_TOKENS_USD', DEFAULT_COST_PER_1K_TOKENS_USD),
-  };
+async function getAiLimitConfig() {
+  return getAiRuntimeConfig();
 }
 
 function estimateTokenCount(text = '') {
@@ -62,10 +43,6 @@ function toCounterNumber(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
 }
 
-function getOpenAiModel() {
-  return process.env.OPENAI_MODEL || DEFAULT_MODEL;
-}
-
 function normalizeAiIntegration(value) {
   const candidate = typeof value === 'string' ? value.trim() : '';
   return TRACKED_AI_INTEGRATIONS.has(candidate) ? candidate : 'openai';
@@ -78,8 +55,11 @@ function getUsageTokens(usage = {}) {
   return { inputTokens, outputTokens, totalTokens };
 }
 
-function calculateCostUsd(totalTokens, costPer1kTokensUsd = getAiLimitConfig().costPer1kTokensUsd) {
-  return Number(((toCounterNumber(totalTokens) / 1000) * costPer1kTokensUsd).toFixed(8));
+function calculateCostUsd(totalTokens, costPer1kTokensUsd) {
+  const rate = Number.isFinite(Number(costPer1kTokensUsd)) && Number(costPer1kTokensUsd) > 0
+    ? Number(costPer1kTokensUsd)
+    : Number(process.env.AI_COST_PER_1K_TOKENS_USD || DEFAULT_COST_PER_1K_TOKENS_USD);
+  return Number(((toCounterNumber(totalTokens) / 1000) * rate).toFixed(8));
 }
 
 async function writeAiAuditLog({ eventName, status, user, authorization, correlationId, provider, model, requestMetadata = {}, errorMessage }) {
@@ -120,7 +100,8 @@ async function writeAiCostLog({ user, authorization, correlationId, integration 
   const timestamp = new Date().toISOString();
   const usageTokens = getUsageTokens(usage);
   const tokens = usageTokens.totalTokens || toCounterNumber(estimatedTokens);
-  const costUsd = usageTokens.totalTokens ? calculateCostUsd(usageTokens.totalTokens) : Number(toCounterNumber(estimatedCostUsd).toFixed(8));
+  const runtimeConfig = await getAiRuntimeConfig();
+  const costUsd = usageTokens.totalTokens ? calculateCostUsd(usageTokens.totalTokens, runtimeConfig.costPer1kTokensUsd) : Number(toCounterNumber(estimatedCostUsd).toFixed(8));
   const logId = `${timestamp.replace(/[^0-9A-Za-z]/g, '')}_${String(correlationId || createCorrelationId('cost')).replace(/[^A-Za-z0-9_-]/g, '_')}`.slice(0, 220);
 
   await admin.firestore().collection(AI_COST_LOG_COLLECTION).doc(logId).set({
@@ -161,7 +142,7 @@ function getLimitDocIds({ companyId, uid, now = new Date() }) {
 }
 
 async function enforceAiLimits({ user, authorization, prompt, correlationId, now = new Date() }) {
-  const config = getAiLimitConfig();
+  const config = await getAiLimitConfig();
   const promptTokens = estimateTokenCount(prompt);
   const estimatedTokens = promptTokens + config.reservedOutputTokens;
   const estimatedCostUsd = (estimatedTokens / 1000) * config.costPer1kTokensUsd;
@@ -251,7 +232,7 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, now
   return reservation;
 }
 
-function calculateActualAiUsage({ status, usage, estimatedTokens }) {
+async function calculateActualAiUsage({ status, usage, estimatedTokens, costPer1kTokensUsd }) {
   if (status === 'failed' && !usage) {
     return { actualTokens: 0, actualCostUsd: 0 };
   }
@@ -267,8 +248,9 @@ function calculateActualAiUsage({ status, usage, estimatedTokens }) {
     actualTokens = toCounterNumber(estimatedTokens);
   }
 
+  const runtimeConfig = costPer1kTokensUsd ? null : await getAiRuntimeConfig();
   actualTokens = Math.max(0, actualTokens);
-  return { actualTokens, actualCostUsd: calculateCostUsd(actualTokens) };
+  return { actualTokens, actualCostUsd: calculateCostUsd(actualTokens, costPer1kTokensUsd || runtimeConfig.costPer1kTokensUsd) };
 }
 
 async function reconcileAiReservation({ user, authorization, reservation, status, usage, provider, model, correlationId }) {
@@ -288,7 +270,8 @@ async function reconcileAiReservation({ user, authorization, reservation, status
   const usageRef = db.collection('aiUsage').doc(reservation.usageDocId);
   const estimatedTokens = toCounterNumber(reservation.estimatedTokens);
   const estimatedCostUsd = toCounterNumber(reservation.estimatedCostUsd);
-  const { actualTokens, actualCostUsd } = calculateActualAiUsage({ status, usage, estimatedTokens });
+  const runtimeConfig = await getAiRuntimeConfig();
+  const { actualTokens, actualCostUsd } = await calculateActualAiUsage({ status, usage, estimatedTokens, costPer1kTokensUsd: runtimeConfig.costPer1kTokensUsd });
   const nowMs = Date.now();
 
   await db.runTransaction(async (transaction) => {
@@ -547,12 +530,14 @@ function extractOutputText(payload = {}) {
   return chunks.join('\n').trim();
 }
 
-function getLlmProvider() {
-  return String(process.env.LLM_PROVIDER || DEFAULT_LLM_PROVIDER).trim().toLowerCase();
+async function getLlmProvider() {
+  const config = await getAiRuntimeConfig();
+  return String(config.provider || 'openai').trim().toLowerCase();
 }
 
-function getLlmModel(provider = getLlmProvider()) {
-  return process.env.LLM_MODEL || process.env.OPENAI_MODEL || (provider === 'openai' ? DEFAULT_MODEL : 'default');
+async function getLlmModel(provider) {
+  const config = await getAiRuntimeConfig();
+  return config.model || (provider === 'openai' ? 'gpt-4o-mini' : 'default');
 }
 
 async function callOpenAIProvider({ apiKey, prompt, user, authorization, correlationId, model }) {
@@ -624,8 +609,8 @@ async function callOpenAIProvider({ apiKey, prompt, user, authorization, correla
 }
 
 async function askLLM({ prompt, user, authorization, correlationId }) {
-  const provider = getLlmProvider();
-  const model = getLlmModel(provider);
+  const provider = await getLlmProvider();
+  const model = await getLlmModel(provider);
 
   if (provider !== 'openai') {
     const error = new Error(`Proveedor LLM no soportado: ${provider}. Configura LLM_PROVIDER=openai o agrega un adaptador en askLLM.`);
@@ -689,8 +674,8 @@ async function aiHandler(req, res) {
     const prompt = getPrompt(req.body);
     authorization = await authorizeAiRequest({ user, body: req.body || {} });
     reservation = await enforceAiLimits({ user, authorization, prompt, correlationId });
-    providerName = getLlmProvider();
-    modelName = getLlmModel(providerName);
+    providerName = await getLlmProvider();
+    modelName = await getLlmModel(providerName);
     await writeAiAuditLog({
       eventName: 'ai_request_started',
       status: 102,
@@ -791,8 +776,8 @@ async function aiHandler(req, res) {
           reservation,
           status: 'failed',
           usage: null,
-          provider: providerName || getLlmProvider(),
-          model: modelName || getLlmModel(providerName || getLlmProvider()),
+          provider: providerName || await getLlmProvider(),
+          model: modelName || await getLlmModel(providerName || await getLlmProvider()),
           correlationId,
         });
       } catch (reconcileError) {
