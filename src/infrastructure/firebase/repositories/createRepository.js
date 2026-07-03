@@ -17,6 +17,7 @@ import {
 import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/filterValidation';
+import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
@@ -47,6 +48,52 @@ function throwIfAborted(signal) {
 
 function isAbortError(error) {
   return error?.name === ABORT_ERROR_NAME || error?.message === 'Aborted';
+}
+
+function nowMs() {
+  return typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now();
+}
+
+function createBatchQueryMetrics(collectionName, operation, requestedCount, chunkCount, correlationId) {
+  const startTime = nowMs();
+  const normalizedCorrelationId = ensureCorrelationId(correlationId, 'batch');
+
+  return {
+    completed(returnedCount) {
+      logFrontendEvent('batch_query_completed', {
+        correlationId: normalizedCorrelationId,
+        collection: collectionName,
+        operation,
+        requestedCount,
+        returnedCount,
+        durationMs: Math.round(nowMs() - startTime),
+        chunks: chunkCount,
+      });
+    },
+    failed(error) {
+      logFrontendEvent('batch_query_failed', {
+        correlationId: normalizedCorrelationId,
+        collection: collectionName,
+        operation,
+        requestedCount,
+        durationMs: Math.round(nowMs() - startTime),
+        chunks: chunkCount,
+        error: error?.message || 'Unknown batch query error',
+      }, 'error');
+    },
+    aborted() {
+      logFrontendEvent('batch_query_aborted', {
+        correlationId: normalizedCorrelationId,
+        collection: collectionName,
+        operation,
+        requestedCount,
+        durationMs: Math.round(nowMs() - startTime),
+        chunks: chunkCount,
+      }, 'warn');
+    },
+  };
 }
 
 function serializeDocSnapshot(snapshot) {
@@ -119,23 +166,31 @@ export const createRepository = (collectionName) => {
     const uniqueIds = [...new Set(ids.filter(Boolean).map(String))];
     if (uniqueIds.length === 0) return [];
 
-    const { signal } = options;
+    const { correlationId, signal } = options;
+    const idChunks = chunkArray(uniqueIds, MAX_IN_QUERY_VALUES);
+    const metrics = createBatchQueryMetrics(collectionName, 'getMany', uniqueIds.length, idChunks.length, correlationId);
     const results = [];
 
     try {
-      for (const idChunk of chunkArray(uniqueIds, MAX_IN_QUERY_VALUES)) {
+      for (const idChunk of idChunks) {
         throwIfAborted(signal);
         const snapshot = await getDocs(query(collectionRef, where(documentId(), 'in', idChunk)));
         throwIfAborted(signal);
         results.push(...serializeQuerySnapshot(snapshot));
       }
     } catch (error) {
-      if (isAbortError(error)) return [];
+      if (isAbortError(error)) {
+        metrics.aborted();
+        return [];
+      }
+      metrics.failed(error);
       throw error;
     }
 
     const resultsById = new Map(results.map((record) => [record.id, record]));
-    return uniqueIds.map((id) => resultsById.get(id)).filter(Boolean);
+    const orderedResults = uniqueIds.map((id) => resultsById.get(id)).filter(Boolean);
+    metrics.completed(orderedResults.length);
+    return orderedResults;
   };
 
   const filterIn = async (field, values = [], filters = {}, options = {}) => {
@@ -148,11 +203,13 @@ export const createRepository = (collectionName) => {
 
     const extraFilters = normalizeObjectFilters(filters, collectionName)
       .filter(([filterField]) => filterField !== field);
-    const { signal } = options;
+    const { correlationId, signal } = options;
+    const valueChunks = chunkArray(uniqueValues, MAX_IN_QUERY_VALUES);
+    const metrics = createBatchQueryMetrics(collectionName, 'filterIn', uniqueValues.length, valueChunks.length, correlationId);
     const results = [];
 
     try {
-      for (const valueChunk of chunkArray(uniqueValues, MAX_IN_QUERY_VALUES)) {
+      for (const valueChunk of valueChunks) {
         throwIfAborted(signal);
         const constraints = [where(field, 'in', valueChunk)];
         extraFilters.forEach(([filterField, filterValue]) => {
@@ -163,12 +220,18 @@ export const createRepository = (collectionName) => {
         results.push(...serializeQuerySnapshot(snapshot));
       }
     } catch (error) {
-      if (isAbortError(error)) return [];
+      if (isAbortError(error)) {
+        metrics.aborted();
+        return [];
+      }
+      metrics.failed(error);
       throw error;
     }
 
     const resultsById = new Map(results.map((record) => [record.id, record]));
-    return Array.from(resultsById.values());
+    const dedupedResults = Array.from(resultsById.values());
+    metrics.completed(dedupedResults.length);
+    return dedupedResults;
   };
 
   const list = async (options) => {
