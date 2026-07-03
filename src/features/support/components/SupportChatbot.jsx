@@ -11,7 +11,7 @@ import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const ticketStatusConfig = {
   abierto:     { label: 'Abierto',     color: 'bg-blue-500/15 text-blue-400' },
   en_proceso:  { label: 'En proceso',  color: 'bg-amber-500/15 text-amber-400' },

@@ -440,7 +440,7 @@
       "score": 26
     },
     {
-      "file": "src/modules/ai/aiService.js",
+      "file": "src/modules/ai/services/aiService.js",
       "incoming": 24,
       "outgoing": 2,
       "score": 26
@@ -482,7 +482,7 @@
       "score": 18
     },
     {
-      "file": "src/pages/AIAssistant.jsx",
+      "file": "src/modules/ai/pages/AIAssistantPage.jsx",
       "incoming": 2,
       "outgoing": 15,
       "score": 17

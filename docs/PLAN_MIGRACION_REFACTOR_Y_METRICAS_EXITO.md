@@ -34,9 +34,9 @@ Durante el congelamiento se permiten documentación, pruebas, adaptadores de com
 | Adaptador | Propósito | Cuándo se elimina |
 | --- | --- | --- |
 | `src/api/firebaseClient.js` | Mantener API pública legacy mientras repositorios se adelgazan. | Cuando consumidores usen servicios de feature y tests de compatibilidad pasen. |
-| Barrels de `src/modules/*/index.js` | Mantener imports de módulos durante traslado de páginas. | Cuando rutas consuman entradas canónicas nuevas. |
+| Barrels de `src/modules/*/index.js` | Mantener solo metadatos explícitos del módulo; no deben reexportar páginas o servicios como shims. | No aplica como shim: los imports deben apuntar a `@modules/<dominio>/pages`, `@modules/<dominio>/components` o `@modules/<dominio>/services`. |
 | Wrappers de UI compartida | Reemplazar clases repetidas sin migrar toda pantalla a la vez. | Cuando todos los componentes usen patrones oficiales. |
-| Facades de Company/Auth | Evitar romper contexto mientras se normalizan claims y empresa activa. | Cuando providers globales estén centralizados. |
+| Facades de Company/Auth | Evitar romper contexto mientras se normalizan claims y empresa activa. | Fecha límite 2026-08-31 para retirar shims en `src/pages`/`src/lib` o documentar una excepción con owner y reemplazo canónico. |
 | Aliases de rutas legacy | Mantener navegación existente. | Solo se eliminan con redirección, analytics y aviso de release. |
 
 ## 5. Orden de migración recomendado

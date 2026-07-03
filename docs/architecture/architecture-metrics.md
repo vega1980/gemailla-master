@@ -39,14 +39,14 @@ Generado: 2026-07-03T01:50:53.916Z
 | src/lib/utils.js | 45 | 0 | 45 |
 | src/api/firebaseClient.js | 32 | 10 | 42 |
 | src/lib/companyContext.jsx | 22 | 4 | 26 |
-| src/modules/ai/aiService.js | 24 | 2 | 26 |
+| src/modules/ai/services/aiService.js | 24 | 2 | 26 |
 | src/components/ui/badge.jsx | 21 | 1 | 22 |
 | src/lib/companyEntityQueries.js | 20 | 1 | 21 |
 | src/components/ui/input.jsx | 19 | 1 | 20 |
 | src/components/ui/select.jsx | 18 | 1 | 19 |
 | src/modules/documents/pages/DocumentsPage.jsx | 3 | 16 | 19 |
 | src/components/ui/dialog.jsx | 17 | 1 | 18 |
-| src/pages/AIAssistant.jsx | 2 | 15 | 17 |
+| src/modules/ai/pages/AIAssistantPage.jsx | 2 | 15 | 17 |
 | src/app/routes.jsx | 1 | 15 | 16 |
 | src/modules/companies/pages/CompaniesPage.jsx | 3 | 13 | 16 |
 | src/components/shared/EmptyState.jsx | 15 | 0 | 15 |

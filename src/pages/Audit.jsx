@@ -12,7 +12,7 @@ import { Shield, TrendingUp, AlertTriangle, CheckCircle, Loader2, BarChart3 } fr
 import ReportGenerator from '@/features/reports/components/ReportGenerator';
 import { motion } from 'framer-motion';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 export default function Audit() {
   const { activeCompany } = useCompany();
   const { user } = useAuth();

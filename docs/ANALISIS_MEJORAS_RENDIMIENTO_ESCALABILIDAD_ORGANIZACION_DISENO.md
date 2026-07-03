@@ -89,7 +89,7 @@ Se revisaron scripts, configuración y métricas generadas por el propio reposit
 
 - La documentación ya define responsabilidades para `src/app`, `src/modules`, `src/features`, `src/lib`, `src/shared`, `src/infrastructure`, `src/components` y `src/pages`.
 - Las métricas muestran acoplamiento alto entre `src:components -> src:lib` (52 imports), `src:pages -> src:components` (51), `src:pages -> src:lib` (29), y `src:app -> src:pages` (12).
-- Los hotspots más fuertes son `src/components/ui/button.jsx`, `src/lib/utils.js`, `src/api/firebaseClient.js`, `src/lib/companyContext.jsx` y `src/modules/ai/aiService.js`.
+- Los hotspots más fuertes son `src/components/ui/button.jsx`, `src/lib/utils.js`, `src/api/firebaseClient.js`, `src/lib/companyContext.jsx` y `src/modules/ai/services/aiService.js`.
 - `src/pages` todavía actúa como zona de integración amplia y debería seguir adelgazándose.
 
 ### Mejoras sugeridas

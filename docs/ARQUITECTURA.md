@@ -46,7 +46,7 @@ src/api/firebaseClient.js         # fachada pública que conserva `firebase.enti
 
 Reglas de migración:
 
-- No cambiar el alias `@/*` ni las rutas públicas.
+- Mantener el alias `@/*` para compatibilidad general y usar `@modules/*` para imports canónicos hacia módulos migrados.
 - No eliminar `src/api/firebaseClient.js`; adelgazar internamente y mantener sus exports.
 - Mover lógica de UI a servicios por feature antes de reubicar páginas completas.
 - Centralizar providers de negocio en `src/app/providers.jsx`, no en layouts visuales.
@@ -58,13 +58,13 @@ La regla general es separar **composición de aplicación**, **pantallas de nego
 | Carpeta | Qué vive aquí | Qué no vive aquí |
 | --- | --- | --- |
 | `src/app/` | Composición global de React: providers, definición única de rutas, layout de rutas y wiring de alto nivel. | Lógica de negocio, llamadas directas a Firebase o componentes específicos de dominio. |
-| `src/modules/` | Entrada pública de cada módulo vertical de producto: páginas/contenedores del módulo, componentes grandes acoplados a esa experiencia y fachadas legacy mientras se migra. | Servicios reutilizables de negocio, validaciones compartidas o utilidades transversales. |
+| `src/modules/` | Entrada pública de cada módulo vertical de producto: páginas/contenedores del módulo y componentes grandes acoplados a esa experiencia. Los imports canónicos usan `@modules/<dominio>/pages`, `@modules/<dominio>/components` o `@modules/<dominio>/services`. | Servicios reutilizables de negocio sin dueño modular, validaciones compartidas, utilidades transversales o shims de reexportación en la raíz del módulo. |
 | `src/features/` | Casos de uso y servicios por dominio que pueden ser consumidos por páginas, módulos o hooks: flujos documentales, membresía de compañías, roles, hooks de filtrado y constantes del dominio. | Componentes de layout global, UI genérica o adaptadores concretos de infraestructura. |
 | `src/lib/` | Infraestructura transversal de la aplicación: query client, observabilidad, auditoría, utilidades base y fachadas técnicas estables. Los contextos React stateful existentes son legacy/transversales y deben migrar gradualmente a `src/app/providers` (composición) o `src/contexts` si no son infraestructura técnica pura. | Reglas de negocio específicas de un dominio si ya existe una `feature` propietaria, ni nuevos providers stateful de aplicación. |
 | `src/shared/` | Contratos y piezas reutilizables sin dependencia de una feature concreta: validaciones, constantes compartidas, barrels de componentes compartidos y utilidades públicas. | Estado global, providers de aplicación o implementaciones de infraestructura. |
 | `src/infrastructure/` | Adaptadores técnicos externos: Firebase Auth/Firestore/Storage/Functions, repositorios y normalización persistente. | Componentes React, decisiones de navegación o reglas visuales. |
 | `src/components/` | Sistema visual y componentes reutilizables existentes, separados por familia (`ui`, `layout`, `shared`) o dominio visual legacy mientras se migra. | Casos de uso de negocio que deban poder probarse fuera de React. |
-| `src/pages/` | Páginas enrutable actuales que conectan layout, componentes y servicios. A medio plazo deben adelgazarse o moverse detrás del módulo correspondiente. | Lógica persistente reutilizable o contratos de dominio. |
+| `src/pages/` | Páginas enrutables legacy todavía pendientes de migrar. Fecha límite para eliminar shims de compatibilidad: 2026-08-31. | Lógica persistente reutilizable, contratos de dominio o archivos que solo reexportan implementaciones migradas. |
 
 ### Criterios prácticos de decisión
 

@@ -12,7 +12,7 @@ import { Plus, DollarSign, Loader2, Pencil, Trash2, CheckCircle, Clock, Sparkles
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
-import { askLLM } from '@/modules/ai/aiService';
+import { askLLM } from '@modules/ai/services/aiService';
 const statusConfig = {
   pendiente: { label: 'Pendiente', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: Clock },
   aprobado:  { label: 'Aprobado',  color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',    icon: CheckCircle },

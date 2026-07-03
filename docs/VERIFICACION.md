@@ -187,7 +187,7 @@ Primeros hotspots detectados para análisis previo a refactor:
 | Categoría | Hallazgo |
 | --- | --- |
 | Acoplamiento entre módulos | `src:components -> src:lib` con 52 imports y `src:pages -> src:components` con 51 imports. |
-| Fan-in/fan-out | `src/components/ui/button.jsx`, `src/lib/utils.js`, `src/api/firebaseClient.js`, `src/lib/companyContext.jsx` y `src/modules/ai/aiService.js` concentran el score más alto. |
+| Fan-in/fan-out | `src/components/ui/button.jsx`, `src/lib/utils.js`, `src/api/firebaseClient.js`, `src/lib/companyContext.jsx` y `src/modules/ai/services/aiService.js` concentran el score más alto. |
 | Duplicación textual | Patrones repetidos de contenedores UI, grids, select triggers y cálculos financieros aparecen como candidatos a revisión manual. |
 
 Interpretación: estas métricas son línea base y control de CI; no autorizan refactors automáticos sin revisar riesgo funcional, ownership y cobertura de pruebas.
