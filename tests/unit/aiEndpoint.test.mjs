@@ -147,6 +147,11 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'a
   Module._load = function patchedLoad(request, parent, isMain) {
     if (request === 'firebase-admin') return admin;
     if (request === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler };
+    if (request === 'firebase-functions/v2/scheduler') {
+      return {
+        onSchedule: (_options, handler) => handler,
+      };
+    }
     if (request === 'firebase-functions/params') return { defineSecret: () => ({ value: () => process.env.OPENAI_API_KEY }) };
     return originalLoad.call(this, request, parent, isMain);
   };
