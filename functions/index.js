@@ -14,7 +14,7 @@ const { cleanupOrphanDocumentStorageHandler } = require('./handlers/orphanDocume
 const { revokeMembershipUserRefreshTokens } = require('./handlers/companyMembershipClaimsHandler');
 const { handleCorsPolicy } = require('./policies/httpPolicy');
 
-exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, aiExports.aiHandler);
+exports.ai = onRequest({ cors: false, secrets: [openAiApiKey], timeoutSeconds: 120, memory: '512MiB' }, aiExports.aiHandler);
 exports.syncCompanyClaims = onRequest({ cors: false }, (req, res) => {
   if (handleCorsPolicy(req, res)) return;
   return syncCompanyClaimsHandler(req, res);
