@@ -56,8 +56,12 @@ export default function ConsultorVirtual({ company, transactions, monthlyData })
   const [initializing, setInitializing] = useState(false);
   const bottomRef = useRef(null);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   // Build context string from company data

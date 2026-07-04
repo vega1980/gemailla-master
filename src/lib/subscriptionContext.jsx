@@ -41,8 +41,12 @@ export function SubscriptionProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  useEffect(() => () => {
-    mountedRef.current = false;
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   const loadSubscription = useCallback(async () => {
