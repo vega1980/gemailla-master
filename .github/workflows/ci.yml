@@ -35,6 +35,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Functions dependencies
+        run: npm --prefix functions ci
+
       - name: Validate environment before build and deploy
         run: npm run validate:env:all
 

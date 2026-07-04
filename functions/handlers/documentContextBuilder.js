@@ -1,5 +1,6 @@
 const admin = require('firebase-admin');
-const zlib = require('node:zlib');
+// unpdf: extracción PDF sin binarios nativos, apta para serverless. Evita el
+// parser regex manual (ReDoS + object streams no soportados).
 
 const MAX_DOCUMENT_BYTES = Number(process.env.AI_DOCUMENT_CONTEXT_MAX_BYTES || 1_000_000);
 const MAX_DOCUMENT_CHARS = Number(process.env.AI_DOCUMENT_CONTEXT_MAX_CHARS || 24_000);
@@ -87,64 +88,7 @@ function warnDocumentContext(eventName, payload = {}) {
   }));
 }
 
-function decodePdfEscapes(value) {
-  return value
-    .replace(/\\([nrtbf()\\])/g, (_match, escaped) => ({ n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', '(': '(', ')': ')', '\\': '\\' }[escaped] || escaped))
-    .replace(/\\([0-7]{1,3})/g, (_match, octal) => String.fromCharCode(parseInt(octal, 8)))
-    .replace(/\\\r?\n/g, '');
-}
-
-function decodePdfHexString(hex) {
-  const normalized = hex.replace(/\s+/g, '');
-  const bytes = Buffer.from(normalized.length % 2 ? `${normalized}0` : normalized, 'hex');
-  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
-    let text = '';
-    for (let index = 2; index + 1 < bytes.length; index += 2) {
-      text += String.fromCharCode((bytes[index] << 8) + bytes[index + 1]);
-    }
-    return text;
-  }
-  return bytes.toString('latin1');
-}
-
-function extractTextOperators(pdfSource) {
-  const chunks = [];
-  const literalStringPattern = /\((?:\\.|[^\\()])*\)\s*Tj/g;
-  const arrayTextPattern = /\[((?:\s*\((?:\\.|[^\\()])*\)\s*-?\d*\.?\d*)+)\s*\]\s*TJ/g;
-  const hexStringPattern = /<([0-9A-Fa-f\s]+)>\s*Tj/g;
-
-  for (const match of pdfSource.matchAll(literalStringPattern)) {
-    chunks.push(decodePdfEscapes(match[0].replace(/\s*Tj$/, '').slice(1, -1)));
-  }
-  for (const match of pdfSource.matchAll(arrayTextPattern)) {
-    const literals = [...match[1].matchAll(/\((?:\\.|[^\\()])*\)/g)].map((item) => decodePdfEscapes(item[0].slice(1, -1)));
-    if (literals.length) chunks.push(literals.join(''));
-  }
-  for (const match of pdfSource.matchAll(hexStringPattern)) {
-    chunks.push(decodePdfHexString(match[1]));
-  }
-  return chunks.join('\n');
-}
-
-function inflatePdfStreams(pdfSource) {
-  const chunks = [];
-  const streamPattern = /(<<[\s\S]*?\/Filter\s*(?:\[[^\]]*)?\/FlateDecode[\s\S]*?>>)\s*stream\r?\n?([\s\S]*?)\r?\n?endstream/g;
-  for (const match of pdfSource.matchAll(streamPattern)) {
-    const streamBytes = Buffer.from(match[2], 'latin1');
-    try {
-      chunks.push(zlib.inflateSync(streamBytes).toString('latin1'));
-    } catch (_error) {
-      try {
-        chunks.push(zlib.inflateRawSync(streamBytes).toString('latin1'));
-      } catch (_rawError) {
-        warnDocumentContext('pdf_stream_inflate_failed');
-      }
-    }
-  }
-  return chunks.join('\n');
-}
-
-function extractPdfText(buffer, metadata = {}) {
+async function extractPdfText(buffer, metadata = {}) {
   const pdfSource = buffer.toString('latin1');
   if (/\/Encrypt\b/.test(pdfSource)) {
     const error = new Error('PDF cifrado no soportado para contexto IA.');
@@ -152,20 +96,28 @@ function extractPdfText(buffer, metadata = {}) {
     throw error;
   }
 
-  const inflatedStreams = inflatePdfStreams(pdfSource);
-  const text = compactText([
-    extractTextOperators(inflatedStreams),
-    extractTextOperators(pdfSource),
-  ].filter(Boolean).join('\n'));
+  const { extractText, getDocumentProxy } = await import('unpdf');
+  let text = '';
+  try {
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const result = await extractText(pdf, { mergePages: true });
+    text = compactText(Array.isArray(result.text) ? result.text.join('\n') : result.text);
+  } catch (error) {
+    warnDocumentContext('pdf_text_extraction_failed', {
+      documentId: metadata.documentId || null,
+      storagePath: metadata.storagePath || null,
+      reason: error.message,
+    });
+    return '';
+  }
 
   if (!text) {
     warnDocumentContext('pdf_text_extraction_empty', {
       documentId: metadata.documentId || null,
       storagePath: metadata.storagePath || null,
-      reason: 'El PDF puede ser escaneado, cifrado, usar fuentes sin ToUnicode o requerir OCR.',
+      reason: 'El PDF puede ser escaneado, usar fuentes sin ToUnicode o requerir OCR.',
     });
   }
-
   return text;
 }
 
@@ -180,6 +132,22 @@ function compactText(text) {
 async function readDocumentBytes(document) {
   const storagePath = getStoragePath(document);
   if (!storagePath) return null;
+
+  // DCB-3: el Admin SDK ignora las Storage rules. Validar prefijo de empresa
+  // impide descargar ficheros de otra empresa vía storagePath manipulado.
+  const companyId = String(document.companyId || '').trim();
+  if (!companyId) {
+    const error = new Error('Documento sin companyId: no se puede validar storagePath.');
+    error.status = 403;
+    throw error;
+  }
+  const expectedPrefix = `companies/${companyId}/documents/`;
+  if (!storagePath.startsWith(expectedPrefix)) {
+    const error = new Error('storagePath fuera del prefijo autorizado de la empresa.');
+    error.status = 403;
+    throw error;
+  }
+
   const file = admin.storage().bucket().file(storagePath);
   const [metadata] = await file.getMetadata();
   const size = Number(metadata.size || 0);
@@ -206,7 +174,7 @@ async function extractDocumentText(document) {
   const detectedType = assertSupportedMagicNumber({ buffer: download.buffer, contentType, fileName, storagePath: download.storagePath });
   let text = '';
   if (detectedType === 'xml') text = stripXmlTags(download.buffer.toString('utf8'));
-  else if (detectedType === 'pdf') text = extractPdfText(download.buffer, { documentId: document.id, storagePath: download.storagePath });
+  else if (detectedType === 'pdf') text = await extractPdfText(download.buffer, { documentId: document.id, storagePath: download.storagePath });
   else text = download.buffer.toString('utf8');
   return compactText(text).slice(0, MAX_DOCUMENT_CHARS);
 }
