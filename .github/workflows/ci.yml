@@ -29,14 +29,31 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
+
+      - name: Set up Java 21 for Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Install Functions dependencies
         run: npm --prefix functions ci
+
+      - name: Cache Firebase emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            firebase-emulators-${{ runner.os }}-
+
+      - name: Pre-download Firestore emulator
+        run: npx firebase-tools setup:emulators:firestore
 
       - name: Validate environment before build and deploy
         run: npm run validate:env:all
@@ -58,6 +75,9 @@ jobs:
 
       - name: Typecheck core
         run: npm run typecheck:core
+
+      - name: Firebase rules emulator tests
+        run: npm run test:rules:emulators
 
       - name: Unit tests
         run: npm run test:unit
