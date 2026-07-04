@@ -225,8 +225,9 @@ function seedBase(overrides = {}) {
       memberCompany_blockedRole: { companyId: 'memberCompany', userUid: 'blockedRole', status: 'active', role: 'guest' },
     },
     documents: {
-      validDoc: { companyId: 'validCompany', storagePath: 'companies/validCompany/doc.pdf' },
-      otherTenantDoc: { companyId: 'otherCompany', storagePath: 'companies/otherCompany/doc.pdf' },
+      validDoc: { companyId: 'validCompany', storagePath: 'companies/validCompany/documents/validDoc/doc.pdf' },
+      otherTenantDoc: { companyId: 'otherCompany', storagePath: 'companies/otherCompany/documents/otherTenantDoc/doc.pdf' },
+      manipulatedPathDoc: { companyId: 'validCompany', storagePath: 'companies/otherCompany/documents/secret/doc.pdf' },
     },
     aiRateLimits: overrides.aiRateLimits || {},
     aiUsage: overrides.aiUsage || {},
@@ -386,6 +387,15 @@ describe('endpoint IA', () => {
 
     assert.equal(res.statusCode, 403);
     assert.match(res.payload.error, /no pertenece a la empresa validada/);
+  });
+
+  it('responde 403 cuando un documento autorizado apunta a storagePath de otro tenant', async () => {
+    const res = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Analiza documento', documentIds: ['manipulatedPathDoc'] },
+    });
+
+    assert.equal(res.statusCode, 403);
+    assert.match(res.payload.error, /storagePath fuera del prefijo autorizado/);
   });
 
   it('responde 200 en el caso válido y registra costo de IA', async () => {
