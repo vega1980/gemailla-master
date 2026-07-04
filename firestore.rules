@@ -93,6 +93,14 @@ service cloud.firestore {
           || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']));
     }
 
+    // Roles que el actor puede asignar. Solo el dueño real de la empresa
+    // puede crear/asignar owner o director. El resto queda acotado a su tier o inferior.
+    function assignableRoles(companyId) {
+      return isCompanyOwner(companyId)
+        ? ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado']
+        : ['admin', 'editor', 'viewer', 'invitado'];
+    }
+
     function canCreateInitialOwnerMembership(memberId) {
       let companyId = request.resource.data.companyId;
       return signedIn()
@@ -295,9 +303,14 @@ service cloud.firestore {
       allow create: if signedIn()
         && auditCreateFieldsAreSafe(request.resource.data)
         && hasCompanyId(request.resource.data)
-        && (canManageCompany(request.resource.data.companyId) || canCreateInitialOwnerMembership(memberId))
         && request.resource.data.get('status', null) in ['active', 'pending', 'archived']
-        && request.resource.data.get('role', null) in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado'];
+        && (
+          canCreateInitialOwnerMembership(memberId)
+          || (
+            canManageCompany(request.resource.data.companyId)
+            && request.resource.data.get('role', null) in assignableRoles(request.resource.data.companyId)
+          )
+        );
 
       allow read: if signedIn()
         && hasCompanyId(resource.data)
@@ -312,7 +325,7 @@ service cloud.firestore {
         && hasCompanyId(request.resource.data)
         && request.resource.data.companyId == resource.data.companyId
         && canManageCompany(resource.data.companyId)
-        && request.resource.data.get('role', null) in ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado']
+        && request.resource.data.get('role', null) in assignableRoles(resource.data.companyId)
         && request.resource.data.get('status', null) in ['active', 'pending', 'archived'];
 
       allow delete: if false;
