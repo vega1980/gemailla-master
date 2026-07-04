@@ -141,6 +141,24 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'a
     firestore() {
       return firestore;
     },
+    storage() {
+      return {
+        bucket() {
+          return {
+            file() {
+              return {
+                async getMetadata() {
+                  return [{ size: 4, contentType: 'application/pdf' }];
+                },
+                async download() {
+                  return [Buffer.from('%PDF')];
+                },
+              };
+            },
+          };
+        },
+      };
+    },
   };
   const modulePath = fileURLToPath(MODULE_PATH);
   const originalLoad = Module._load;
