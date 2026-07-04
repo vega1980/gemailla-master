@@ -257,6 +257,44 @@ describe('Firestore security rules', () => {
     }, admin), 'admin membership role update');
   });
 
+  it('restricts owner and director membership assignment to the real company owner', async () => {
+    await assertAllowed(firestoreSet(`companyMembers/${companyId}_owner_director_invite`, {
+      companyId,
+      userUid: 'owner-director-invite-uid',
+      userEmail: 'owner-director-invite@gemailla.test',
+      role: 'director',
+      status: 'pending',
+      createdBy: owner.uid,
+    }, owner), 'owner director membership invite create');
+
+    await assertDenied(firestoreSet(`companyMembers/${companyId}_admin_director_invite`, {
+      companyId,
+      userUid: 'admin-director-invite-uid',
+      userEmail: 'admin-director-invite@gemailla.test',
+      role: 'director',
+      status: 'pending',
+      createdBy: admin.uid,
+    }, admin), 'admin director membership invite create');
+
+    await assertDenied(firestorePatch(`companyMembers/${companyId}_${admin.uid}`, {
+      companyId,
+      userUid: admin.uid,
+      userEmail: admin.claims.email,
+      role: 'owner',
+      status: 'active',
+      updatedBy: admin.uid,
+    }, admin), 'admin self-promote membership update');
+
+    await assertDenied(firestorePatch(`companyMembers/${companyId}_${director.uid}`, {
+      companyId,
+      userUid: director.uid,
+      userEmail: director.claims.email,
+      role: 'owner',
+      status: 'active',
+      updatedBy: director.uid,
+    }, director), 'director self-promote membership update');
+  });
+
   it('allows an active editor to modify permitted documents', async () => {
     await assertAllowed(firestoreGet('documents/protected-doc', editor), 'editor document read');
     await assertAllowed(firestorePatch('documents/protected-doc', {
