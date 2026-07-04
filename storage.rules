@@ -12,9 +12,33 @@ service firebase.storage {
         && request.auth.token.membershipStatus == 'active';
     }
 
-    function canWriteCompanyDocuments(companyId) {
+    function membershipId(companyId) {
+      return companyId + '_' + request.auth.uid;
+    }
+
+    function activeMembership(companyId) {
+      let memberId = membershipId(companyId);
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/companyMembers/$(memberId))
+        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.companyId == companyId
+        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.userUid == request.auth.uid
+        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.status == 'active';
+    }
+
+    function activeCompanyAccess(companyId) {
       return hasCompanyToken(companyId)
-        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor'];
+        && activeMembership(companyId);
+    }
+
+    function activeMembershipRole(companyId) {
+      let memberId = membershipId(companyId);
+      return firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.role;
+    }
+
+    function canWriteCompanyDocuments(companyId) {
+      return activeCompanyAccess(companyId)
+        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor']
+        && activeMembershipRole(companyId) in ['owner', 'director', 'admin', 'editor'];
     }
 
     function hasExistingObjectMetadata(companyId, documentId) {
@@ -67,7 +91,7 @@ service firebase.storage {
 
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
-      allow read: if hasCompanyToken(companyId)
+      allow read: if activeCompanyAccess(companyId)
                   && hasExistingObjectMetadata(companyId, documentId);
 
       allow create: if canWriteCompanyDocuments(companyId)

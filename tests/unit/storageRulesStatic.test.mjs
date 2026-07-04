@@ -11,7 +11,13 @@ describe('Cloud Storage rules static invariants', () => {
     assert.match(source, /function hasCompanyToken\(companyId\) \{/);
     assert.match(source, /request\.auth\.token\.companyId == companyId/);
     assert.match(source, /request\.auth\.token\.membershipStatus == 'active'/);
-    assert.match(source, /allow read: if hasCompanyToken\(companyId\)/);
+    assert.match(source, /function activeMembership\(companyId\) \{/);
+    assert.match(source, /function membershipId\(companyId\) \{/);
+    assert.match(source, /firestore\.exists\(\/databases\/\(default\)\/documents\/companyMembers\/\$\(memberId\)\)/);
+    assert.match(source, /firestore\.get\(\/databases\/\(default\)\/documents\/companyMembers\/\$\(memberId\)\)\.data\.status == 'active'/);
+    assert.match(source, /function activeCompanyAccess\(companyId\) \{/);
+    assert.match(source, /return hasCompanyToken\(companyId\)\s*&& activeMembership\(companyId\)/);
+    assert.match(source, /allow read: if activeCompanyAccess\(companyId\)/);
   });
 
   it('restricts uploads to active writer roles with matching custom metadata', async () => {
@@ -19,6 +25,7 @@ describe('Cloud Storage rules static invariants', () => {
 
     assert.match(source, /function canWriteCompanyDocuments\(companyId\) \{/);
     assert.match(source, /request\.auth\.token\.companyRole in \['owner', 'director', 'admin', 'editor'\]/);
+    assert.match(source, /activeMembershipRole\(companyId\) in \['owner', 'director', 'admin', 'editor'\]/);
     assert.match(source, /allow create: if canWriteCompanyDocuments\(companyId\)/);
     assert.match(source, /function documentExists\(companyId, documentId\) \{/);
     assert.match(source, /firestore\.exists\(\s*\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\s*\)/);

@@ -97,6 +97,7 @@ Todos los flujos en `src/features` deben validar precondiciones (`company.id`, `
 - Firestore guarda metadata y entidades de negocio.
 - Storage guarda binarios PDF/XML.
 - Las reglas de Firestore/Storage son parte crítica de la arquitectura, no una capa secundaria.
+- Los cambios en `companyMembers` revocan refresh tokens y Storage revalida la membresía activa en Firestore para evitar accesos con claims antiguos tras expulsiones o degradaciones de rol.
 
 ### 2. Multiempresa por membresía y roles
 

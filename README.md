@@ -134,8 +134,8 @@ Las rutas de backend no se configuran con variables `VITE_*`: deben permanecer r
 ## Reglas de seguridad
 
 - Firestore controla acceso por `ownerUid`, membresía activa y rol.
-- Storage valida usuario autenticado, empresa activa por claims, permisos/rol válidos, metadata `companyId`/`documentId` coincidente, tamaño y tipo de archivo.
-- El borrado físico desde cliente está bloqueado en Firestore y Storage.
+- Storage valida usuario autenticado, empresa activa por claims, membresía activa en Firestore, permisos/rol válidos, metadata `companyId`/`documentId` coincidente, tamaño y tipo de archivo.
+- Los cambios de membresía revocan refresh tokens desde Cloud Functions y el cliente fuerza `getIdToken(true)` tras sincronizar claims; además Storage consulta `companyMembers` para cerrar la ventana de hasta 1 hora de claims antiguos.
 - El borrado funcional debe hacerse como borrado lógico con `status: "archived"`.
 
 ## Regla de estabilización
