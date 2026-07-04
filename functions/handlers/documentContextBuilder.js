@@ -7,7 +7,8 @@ const MAX_TOTAL_CONTEXT_CHARS = Number(process.env.AI_DOCUMENT_CONTEXT_MAX_TOTAL
 
 const XML_DOCTYPE_PATTERN = /<!DOCTYPE\b/i;
 const XML_ENTITY_PATTERN = /<!ENTITY\b/i;
-const XML_EXTERNAL_REF_PATTERN = /\b(SYSTEM|PUBLIC)\b/i;
+// Solo peligroso dentro de una declaración DOCTYPE/DTD, no en el contenido de negocio.
+const XML_DOCTYPE_EXTERNAL_PATTERN = /<!DOCTYPE[^>]*\b(SYSTEM|PUBLIC)\b/i;
 
 function getDocumentLabel(document, index) {
   return String(document.title || document.name || document.fileName || document.originalName || document.id || `documento-${index + 1}`)
@@ -61,7 +62,7 @@ function assertSupportedMagicNumber({ buffer, contentType, fileName, storagePath
 }
 
 function stripXmlTags(xml) {
-  if (XML_DOCTYPE_PATTERN.test(xml) || XML_ENTITY_PATTERN.test(xml) || XML_EXTERNAL_REF_PATTERN.test(xml)) {
+  if (XML_DOCTYPE_PATTERN.test(xml) || XML_ENTITY_PATTERN.test(xml) || XML_DOCTYPE_EXTERNAL_PATTERN.test(xml)) {
     const error = new Error('XML rechazado: no se permiten DTD, ENTITY ni referencias externas.');
     error.status = 400;
     throw error;
