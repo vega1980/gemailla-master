@@ -48,6 +48,7 @@ export function CompanyProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     registerTrace(pageCorrelationIdRef.current, null, 'CompanyProvider');
 
     return () => {
