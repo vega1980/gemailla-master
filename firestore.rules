@@ -175,10 +175,17 @@ service cloud.firestore {
         && ownerUidUnchangedOrSelf();
     }
 
+    // Si el documento declara companyId, debe ser escribible por el usuario.
+    // Sin companyId (documento estrictamente personal), ownerUid abre la puerta.
+    function companyScopeValid(data) {
+      return !hasCompanyId(data) || canWriteCompany(data.companyId);
+    }
+
     function canCreateOwnedOrCompanyRecord() {
       return signedIn()
         && auditCreateFieldsAreSafe(request.resource.data)
         && ownerUidIsSelfOrMissing(request.resource.data)
+        && companyScopeValid(request.resource.data)
         && (
           (hasCompanyId(request.resource.data) && canWriteCompany(request.resource.data.companyId))
           || hasOwnerUid(request.resource.data)
@@ -197,6 +204,7 @@ service cloud.firestore {
       return signedIn()
         && auditUpdateFieldsAreSafe()
         && ownerUidUnchangedOrSelf()
+        && companyScopeValid(request.resource.data)
         && (
           (hasCompanyId(resource.data) && companyIdUnchanged() && canWriteCompany(resource.data.companyId))
           || hasOwnerUid(resource.data)
