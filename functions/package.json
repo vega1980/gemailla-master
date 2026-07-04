@@ -11,7 +11,7 @@
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
-    "lint": "node --check index.js && node --check handlers/functionsRouter.js",
+    "lint": "node --check index.js && node --check handlers/*.js",
     "test": "npm run lint"
   },
   "dependencies": {
