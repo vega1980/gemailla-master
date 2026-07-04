@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { firebase, isAiDisabledResponse } from '@/api/firebaseClient';
 import { createCorrelationId } from '@/lib/observability';
 import { useCompanyAiConversations } from '@/lib/companyEntityQueries';
@@ -25,6 +25,8 @@ function estimateRequestCostUsd(prompt, context) {
   return ((String(prompt || '').length + String(context || '').length) / 1000) * 0.01;
 }
 
+const MAX_CONTEXT_DOCUMENTS = 15;
+
 const suggestedQueries = [
   '¿Cuál es el total de gastos en nómina este año?',
   '¿Qué facturas tengo pendientes de analizar?',
@@ -35,6 +37,16 @@ const suggestedQueries = [
 const getErrorMessage = (error, fallback) => {
   if (error instanceof Error && error.message) return error.message;
   return fallback;
+};
+
+const buildActionableErrorMessage = (error, fallback, correlationId, parentCorrelationId) => {
+  const baseMessage = getErrorMessage(error, fallback);
+  const traceSuffix = [
+    correlationId ? `correlationId: ${correlationId}` : '',
+    parentCorrelationId ? `parentCorrelationId: ${parentCorrelationId}` : '',
+  ].filter(Boolean).join(' | ');
+
+  return traceSuffix ? `${baseMessage} (${traceSuffix})` : baseMessage;
 };
 
 const normalizeAIResponse = (response) => {
@@ -76,6 +88,30 @@ export default function AIAssistant() {
   const { documents, transactions } = useCompanyData(activeCompany);
   const { data: savedConvos = [] } = useCompanyAiConversations(activeCompany);
 
+  const analyzedDocuments = useMemo(() => (
+    documents.filter((document) => document.status === 'analyzed')
+  ), [documents]);
+
+  const contextDocuments = useMemo(() => (
+    analyzedDocuments
+      .filter((document) => filterDocType === 'all' || document.docType === filterDocType)
+      .slice(0, MAX_CONTEXT_DOCUMENTS)
+  ), [analyzedDocuments, filterDocType]);
+
+  const financialSummary = useMemo(() => transactions.reduce((summary, transaction) => {
+    const transactionAmount = Number(transaction.amount || 0);
+
+    if (transaction.type === 'ingreso') {
+      return { ...summary, totalIncome: summary.totalIncome + transactionAmount };
+    }
+
+    if (transaction.type === 'gasto') {
+      return { ...summary, totalExpenses: summary.totalExpenses + transactionAmount };
+    }
+
+    return summary;
+  }, { totalIncome: 0, totalExpenses: 0, transactionCount: transactions.length }), [transactions]);
+
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -111,23 +147,19 @@ export default function AIAssistant() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversations]);
 
-  const handleSubmit = async (q) => {
-    const userQuery = q || query;
+  const handleSubmit = useCallback(async (suggestedQuery) => {
+    const userQuery = suggestedQuery || query;
     if (!userQuery.trim() || loadingRef.current) return;
 
     loadingRef.current = true;
     setQuery('');
     setLoading(true);
 
-    // Build context from documents and transactions
-    const relevantDocs = documents
-      .filter(d => d.status === 'analyzed')
-      .filter(d => filterDocType === 'all' || d.docType === filterDocType)
-      .slice(0, 15);
-    const docIds = relevantDocs.map(d => d.id);
+    const selectedDocumentIds = contextDocuments.map((document) => document.id);
+    const parentCorrelationId = createCorrelationId('ai_page');
     const correlationId = createCorrelationId('ai');
     const pendingId = createPendingConversationId();
-    const pendingConvo = { id: pendingId, query: userQuery, response: null, docs: docIds };
+    const pendingConvo = { id: pendingId, query: userQuery, response: null, docs: selectedDocumentIds };
     if (isMountedRef.current) {
       setConversations(prev => [...prev, pendingConvo]);
     }
@@ -148,28 +180,23 @@ export default function AIAssistant() {
         userEmail: user?.email || '',
         query: userQuery,
         response,
-        context_documents: docIds,
+        context_documents: selectedDocumentIds,
         filters_used: { docType: filterDocType },
         status,
         estimatedCostUsd,
         ...(usageLog ? { tokens: usageLog.tokens, model: usageLog.model, costo: usageLog.costo, costUsd: usageLog.costUsd, costLogTimestamp: usageLog.costLogTimestamp } : {}),
         requiresSupervisorApproval: status === 'pendingApproval',
         errorMessage,
-        documentIds: docIds,
+        documentIds: selectedDocumentIds,
         correlationId,
+        parentCorrelationId,
       });
     };
 
     try {
-      const docContext = relevantDocs.map(d =>
-        `[${d.docType || 'doc'}] ${d.title} | Total: $${d.total || 0} | Fecha: ${d.docDate || 'N/A'} | RFC: ${d.rfc_emisor || 'N/A'} | Resumen: ${d.ai_summary || 'Sin resumen'}`
-      ).join('\n');
-
-      const txSummary = {
-        total_ingresos: transactions.filter(t => t.type === 'ingreso').reduce((sum, t) => sum + (t.amount || 0), 0),
-        total_gastos: transactions.filter(t => t.type === 'gasto').reduce((sum, t) => sum + (t.amount || 0), 0),
-        num_transactions: transactions.length,
-      };
+      const documentContext = contextDocuments.map((document) => (
+        `[${document.docType || 'doc'}] ${document.title} | Total: $${document.total || 0} | Fecha: ${document.docDate || 'N/A'} | RFC: ${document.rfc_emisor || 'N/A'} | Resumen: ${document.ai_summary || 'Sin resumen'}`
+      )).join('\n');
 
       const requestPrompt = `Eres GEMAILLA AI, un asistente financiero experto para empresas mexicanas. Responde con datos reales basados en el contexto.
 
@@ -177,19 +204,19 @@ Empresa: ${activeCompany.name}
 RFC: ${activeCompany.rfc || 'N/A'}
 
 DOCUMENTOS ANALIZADOS:
-${docContext || 'Sin documentos analizados aún.'}
+${documentContext || 'Sin documentos analizados aún.'}
 
 RESUMEN FINANCIERO:
-- Ingresos totales: $${txSummary.total_ingresos.toLocaleString()}
-- Gastos totales: $${txSummary.total_gastos.toLocaleString()}
-- Balance: $${(txSummary.total_ingresos - txSummary.total_gastos).toLocaleString()}
-- Transacciones: ${txSummary.num_transactions}
+- Ingresos totales: $${financialSummary.totalIncome.toLocaleString()}
+- Gastos totales: $${financialSummary.totalExpenses.toLocaleString()}
+- Balance: $${(financialSummary.totalIncome - financialSummary.totalExpenses).toLocaleString()}
+- Transacciones: ${financialSummary.transactionCount}
 
 PREGUNTA DEL USUARIO:
 ${userQuery}
 
 Responde de forma profesional, concisa y con datos específicos. Usa formato markdown para mejor legibilidad.`;
-      const estimatedCostUsd = estimateRequestCostUsd(requestPrompt, docContext);
+      const estimatedCostUsd = estimateRequestCostUsd(requestPrompt, documentContext);
 
       if (estimatedCostUsd > HIGH_COST_APPROVAL_THRESHOLD_USD) {
         const approvalMessage = 'Solicitud pendiente de aprobación: el costo estimado supera $0.25 USD y requiere autorización de un supervisor.';
@@ -201,8 +228,9 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
       const aiResponse = await askLLM({
         companyId: activeCompany.id,
         prompt: requestPrompt,
-        documentIds: docIds,
+        documentIds: selectedDocumentIds,
         correlationId,
+        parentCorrelationId,
       });
       const response = normalizeAIResponse(aiResponse);
       updateConversation(response);
@@ -220,11 +248,17 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
       });
 
       await logAction({
-        companyId: activeCompany.id, userEmail: user?.email, userName: user?.fullName,
-        action: 'ai_query', entityType: 'AIConversation', details: `Consulta IA completada (longitud: ${userQuery.length}, documentos: ${docIds.length})`, correlationId: aiResponse?.correlationId || correlationId
+        companyId: activeCompany.id,
+        userEmail: user?.email,
+        userName: user?.fullName,
+        action: 'ai_query',
+        entityType: 'AIConversation',
+        details: `Consulta IA completada (longitud: ${userQuery.length}, documentos: ${selectedDocumentIds.length})`,
+        correlationId: aiResponse?.correlationId || correlationId,
+        parentCorrelationId,
       });
     } catch (error) {
-      const errorMessage = getErrorMessage(error, 'Verifica la configuración del backend seguro y vuelve a intentar.');
+      const errorMessage = buildActionableErrorMessage(error, 'Verifica la configuración del backend seguro y vuelve a intentar.', correlationId, parentCorrelationId);
       const response = `No se pudo completar la consulta de IA. ${errorMessage}`;
       updateConversation(response);
 
@@ -236,8 +270,9 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
           userName: user?.fullName,
           action: 'ai_query_error',
           entityType: 'AIConversation',
-          details: `Consulta IA fallida (longitud: ${userQuery.length}, documentos: ${docIds.length}) — ${errorMessage}`,
+          details: `Consulta IA fallida (longitud: ${userQuery.length}, documentos: ${selectedDocumentIds.length}) — ${errorMessage}`,
           correlationId,
+          parentCorrelationId,
         });
       } catch (persistenceError) {
         console.error('Error persisting failed AI conversation:', persistenceError);
@@ -248,7 +283,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
         setLoading(false);
       }
     }
-  };
+  }, [activeCompany, contextDocuments, filterDocType, financialSummary, query, user]);
 
   const { canAccessAI, loading: subLoading } = useSubscription();
 
@@ -286,7 +321,7 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
         </Select>
         <div className="text-xs text-muted-foreground flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-primary" />
-          {documents.filter(d => d.status === 'analyzed').length} documentos indexados
+          {analyzedDocuments.length} documentos indexados
         </div>
       </div>
 
@@ -297,10 +332,10 @@ Responde de forma profesional, concisa y con datos específicos. Usa formato mar
             <Brain className="w-12 h-12 text-primary/30 mb-4" />
             <p className="text-muted-foreground text-sm mb-6">Pregunta lo que necesites sobre tu empresa</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl w-full">
-              {suggestedQueries.map(q => (
-                <button key={q} onClick={() => handleSubmit(q)}
+              {suggestedQueries.map((suggestedQuery) => (
+                <button key={suggestedQuery} onClick={() => handleSubmit(suggestedQuery)}
                   className="text-left p-3 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors text-sm text-muted-foreground hover:text-foreground">
-                  {q}
+                  {suggestedQuery}
                 </button>
               ))}
             </div>
