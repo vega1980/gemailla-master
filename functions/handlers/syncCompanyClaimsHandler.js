@@ -51,8 +51,13 @@ async function syncCompanyClaimsHandler(req, res) {
     const companyId = requireCompanyId(req.body || {});
     const access = await validateCompanyAccess({ user, companyId });
     const companyRole = getRoleForClaims(access.role);
-    await admin.auth().setCustomUserClaims(user.uid, { companyId, companyRole, role: companyRole });
-    return res.status(200).json({ success: true, companyId, companyRole });
+    await admin.auth().setCustomUserClaims(user.uid, {
+      companyId,
+      companyRole,
+      role: companyRole,
+      membershipStatus: 'active',
+    });
+    return res.status(200).json({ success: true, companyId, companyRole, membershipStatus: 'active' });
   } catch (error) {
     const status = Number(error?.status) || 500;
     return res.status(status).json({ error: error?.message || 'No se pudieron sincronizar los claims.' });

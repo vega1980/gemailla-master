@@ -135,6 +135,7 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'a
       return {
         verifyIdToken,
         async setCustomUserClaims() {},
+        async revokeRefreshTokens() {},
       };
     },
     firestore() {
@@ -150,6 +151,11 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'a
     if (request === 'firebase-functions/v2/scheduler') {
       return {
         onSchedule: (_options, handler) => handler,
+      };
+    }
+    if (request === 'firebase-functions/v2/firestore') {
+      return {
+        onDocumentWritten: (_path, handler) => handler,
       };
     }
     if (request === 'firebase-functions/params') return { defineSecret: () => ({ value: () => process.env.OPENAI_API_KEY }) };
