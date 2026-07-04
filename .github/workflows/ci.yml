@@ -59,6 +59,10 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Install Functions dependencies
+        run: npm ci
+        working-directory: functions
+
       - name: Functions tests
         run: npm run test:functions
 

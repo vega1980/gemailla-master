@@ -260,7 +260,7 @@ function seedBase(overrides = {}) {
   });
 }
 
-async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-token', body, fetchImpl, origin } = {}) {
+async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-token', body, fetchImpl, origin, storageFiles = {} } = {}) {
   const handler = await loadAiEndpoint({
     store,
     verifyIdToken: async (receivedToken) => {
@@ -268,6 +268,7 @@ async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-
       return { uid };
     },
     fetchImpl: fetchImpl || (async () => ({ ok: true, status: 200, async json() { return { output_text: 'Respuesta IA de prueba' }; } })),
+    storageFiles,
   });
   const res = createRes();
   await handler(createReq({ token, body, origin }), res);
@@ -426,9 +427,16 @@ describe('endpoint IA', () => {
 
   it('responde 200 en el caso válido y registra costo de IA', async () => {
     const store = seedBase();
+    store.set('documents/validDoc', { companyId: 'validCompany', storagePath: 'companies/validCompany/documents/validDoc/doc.txt' });
     const res = await exercise({
       store,
       body: { companyId: 'validCompany', prompt: 'Hola', documentIds: ['validDoc'], integration: 'ellmer' },
+      storageFiles: {
+        'companies/validCompany/documents/validDoc/doc.txt': {
+          buffer: Buffer.from('Contexto financiero validado', 'utf8'),
+          metadata: { size: 28, contentType: 'text/plain', name: 'companies/validCompany/documents/validDoc/doc.txt' },
+        },
+      },
       fetchImpl: async () => ({
         ok: true,
         status: 200,
