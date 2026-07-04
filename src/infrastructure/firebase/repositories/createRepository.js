@@ -56,14 +56,20 @@ function nowMs() {
     : Date.now();
 }
 
-function createBatchQueryMetrics(collectionName, operation, requestedCount, chunkCount, correlationId) {
+function normalizeParentCorrelationId(parentCorrelationId) {
+  return parentCorrelationId ? ensureCorrelationId(parentCorrelationId, 'parent') : undefined;
+}
+
+function createBatchQueryMetrics(collectionName, operation, requestedCount, chunkCount, correlationId, parentCorrelationId) {
   const startTime = nowMs();
   const normalizedCorrelationId = ensureCorrelationId(correlationId, 'batch');
+  const normalizedParentCorrelationId = normalizeParentCorrelationId(parentCorrelationId);
 
   return {
     completed(returnedCount) {
       logFrontendEvent('batch_query_completed', {
         correlationId: normalizedCorrelationId,
+        parentCorrelationId: normalizedParentCorrelationId,
         collection: collectionName,
         operation,
         requestedCount,
@@ -75,6 +81,7 @@ function createBatchQueryMetrics(collectionName, operation, requestedCount, chun
     failed(error) {
       logFrontendEvent('batch_query_failed', {
         correlationId: normalizedCorrelationId,
+        parentCorrelationId: normalizedParentCorrelationId,
         collection: collectionName,
         operation,
         requestedCount,
@@ -86,6 +93,7 @@ function createBatchQueryMetrics(collectionName, operation, requestedCount, chun
     aborted() {
       logFrontendEvent('batch_query_aborted', {
         correlationId: normalizedCorrelationId,
+        parentCorrelationId: normalizedParentCorrelationId,
         collection: collectionName,
         operation,
         requestedCount,
@@ -166,9 +174,10 @@ export const createRepository = (collectionName) => {
     const uniqueIds = [...new Set(ids.filter(Boolean).map(String))];
     if (uniqueIds.length === 0) return [];
 
-    const { correlationId, signal } = options;
+    const { signal } = options;
+    const correlationId = ensureCorrelationId(options.correlationId, 'batch');
     const idChunks = chunkArray(uniqueIds, MAX_IN_QUERY_VALUES);
-    const metrics = createBatchQueryMetrics(collectionName, 'getMany', uniqueIds.length, idChunks.length, correlationId);
+    const metrics = createBatchQueryMetrics(collectionName, 'getMany', uniqueIds.length, idChunks.length, correlationId, options.parentCorrelationId);
     const results = [];
 
     try {
@@ -203,9 +212,10 @@ export const createRepository = (collectionName) => {
 
     const extraFilters = normalizeObjectFilters(filters, collectionName)
       .filter(([filterField]) => filterField !== field);
-    const { correlationId, signal } = options;
+    const { signal } = options;
+    const correlationId = ensureCorrelationId(options.correlationId, 'batch');
     const valueChunks = chunkArray(uniqueValues, MAX_IN_QUERY_VALUES);
-    const metrics = createBatchQueryMetrics(collectionName, 'filterIn', uniqueValues.length, valueChunks.length, correlationId);
+    const metrics = createBatchQueryMetrics(collectionName, 'filterIn', uniqueValues.length, valueChunks.length, correlationId, options.parentCorrelationId);
     const results = [];
 
     try {
