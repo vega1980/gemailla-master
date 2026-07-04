@@ -59,6 +59,9 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Install Functions dependencies
+        run: npm --prefix functions install --no-audit --no-fund
+
       - name: Functions tests
         run: npm run test:functions
 
