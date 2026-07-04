@@ -451,6 +451,25 @@ function getRequestedDocuments(body = {}) {
   return { documentIds, storagePaths };
 }
 
+function validateDocumentStoragePrefix(document) {
+  const storagePath = String(document?.storagePath || '').trim();
+  if (!storagePath) return;
+
+  // DCB-3: el Admin SDK ignora las Storage rules. Validamos que el storagePath
+  // viva dentro del prefijo de la empresa del documento para impedir que un
+  // storagePath manipulado descargue ficheros de otra empresa e inyecte su
+  // contenido en el contexto del LLM.
+  const companyId = String(document.companyId || '').trim();
+  if (!companyId) {
+    fail(403, 'Documento sin companyId: no se puede validar el prefijo de storagePath.');
+  }
+
+  const expectedPrefix = `companies/${companyId}/documents/`;
+  if (!storagePath.startsWith(expectedPrefix)) {
+    fail(403, 'storagePath fuera del prefijo autorizado de la empresa.');
+  }
+}
+
 async function validateCompanyAccess({ user, companyId }) {
   const companyRef = admin.firestore().collection('companies').doc(companyId);
   const companySnap = await companyRef.get();
@@ -488,6 +507,7 @@ async function validateRequestedDocuments({ companyId, documentIds, storagePaths
     if (!docSnap.exists) fail(403, 'Documento solicitado no válido o sin acceso.');
     const data = docSnap.data() || {};
     if (data.companyId !== companyId) fail(403, 'Documento solicitado no pertenece a la empresa validada.');
+    validateDocumentStoragePrefix(data);
     if (!seenDocIds.has(docSnap.id)) {
       seenDocIds.add(docSnap.id);
       documentRefs.push({ id: docSnap.id, ...data });
@@ -503,6 +523,7 @@ async function validateRequestedDocuments({ companyId, documentIds, storagePaths
       .get();
     if (querySnap.empty) fail(403, 'Ruta de documento solicitada no válida o sin acceso.');
     const docSnap = querySnap.docs[0];
+    validateDocumentStoragePrefix(docSnap.data() || {});
     if (!seenDocIds.has(docSnap.id)) {
       seenDocIds.add(docSnap.id);
       documentRefs.push({ id: docSnap.id, ...(docSnap.data() || {}) });
