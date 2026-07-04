@@ -57,20 +57,28 @@ service firebase.storage {
       ).data.companyId == companyId;
     }
 
-    function hasRequiredUploadMetadata() {
+    function uploadMetadata() {
       return request.resource.metadata != null
-        && request.resource.metadata.keys().hasAll(['companyId', 'documentId']);
+        ? request.resource.metadata
+        : request.resource.customMetadata;
+    }
+
+    function hasRequiredUploadMetadata() {
+      let md = uploadMetadata();
+      return md != null
+        && md.keys().hasAll(['companyId', 'documentId']);
     }
 
     function isValidMetadata(companyId, documentId) {
+      let md = uploadMetadata();
       return hasRequiredUploadMetadata()
         && (
-          request.resource.metadata.companyId == companyId
-          || request.resource.metadata.get('companyId', null) == companyId
+          md.companyId == companyId
+          || md.get('companyId', null) == companyId
         )
         && (
-          request.resource.metadata.documentId == documentId
-          || request.resource.metadata.get('documentId', null) == documentId
+          md.documentId == documentId
+          || md.get('documentId', null) == documentId
         );
     }
 
