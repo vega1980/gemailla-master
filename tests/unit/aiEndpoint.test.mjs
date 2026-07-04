@@ -497,7 +497,7 @@ describe('endpoint IA', () => {
     assert.equal(usageDocs[0].budgetUsedUsd, 0);
   });
 
-  it('incrementa failedRequestCount cuando el proveedor colapsa después de reservar', async () => {
+  it('incrementa failedRequestCount cuando falla la red del proveedor después de reservar', async () => {
     const store = seedBase();
 
     const res = await exercise({
@@ -508,8 +508,8 @@ describe('endpoint IA', () => {
       },
     });
 
-    assert.equal(res.statusCode, 500);
-    assert.match(res.payload.error, /network collapse after reservation/);
+    assert.equal(res.statusCode, 502);
+    assert.match(res.payload.error, /No se pudo contactar al proveedor LLM/);
 
     const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
     assert.equal(usageDocs.length, 1);
