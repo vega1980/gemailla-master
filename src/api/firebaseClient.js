@@ -109,8 +109,16 @@ function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas por
   };
 }
 
+function getParentCorrelationHeaders(parentCorrelationId) {
+  if (!parentCorrelationId) return {};
+  return { 'X-Parent-Correlation-Id': ensureCorrelationId(parentCorrelationId, 'parent') };
+}
+
 export async function invokeLLM(params = {}) {
   const correlationId = ensureCorrelationId(params.correlationId, 'ai');
+  const parentCorrelationId = params.parentCorrelationId
+    ? ensureCorrelationId(params.parentCorrelationId, 'parent')
+    : undefined;
   const companyId = typeof params.companyId === 'string' ? params.companyId.trim() : '';
   if (!companyId) throw new Error('companyId es obligatorio para usar IA.');
   const endpoint = getSafeAiEndpoint();
@@ -119,12 +127,14 @@ export async function invokeLLM(params = {}) {
     headers: {
       'Content-Type': 'application/json',
       'X-Correlation-Id': correlationId,
+      ...getParentCorrelationHeaders(parentCorrelationId),
       ...(await getAuthHeader()),
     },
     body: JSON.stringify({
       ...params,
       companyId,
       correlationId,
+      ...(parentCorrelationId ? { parentCorrelationId } : {}),
       release: getReleaseMetadata(),
     }),
   });
@@ -141,18 +151,19 @@ export async function invokeLLM(params = {}) {
 
   if (!response.ok) {
     const message = payload?.error || payload?.message || `Error HTTP ${response.status} al llamar IA.`;
-    logFrontendEvent('ai_request_failed', { correlationId, status: response.status, message }, 'error');
+    logFrontendEvent('ai_request_failed', { correlationId, parentCorrelationId, status: response.status, message }, 'error');
     await persistObservabilityEvent('ai_request_failed', {
       correlationId,
       severity: 'ERROR',
       source: 'frontend',
+      parentCorrelationId,
       status: response.status,
       message,
     }).catch(() => null);
     throw new Error(`${message} (correlationId: ${correlationId})`);
   }
 
-  logFrontendEvent('ai_request_completed', { correlationId, status: response.status });
+  logFrontendEvent('ai_request_completed', { correlationId, parentCorrelationId, status: response.status });
   const result = payload?.data || payload?.result || payload;
   if (result && typeof result === 'object') return { ...result, correlationId: result.correlationId || correlationId };
   return { response: result, correlationId };
@@ -168,6 +179,9 @@ async function extractDataFromUploadedFile() {
 
 async function invokeFunction(name, payload = {}) {
   const correlationId = ensureCorrelationId(payload.correlationId, name || 'fn');
+  const parentCorrelationId = payload.parentCorrelationId
+    ? ensureCorrelationId(payload.parentCorrelationId, 'parent')
+    : undefined;
   const endpoint = getSafeFunctionsEndpoint();
   if (!endpoint) {
     return {
@@ -177,6 +191,7 @@ async function invokeFunction(name, payload = {}) {
         message: `Función ${name} desactivada: falta backend seguro.`,
         results: {},
         correlationId,
+        ...(parentCorrelationId ? { parentCorrelationId } : {}),
       },
     };
   }
@@ -189,11 +204,13 @@ async function invokeFunction(name, payload = {}) {
     headers: {
       'Content-Type': 'application/json',
       'X-Correlation-Id': correlationId,
+      ...getParentCorrelationHeaders(parentCorrelationId),
       ...(await getAuthHeader()),
     },
     body: JSON.stringify({
       ...payload,
       correlationId,
+      ...(parentCorrelationId ? { parentCorrelationId } : {}),
       release: payload.release || getReleaseMetadata(),
     }),
   });
@@ -201,7 +218,7 @@ async function invokeFunction(name, payload = {}) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data?.error || data?.message || `No se pudo ejecutar ${name}.`;
-    logFrontendEvent('function_request_failed', { correlationId, functionName: name, status: response.status, message }, 'error');
+    logFrontendEvent('function_request_failed', { correlationId, parentCorrelationId, functionName: name, status: response.status, message }, 'error');
     throw new Error(`${message} (correlationId: ${correlationId})`);
   }
   return { data };
