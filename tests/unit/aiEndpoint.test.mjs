@@ -9,6 +9,10 @@ const realRequire = createRequire(import.meta.url);
 const MODULE_PATH = new URL('../../functions/index.js', import.meta.url);
 const ORIGINAL_ENV = { ...process.env };
 
+function assertCloseTo(actual, expected, tolerance = 1e-12) {
+  assert.ok(Math.abs(actual - expected) < tolerance, `expected ${actual} to be within ${tolerance} of ${expected}`);
+}
+
 
 function expect(received) {
   return {
@@ -127,7 +131,7 @@ function createFirestore(store) {
   };
 }
 
-async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'aiHandler' }) {
+async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'aiHandler', storageFiles = {} }) {
   const firestore = createFirestore(store);
   const admin = {
     initializeApp() {},
@@ -140,6 +144,28 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'a
     },
     firestore() {
       return firestore;
+    },
+    storage() {
+      return {
+        bucket() {
+          return {
+            file(storagePath) {
+              const file = storageFiles[storagePath] || {
+                buffer: Buffer.from('%PDF-1.4\nBT (Contexto financiero validado) Tj ET\n%%EOF', 'latin1'),
+                metadata: { size: 54, contentType: 'application/pdf', name: storagePath },
+              };
+              return {
+                async getMetadata() {
+                  return [{ size: file.metadata?.size || file.buffer.length, contentType: file.metadata?.contentType, name: file.metadata?.name || storagePath }];
+                },
+                async download() {
+                  return [file.buffer];
+                },
+              };
+            },
+          };
+        },
+      };
     },
   };
   const modulePath = fileURLToPath(MODULE_PATH);
@@ -406,7 +432,7 @@ describe('endpoint IA', () => {
     assert.equal(res.payload.response, 'Respuesta IA de prueba');
     assert.equal(res.payload.companyId, 'validCompany');
     assert.equal(res.payload.tokens, 18);
-    assert.equal(res.payload.costo, 0.000036);
+    assertCloseTo(res.payload.costo, 0.000036);
 
     const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
     assert.equal(usageDocs.length, 1);
@@ -419,7 +445,7 @@ describe('endpoint IA', () => {
     assert.equal(costLogs.length, 1);
     assert.equal(costLogs[0].tokens, 18);
     assert.equal(costLogs[0].model, 'gpt-4o-mini');
-    assert.equal(costLogs[0].costo, 0.000036);
+    assertCloseTo(costLogs[0].costo, 0.000036);
     assert.equal(costLogs[0].integration, 'ellmer');
     assert.match(costLogs[0].timestamp, /^\d{4}-\d{2}-\d{2}T/);
 
@@ -504,7 +530,7 @@ describe('endpoint IA', () => {
     assert.equal(reservation.usageDocId, '2026-06-19_validCompany');
     assert.equal(reservation.rateDocId, 'validCompany_owner-uid');
     assert.equal(reservation.estimatedTokens, 1201);
-    assert.equal(reservation.estimatedCostUsd, 0.002402);
+    assertCloseTo(reservation.estimatedCostUsd, 0.002402);
     assert.equal(reservation.reservedAtMs, 1781827200000);
     assert.equal(reservation.reservationStatus, 'reserved');
   });
