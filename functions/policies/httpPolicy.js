@@ -33,8 +33,37 @@ function applyCors(req, res) {
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
 }
 
+function handleCorsPolicy(req, res, options = {}) {
+  applyCors(req, res);
+
+  try {
+    enforceAllowedOrigin(req);
+  } catch (error) {
+    const status = Number(error.status) || 403;
+    if (typeof options.onRejected === 'function') {
+      options.onRejected({ error, status });
+    }
+    res.status(status).json(
+      typeof options.buildErrorBody === 'function'
+        ? options.buildErrorBody({ error, status })
+        : { error: error.message || 'CORS no permitido para este origen.' },
+    );
+    return true;
+  }
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('');
+    return true;
+  }
+
+  return false;
+}
+
 function enforceAllowedOrigin(req) {
   const requestOrigin = req.get('origin');
+
+  // Requests without Origin are non-CORS traffic (for example curl or server-to-server).
+  // They are allowed here, so authentication/authorization must remain the primary barrier.
   if (!requestOrigin) return;
 
   const allowedOrigins = getAllowedOrigins();
@@ -43,4 +72,11 @@ function enforceAllowedOrigin(req) {
   }
 }
 
-module.exports = { DEFAULT_ALLOWED_ORIGINS, applyCors, enforceAllowedOrigin, fail, getAllowedOrigins };
+module.exports = {
+  DEFAULT_ALLOWED_ORIGINS,
+  applyCors,
+  enforceAllowedOrigin,
+  fail,
+  getAllowedOrigins,
+  handleCorsPolicy,
+};

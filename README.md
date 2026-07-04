@@ -118,7 +118,7 @@ firebase deploy --only functions,hosting
 Variables opcionales para Functions:
 
 - `OPENAI_MODEL`: modelo a usar; por defecto `gpt-4o-mini`.
-- `ALLOWED_ORIGINS`: lista separada por comas para CORS. Si no se configura, solo se permiten `https://gemailla-enterprise.firebaseapp.com` y `https://gemailla-enterprise.web.app`; cualquier otro `Origin` recibe `403`.
+- `ALLOWED_ORIGINS`: lista separada por comas para CORS. Si no se configura, solo se permiten `https://gemailla.com`, `https://www.gemailla.com`, `https://gemailla-enterprise.firebaseapp.com` y `https://gemailla-enterprise.web.app`; cualquier otro `Origin` presente recibe `403`.
 - `AI_RATE_LIMIT_WINDOW_MS`: ventana móvil por usuario/empresa para limitar frecuencia; por defecto `60000`.
 - `AI_RATE_LIMIT_MAX_REQUESTS`: máximo de solicitudes por usuario/empresa en la ventana; por defecto `30`.
 - `AI_DAILY_TOKEN_LIMIT`: tokens reservados diarios por empresa en Firestore (`aiUsage/{YYYY-MM-DD_companyId}`); por defecto `50000`.
@@ -127,7 +127,7 @@ Variables opcionales para Functions:
 - `AI_COST_PER_1K_TOKENS_USD`: coste estimado usado para presupuesto diario; por defecto `0.002`.
 - `ALLOW_UNAUTHENTICATED_AI=true`: solo para emuladores/desarrollo local sin sesión Firebase.
 
-La función `ai` valida CORS antes de procesar la solicitud, exige un token Firebase Auth `Bearer`, valida acceso a `companyId` y documentos, y registra límites en Firestore por usuario/empresa (`aiRateLimits`) y por empresa/día (`aiUsage`).
+Las funciones HTTP validan CORS antes de procesar la solicitud, pero CORS no es un control de autenticación: clientes no-navegador como `curl`, scripts o server-to-server pueden omitir el header `Origin` y no reciben `Access-Control-Allow-Origin`. La barrera primaria sigue siendo exigir token Firebase Auth `Bearer`, validar acceso a `companyId`/rol/documentos y registrar límites en Firestore por usuario/empresa (`aiRateLimits`) y por empresa/día (`aiUsage`).
 
 Las rutas de backend no se configuran con variables `VITE_*`: deben permanecer relativas y bajo el mismo origen (`/api/ai` y `/api/functions`). Si necesitas integrar otro proveedor, publícalo detrás de Firebase Hosting/Cloud Functions/Cloud Run y conserva el acceso desde el frontend mediante esas rutas internas.
 
