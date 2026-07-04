@@ -1,4 +1,5 @@
 const { syncCompanyClaimsHandler } = require('./syncCompanyClaimsHandler');
+const { handleCorsPolicy } = require('../policies/httpPolicy');
 
 const FUNCTION_HANDLERS = new Map([
   ['syncCompanyClaims', syncCompanyClaimsHandler],
@@ -21,6 +22,8 @@ function getFunctionNameFromRequest(req) {
 }
 
 async function functionsRouterHandler(req, res) {
+  if (handleCorsPolicy(req, res)) return;
+
   const functionName = getFunctionNameFromRequest(req);
   const handler = FUNCTION_HANDLERS.get(functionName);
 

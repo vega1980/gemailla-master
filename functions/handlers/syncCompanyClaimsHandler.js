@@ -1,5 +1,4 @@
 const admin = require('firebase-admin');
-const { applyCors, enforceAllowedOrigin } = require('../policies/httpPolicy');
 const { requireCompanyId, validateCompanyAccess } = require('./aiHandler');
 
 const COMPANY_ADMIN_ROLES = new Set(['owner', 'director', 'admin']);
@@ -34,19 +33,9 @@ function getRoleForClaims(role) {
 }
 
 async function syncCompanyClaimsHandler(req, res) {
-  applyCors(req, res);
-  if (req.method === 'OPTIONS') {
-    try {
-      enforceAllowedOrigin(req);
-      return res.status(204).send('');
-    } catch (error) {
-      return res.status(Number(error.status) || 403).json({ error: error.message || 'CORS no permitido para este origen.' });
-    }
-  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
 
   try {
-    enforceAllowedOrigin(req);
     const user = await verifyFirebaseUser(req);
     const companyId = requireCompanyId(req.body || {});
     const access = await validateCompanyAccess({ user, companyId });

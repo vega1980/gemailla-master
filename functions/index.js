@@ -12,9 +12,13 @@ const { syncCompanyClaimsHandler, getRoleForClaims } = require('./handlers/syncC
 const { functionsRouterHandler } = require('./handlers/functionsRouter');
 const { cleanupOrphanDocumentStorageHandler } = require('./handlers/orphanDocumentStorageCleanup');
 const { revokeMembershipUserRefreshTokens } = require('./handlers/companyMembershipClaimsHandler');
+const { handleCorsPolicy } = require('./policies/httpPolicy');
 
 exports.ai = onRequest({ cors: false, secrets: [openAiApiKey] }, aiExports.aiHandler);
-exports.syncCompanyClaims = onRequest({ cors: false }, syncCompanyClaimsHandler);
+exports.syncCompanyClaims = onRequest({ cors: false }, (req, res) => {
+  if (handleCorsPolicy(req, res)) return;
+  return syncCompanyClaimsHandler(req, res);
+});
 exports.functionsRouter = onRequest({ cors: false }, functionsRouterHandler);
 exports.cleanupOrphanDocumentStorage = onSchedule({ schedule: 'every sunday 03:00', timeZone: 'Etc/UTC' }, cleanupOrphanDocumentStorageHandler);
 exports.revokeMembershipClaimsOnWrite = onDocumentWritten('companyMembers/{memberId}', revokeMembershipUserRefreshTokens);

@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
 require('../contracts/aiContracts');
-const { applyCors, enforceAllowedOrigin, fail, getAllowedOrigins } = require('../policies/httpPolicy');
+const { enforceAllowedOrigin, fail, getAllowedOrigins, handleCorsPolicy } = require('../policies/httpPolicy');
 const { DEFAULT_COST_PER_1K_TOKENS_USD, getAiRuntimeConfig } = require('../config');
 
 const openAiApiKey = { value: () => process.env.OPENAI_API_KEY };
@@ -632,28 +632,24 @@ async function askLLM({ prompt, user, authorization, correlationId }) {
 async function aiHandler(req, res) {
   const startedAt = Date.now();
   const correlationId = getCorrelationId(req);
-  applyCors(req, res);
   res.set('X-Correlation-Id', correlationId);
   res.set('X-App-Version', RELEASE_METADATA.appVersion);
   res.set('X-Build-Id', RELEASE_METADATA.buildId);
   res.set('X-Git-Sha', RELEASE_METADATA.gitSha);
   res.set('X-Deploy-Env', RELEASE_METADATA.deployEnv);
 
-  if (req.method === 'OPTIONS') {
-    try {
-      enforceAllowedOrigin(req);
-      res.status(204).send('');
-    } catch (error) {
-      const status = Number(error.status) || 403;
-      structuredLog('WARNING', 'ai_cors_preflight_rejected', {
-        correlationId,
-        origin: req.get('origin') || 'none',
-        status,
-      });
-      res.status(status).json({ error: error.message || 'CORS no permitido.', correlationId, release: RELEASE_METADATA });
-    }
-    return;
-  }
+  if (handleCorsPolicy(req, res, {
+    onRejected: ({ status }) => structuredLog('WARNING', 'ai_cors_request_rejected', {
+      correlationId,
+      origin: req.get('origin') || 'none',
+      status,
+    }),
+    buildErrorBody: ({ error }) => ({
+      error: error.message || 'CORS no permitido.',
+      correlationId,
+      release: RELEASE_METADATA,
+    }),
+  })) return;
 
   if (req.method !== 'POST') {
     structuredLog('WARNING', 'ai_request_rejected', { correlationId, method: req.method, status: 405 });
@@ -668,8 +664,6 @@ async function aiHandler(req, res) {
   let modelName = null;
 
   try {
-    enforceAllowedOrigin(req);
-
     user = await verifyFirebaseUser(req);
     const prompt = getPrompt(req.body);
     authorization = await authorizeAiRequest({ user, body: req.body || {} });
