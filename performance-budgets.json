@@ -18,7 +18,7 @@
       "allowedVendors": ["vendor-core", "vendor-firebase", "vendor-charts"]
     },
     "/ai": {
-      "module": "src/pages/AIAssistant.jsx",
+      "module": "src/modules/ai/pages/AIAssistantPage.jsx",
       "routeMaxKb": 140,
       "allowedVendors": ["vendor-core", "vendor-firebase"]
     }
