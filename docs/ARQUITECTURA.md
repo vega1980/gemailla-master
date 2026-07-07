@@ -125,7 +125,7 @@ sequenceDiagram
 
 Decisiones:
 
-- Firestore se crea antes de Storage para mantener el contrato de negocio; Storage no lee Firestore y valida aislamiento con claims activos y metadata personalizada `companyId`/`documentId`.
+- Firestore se crea antes de Storage para mantener el contrato de negocio; Storage valida aislamiento con claims activos, membresía activa en Firestore y metadata personalizada `companyId`/`documentId`.
 - Storage acepta solo `create`; no acepta `update` ni `delete` desde cliente.
 - La app guarda `storagePath`, no URLs públicas persistidas.
 - Si falla la subida, la metadata queda marcada con `status: "error"` y `errorMessage`.
@@ -167,7 +167,7 @@ Condiciones principales:
 
 - usuario autenticado;
 - permiso de lectura/escritura sobre la empresa;
-- metadata `companyId`/`documentId` coincidente con la ruta y claim de empresa activo;
+- `customMetadata.companyId` y `customMetadata.documentId` son el contrato oficial de subida a Storage; deben coincidir con la ruta y el claim de empresa activo. Las reglas también toleran la proyección equivalente en `request.resource.metadata` que expone Firebase Rules al evaluar metadata personalizada;
 - archivo PDF/XML;
 - tamaño máximo 15 MB;
 - archivo inmutable después de creado.

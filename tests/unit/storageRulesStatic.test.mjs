@@ -31,8 +31,14 @@ describe('Cloud Storage rules static invariants', () => {
     assert.match(source, /firestore\.exists\(\s*\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\s*\)/);
     assert.match(source, /firestore\.get\(\s*\/databases\/\(default\)\/documents\/documents\/\$\(documentId\)\s*\)\.data\.companyId == companyId/);
     assert.match(source, /&& documentExists\(companyId, documentId\)/);
-    assert.match(source, /request\.resource\.metadata\.companyId == companyId/);
-    assert.match(source, /request\.resource\.metadata\.documentId == documentId/);
+    assert.doesNotMatch(source, /function uploadMetadata\(\) \{/);
+    assert.doesNotMatch(source, /request\.resource\.customMetadata/);
+    assert.match(source, /function hasRequiredUploadMetadata\(\) \{/);
+    assert.match(source, /let md = request\.resource\.metadata/);
+    assert.match(source, /md\.keys\(\)\.hasAll\(\['companyId', 'documentId'\]\)/);
+    assert.match(source, /function isValidMetadata\(companyId, documentId\) \{/);
+    assert.match(source, /&& md\.companyId == companyId/);
+    assert.match(source, /&& md\.documentId == documentId/);
     assert.match(source, /request\.resource\.size < 15 \* 1024 \* 1024/);
     assert.match(source, /hasAllowedDocumentContentType\(\)/);
     assert.match(source, /allow update, delete: if false/);
