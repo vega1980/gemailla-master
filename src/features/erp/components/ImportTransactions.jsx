@@ -1,11 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Download, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import { createImportLog, parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
+import { parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
+import { createTransactionImportLog, importTransactions } from '@/app/useCases/financeUseCases';
 
 const EXPECTED_COLUMNS = ['tipo', 'monto', 'descripcion', 'fecha', 'categoria', 'metodo_pago'];
 
@@ -87,7 +87,7 @@ export default function ImportTransactions({ companyId, onSuccess }) {
     } catch (err) {
       setStep('upload');
       toast({ title: 'Error en la importación', description: err.message, variant: 'destructive' });
-      await createImportLog({ firebase, companyId, type: 'transactions', file, validCount: 0, errorCount: 1, status: 'failed', errors: [err.message] });
+      await createTransactionImportLog({ companyId, fileName: file.name, validCount: 0, errorCount: 1, status: 'failed', errors: [err.message] });
     }
   };
 
@@ -101,7 +101,7 @@ export default function ImportTransactions({ companyId, onSuccess }) {
       valid.push(normalizeRow(row, companyId));
     });
     if (!valid.length) {
-      await createImportLog({ firebase, companyId, type: 'transactions', file, validCount: 0, errorCount: errs.length, status: 'failed', errors: errs });
+      await createTransactionImportLog({ companyId, fileName: file.name, validCount: 0, errorCount: errs.length, status: 'failed', errors: errs });
     }
     setRows(valid);
     setErrors(errs);
@@ -111,8 +111,16 @@ export default function ImportTransactions({ companyId, onSuccess }) {
   const handleImport = async () => {
     if (!rows.length) return;
     setImporting(true);
-    const created = await firebase.entities.Transaction.bulkCreate(rows);
-    await createImportLog({ firebase, companyId, type: 'transactions', file: fileRef.current?.files?.[0], validCount: created.length, errorCount: errors.length, status: errors.length ? 'partial' : 'success', errors });
+    const created = await importTransactions({
+      rows,
+      companyId,
+      importLog: {
+        fileName: fileRef.current?.files?.[0]?.name || 'transacciones.csv',
+        errorCount: errors.length,
+        status: errors.length ? 'partial' : 'success',
+        errors,
+      },
+    });
     setImportedCount(created.length);
     setImporting(false);
     setStep('done');
