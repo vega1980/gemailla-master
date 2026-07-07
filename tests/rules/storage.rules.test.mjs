@@ -123,7 +123,7 @@ describe('Cloud Storage security rules', () => {
       'upload outside companies root',
     );
     await assertDenied(
-      storageUpload(missingDocumentPdfPath, owner, { metadata: { companyId, documentId: missingDocumentId } }),
+      storageUpload(missingDocumentPdfPath, owner, { customMetadata: { companyId, documentId: missingDocumentId } }),
       'upload with metadata for missing Firestore document',
     );
   });
@@ -147,17 +147,17 @@ describe('Cloud Storage security rules', () => {
     );
 
     await assertDenied(
-      storageUpload(validPdfPath, owner, { metadata: { documentId } }),
+      storageUpload(validPdfPath, owner, { customMetadata: { documentId } }),
       'upload without Storage companyId metadata',
     );
 
     await assertDenied(
-      storageUpload(validPdfPath, owner, { metadata: { companyId } }),
+      storageUpload(validPdfPath, owner, { customMetadata: { companyId } }),
       'upload without Storage documentId metadata',
     );
 
     await assertDenied(
-      storageUpload(validPdfPath, owner, { metadata: { companyId, documentId: sameCompanyOtherDocumentId } }),
+      storageUpload(validPdfPath, owner, { customMetadata: { companyId, documentId: sameCompanyOtherDocumentId } }),
       'upload path document differs from existing same-company Storage custom metadata',
     );
 
@@ -168,11 +168,11 @@ describe('Cloud Storage security rules', () => {
       'upload path company differs from Storage custom metadata',
     );
     await assertDenied(
-      storageUpload(validPdfPath, viewer, { metadata: { companyId, documentId } }),
+      storageUpload(validPdfPath, viewer, { customMetadata: { companyId, documentId } }),
       'active viewer cannot upload documents',
     );
     await assertDenied(
-      storageUpload(validPdfPath, inactiveOwner, { metadata: { companyId, documentId } }),
+      storageUpload(validPdfPath, inactiveOwner, { customMetadata: { companyId, documentId } }),
       'inactive owner cannot upload documents',
     );
   });
@@ -199,7 +199,7 @@ describe('Cloud Storage security rules', () => {
   it('denies access to another company', async () => {
     await assertDenied(
       storageUpload(validPdfPath, outsider, {
-        metadata: { companyId, documentId },
+        customMetadata: { companyId, documentId },
       }),
       'upload when token companyId differs from path company',
     );
