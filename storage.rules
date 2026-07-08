@@ -2,6 +2,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
     function signedIn() {
       return request.auth != null;
     }
@@ -18,11 +22,11 @@ service firebase.storage {
 
     function activeMembership(companyId) {
       let memberId = membershipId(companyId);
+      let member = firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data;
       return signedIn()
-        && firestore.exists(/databases/(default)/documents/companyMembers/$(memberId))
-        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.companyId == companyId
-        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.userUid == request.auth.uid
-        && firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.status == 'active';
+        && member.companyId == companyId
+        && member.userUid == request.auth.uid
+        && member.status == 'active';
     }
 
     function activeCompanyAccess(companyId) {
@@ -35,10 +39,14 @@ service firebase.storage {
       return firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.role;
     }
 
+    function isWriterRole(role) {
+      return role in ['owner', 'director', 'admin', 'editor'];
+    }
+
     function canWriteCompanyDocuments(companyId) {
       return activeCompanyAccess(companyId)
-        && request.auth.token.companyRole in ['owner', 'director', 'admin', 'editor']
-        && activeMembershipRole(companyId) in ['owner', 'director', 'admin', 'editor'];
+        && isWriterRole(request.auth.token.companyRole)
+        && isWriterRole(activeMembershipRole(companyId));
     }
 
     function hasExistingObjectMetadata(companyId, documentId) {
@@ -49,23 +57,15 @@ service firebase.storage {
     }
 
     function documentExists(companyId, documentId) {
-      return firestore.exists(
-        /databases/(default)/documents/documents/$(documentId)
-      )
-      && firestore.get(
+      return firestore.get(
         /databases/(default)/documents/documents/$(documentId)
       ).data.companyId == companyId;
     }
 
-    function hasRequiredUploadMetadata() {
-      let md = request.resource.metadata;
-      return md != null
-        && md.keys().hasAll(['companyId', 'documentId']);
-    }
-
     function isValidMetadata(companyId, documentId) {
       let md = request.resource.metadata;
-      return hasRequiredUploadMetadata()
+      return md != null
+        && md.keys().hasAll(['companyId', 'documentId'])
         && md.companyId == companyId
         && md.documentId == documentId;
     }
@@ -90,20 +90,15 @@ service firebase.storage {
       allow read: if activeCompanyAccess(companyId)
                   && hasExistingObjectMetadata(companyId, documentId);
 
-      allow create: if canWriteCompanyDocuments(companyId)
-                    && documentExists(companyId, documentId)
-                    && isValidMetadata(companyId, documentId)
-                    && request.resource.size > 0
+      allow create: if request.resource.size > 0
                     && request.resource.size < 15 * 1024 * 1024
-                    && hasAllowedDocumentContentType()
-                    && hasAllowedFileExtension(fileName)
-                    && contentTypeMatchesExtension(fileName);
+                    && contentTypeMatchesExtension(fileName)
+                    && canWriteCompanyDocuments(companyId)
+                    && documentExists(companyId, documentId)
+                    && isValidMetadata(companyId, documentId);
 
+      // Files are immutable once created — updates and deletes are never allowed
       allow update, delete: if false;
-    }
-
-    match /{allPaths=**} {
-      allow read, write: if false;
     }
   }
 }
