@@ -71,33 +71,76 @@ function normalizePaymentMethod(rawPaymentMethod) {
   return PAYMENT_METHOD_MAP[key] || 'transferencia';
 }
 
-function normalizeDate(rawDate, fallbackDate = new Date()) {
-  const raw = normalizeText(rawDate);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
-    const [day, month, year] = raw.split('/');
-    return `${year}-${month}-${day}`;
+function assertValidDateParts(year, month, day) {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year
+    || date.getUTCMonth() !== month - 1
+    || date.getUTCDate() !== day
+  ) {
+    throw new Error('La fecha de la transacción no es válida.');
   }
-  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(raw)) {
-    const [month, day, year] = raw.split('/');
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  }
-  return fallbackDate.toISOString().slice(0, 10);
 }
 
-export function normalizeTransactionDraft(draft = {}, companyId, options = {}) {
+function normalizeDate(rawDate) {
+  const raw = normalizeText(rawDate);
+  let year;
+  let month;
+  let day;
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    [, year, month, day] = isoMatch;
+  } else {
+    const dayFirstMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!dayFirstMatch) throw new Error('La fecha de la transacción no es válida.');
+    [, day, month, year] = dayFirstMatch;
+  }
+
+  const numericYear = Number(year);
+  const numericMonth = Number(month);
+  const numericDay = Number(day);
+  assertValidDateParts(numericYear, numericMonth, numericDay);
+
+  return `${String(numericYear).padStart(4, '0')}-${String(numericMonth).padStart(2, '0')}-${String(numericDay).padStart(2, '0')}`;
+}
+
+function pickAllowedDraftFields(draft = {}) {
+  return Object.fromEntries(
+    [
+      'reference',
+      'notes',
+      'expense_type',
+      'isRecurring',
+      'dueDate',
+      'supplier_id',
+    ]
+      .filter((field) => Object.hasOwn(draft, field))
+      .map((field) => [field, draft[field]]),
+  );
+}
+
+export function normalizeTransactionDraft(draft = {}, companyId) {
   assertCompanyId(companyId);
+  const {
+    tipo,
+    monto,
+    descripcion,
+    fecha,
+    categoria,
+    metodo_pago: metodoPago,
+  } = draft;
   const type = normalizeType(draft);
-  const category = draft.category || draft.categoria;
-  const paymentMethod = draft.paymentMethod || draft.metodo_pago;
+  const category = draft.category || categoria;
+  const paymentMethod = draft.paymentMethod || metodoPago;
 
   return {
-    ...draft,
+    ...pickAllowedDraftFields(draft),
     companyId,
     type,
-    amount: normalizeAmount(draft.amount ?? draft.monto),
-    description: normalizeText(draft.description ?? draft.descripcion),
-    date: normalizeDate(draft.date ?? draft.fecha, options.fallbackDate),
+    amount: normalizeAmount(draft.amount ?? monto),
+    description: normalizeText(draft.description ?? descripcion),
+    date: normalizeDate(draft.date ?? fecha),
     category: normalizeCategory(category, type),
     paymentMethod: normalizePaymentMethod(paymentMethod),
     status: draft.status || 'confirmed',

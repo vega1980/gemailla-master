@@ -5,7 +5,7 @@ import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Download
 import { useToast } from '@/components/ui/use-toast';
 import { parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
 import { importTransactions, prepareTransactionImport, recordTransactionImportFailure } from '@/app/useCases/financeUseCases';
-import { runTransactionImport } from '@/features/erp/services/transactionImportPresenter';
+import { runTransactionImport, shouldStartTransactionImport } from '@/features/erp/services/transactionImportPresenter';
 
 const EXPECTED_COLUMNS = ['tipo', 'monto', 'descripcion', 'fecha', 'categoria', 'metodo_pago'];
 
@@ -36,7 +36,12 @@ export default function ImportTransactions({ companyId, onSuccess }) {
     } catch (err) {
       setStep('upload');
       toast({ title: 'Error en la importación', description: err.message, variant: 'destructive' });
-      await recordTransactionImportFailure({ companyId, fileName: file.name, errorCount: 1, errors: [err.message] });
+      await recordTransactionImportFailure({
+        companyId,
+        fileName: file.name,
+        errorCount: 1,
+        errors: [err.message],
+      }).catch(() => null);
     }
   };
 
@@ -55,18 +60,22 @@ export default function ImportTransactions({ companyId, onSuccess }) {
     setStep('preview');
   };
 
-  const handleImport = () => runTransactionImport({
-    rows,
-    companyId,
-    fileName: fileRef.current?.files?.[0]?.name,
-    errors,
-    importTransactions,
-    setImportedCount,
-    setImporting,
-    setStep,
-    toast,
-    onSuccess,
-  });
+  const handleImport = () => {
+    if (!shouldStartTransactionImport(rows, importing)) return;
+
+    return runTransactionImport({
+      rows,
+      companyId,
+      fileName: fileRef.current?.files?.[0]?.name,
+      errors,
+      importTransactions,
+      setImportedCount,
+      setImporting,
+      setStep,
+      toast,
+      onSuccess,
+    });
+  };
 
   const downloadTemplate = () => {
     const csv = [

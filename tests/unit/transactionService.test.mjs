@@ -10,7 +10,7 @@ import {
 
 describe('transaction domain service', () => {
   it('normaliza borradores y exige companyId antes de tocar infraestructura', () => {
-    assert.deepEqual(normalizeTransactionDraft({ type: 'gasto', amount: '12.50' }, 'company-1', { fallbackDate: new Date('2026-01-02T00:00:00Z') }), {
+    assert.deepEqual(normalizeTransactionDraft({ type: 'gasto', amount: '12.50', date: '2026-01-02' }, 'company-1'), {
       type: 'gasto',
       amount: 12.5,
       companyId: 'company-1',
@@ -22,7 +22,7 @@ describe('transaction domain service', () => {
     });
 
     assert.throws(() => normalizeTransactionDraft({ amount: 10 }, ''), /companyId es obligatorio/);
-    assert.throws(() => normalizeTransactionDraft({ amount: 0 }, 'company-1'), /mayor a cero/);
+    assert.throws(() => normalizeTransactionDraft({ amount: 0, date: '2026-01-02' }, 'company-1'), /mayor a cero/);
   });
 
   it('mapea filas importadas en español dentro del dominio y tolera metodo_pago vacío', () => {
@@ -31,7 +31,7 @@ describe('transaction domain service', () => {
         tipo: 'gasto',
         monto: '$3,500',
         descripcion: 'Renta oficina',
-        fecha: '01/05/2026',
+        fecha: '1/5/2026',
         categoria: 'renta',
         metodo_pago: undefined,
       },
@@ -39,11 +39,11 @@ describe('transaction domain service', () => {
         tipo: 'ingreso',
         monto: '15000',
         descripcion: '',
-        fecha: '2026-05-02',
+        fecha: '02/05/2026',
         categoria: 'ventas',
         metodo_pago: 'tarjeta credito',
       },
-    ], 'company-1', { fallbackDate: new Date('2026-01-02T00:00:00Z') });
+    ], 'company-1');
 
     assert.deepEqual(prepared.rows.map((row) => ({
       type: row.type,
@@ -56,6 +56,39 @@ describe('transaction domain service', () => {
       { type: 'ingreso', amount: 15000, date: '2026-05-02', category: 'ventas', paymentMethod: 'tarjeta_credito' },
     ]);
     assert.deepEqual(prepared.errors, ['Fila 3: descripción vacía; se importará sin descripción.']);
+  });
+
+  it('no conserva alias españoles del archivo en la transacción normalizada', () => {
+    const normalized = normalizeTransactionDraft({
+      tipo: 'gasto',
+      monto: '100',
+      descripcion: 'Pago proveedor',
+      fecha: '7/7/2026',
+      categoria: 'materiales',
+      metodo_pago: 'cheque',
+      notes: 'Campo legítimo del formulario',
+    }, 'company-1');
+
+    assert.deepEqual(Object.keys(normalized).sort(), [
+      'amount',
+      'category',
+      'companyId',
+      'date',
+      'description',
+      'notes',
+      'paymentMethod',
+      'status',
+      'type',
+    ].sort());
+    assert.equal(normalized.date, '2026-07-07');
+  });
+
+  it('normaliza fechas d/M/yyyy, dd/MM/yyyy e invalida fechas imposibles', () => {
+    assert.equal(normalizeTransactionDraft({ amount: 10, date: '1/5/2026' }, 'company-1').date, '2026-05-01');
+    assert.equal(normalizeTransactionDraft({ amount: 10, date: '01/05/2026' }, 'company-1').date, '2026-05-01');
+    assert.equal(normalizeTransactionDraft({ amount: 10, date: '2026-05-01' }, 'company-1').date, '2026-05-01');
+    assert.throws(() => normalizeTransactionDraft({ amount: 10, date: '31/02/2026' }, 'company-1'), /fecha de la transacción no es válida/i);
+    assert.throws(() => normalizeTransactionDraft({ amount: 10, date: '02/31/2026' }, 'company-1'), /fecha de la transacción no es válida/i);
   });
 
   it('ejecuta casos de uso con repositorios inyectados, sin depender de Firebase', async () => {
@@ -80,7 +113,7 @@ describe('transaction domain service', () => {
 
     const created = await service.bulkImport({
       companyId: 'company-1',
-      rows: [{ type: 'ingreso', amount: '100' }, { type: 'gasto', amount: 40 }],
+      rows: [{ type: 'ingreso', amount: '100', date: '2026-01-02' }, { type: 'gasto', amount: 40, date: '2026-01-03' }],
       importLog: { status: 'partial', errorCount: 1 },
     });
 

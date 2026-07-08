@@ -1,3 +1,7 @@
+export function shouldStartTransactionImport(rows, importing) {
+  return rows.length > 0 && importing !== true;
+}
+
 export async function runTransactionImport({
   rows,
   companyId,
@@ -10,8 +14,6 @@ export async function runTransactionImport({
   toast,
   onSuccess,
 }) {
-  if (!rows.length) return;
-
   setImporting(true);
   try {
     const created = await importTransactions({
@@ -28,9 +30,12 @@ export async function runTransactionImport({
     setStep('done');
     onSuccess?.();
   } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : 'No se pudieron guardar las transacciones. Intenta de nuevo.';
     toast({
       title: 'Error al importar transacciones',
-      description: error.message || 'No se pudieron guardar las transacciones. Intenta de nuevo.',
+      description: message,
       variant: 'destructive',
     });
     setStep('preview');

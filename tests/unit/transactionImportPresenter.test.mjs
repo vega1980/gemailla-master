@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { runTransactionImport } from '../../src/features/erp/services/transactionImportPresenter.js';
+import {
+  runTransactionImport,
+  shouldStartTransactionImport,
+} from '../../src/features/erp/services/transactionImportPresenter.js';
 
 function createHarness(overrides = {}) {
   const calls = [];
@@ -24,6 +27,12 @@ function createHarness(overrides = {}) {
 }
 
 describe('transaction import presenter', () => {
+  it('bloquea doble ejecución cuando no hay filas o ya está importando', () => {
+    assert.equal(shouldStartTransactionImport([], false), false);
+    assert.equal(shouldStartTransactionImport([{ amount: 10 }], true), false);
+    assert.equal(shouldStartTransactionImport([{ amount: 10 }], false), true);
+  });
+
   it('marca done, guarda conteo y ejecuta onSuccess cuando la importación funciona', async () => {
     const harness = createHarness({
       importTransactions: async (payload) => {
@@ -44,17 +53,14 @@ describe('transaction import presenter', () => {
     ]);
   });
 
-  it('si falla vuelve a preview, muestra toast destructivo y siempre desbloquea sin registrar failed', async () => {
+  it('si falla vuelve a preview, muestra toast destructivo y siempre desbloquea', async () => {
     const error = new Error('Firestore timeout después de crear algunas filas');
-    let failureLogCalled = false;
     const harness = createHarness({
       importTransactions: async () => { throw error; },
-      recordTransactionImportFailure: () => { failureLogCalled = true; },
     });
 
     await runTransactionImport(harness.params);
 
-    assert.equal(failureLogCalled, false);
     assert.deepEqual(harness.calls, [
       ['setImporting', true],
       ['toast', {
@@ -65,5 +71,20 @@ describe('transaction import presenter', () => {
       ['setStep', 'preview'],
       ['setImporting', false],
     ]);
+  });
+
+  it('usa un mensaje genérico si el rechazo no es una instancia de Error', async () => {
+    const harness = createHarness({
+      importTransactions: async () => { throw 'timeout'; },
+    });
+
+    await runTransactionImport(harness.params);
+
+    assert.deepEqual(harness.calls[1], ['toast', {
+      title: 'Error al importar transacciones',
+      description: 'No se pudieron guardar las transacciones. Intenta de nuevo.',
+      variant: 'destructive',
+    }]);
+    assert.deepEqual(harness.calls.at(-1), ['setImporting', false]);
   });
 });
