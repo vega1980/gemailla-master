@@ -18,32 +18,23 @@ describe('Cloud Storage rules static invariants', () => {
     assert.match(source, /request\.auth\.token\.companyId\s*==\s*companyId/);
     assert.match(source, /request\.auth\.token\.membershipStatus\s*==\s*'active'/);
 
-    assert.match(source, /function membershipId\(companyId\)/);
-    assert.match(source, /function activeMembership\(companyId\)/);
-    assert.match(source, /\/documents\/companyMembers\/\$\(memberId\)/);
-
-    assert.match(source, /\.data\.companyId\s*==\s*companyId|member\.companyId\s*==\s*companyId/);
-    assert.match(source, /\.data\.userUid\s*==\s*request\.auth\.uid|member\.userUid\s*==\s*request\.auth\.uid/);
-    assert.match(source, /\.data\.status\s*==\s*'active'|member\.status\s*==\s*'active'/);
+    assert.doesNotMatch(source, /firestore\.get\(/);
+    assert.doesNotMatch(source, /companyMembers/);
 
     assert.match(source, /function activeCompanyAccess\(companyId\)/);
     assert.match(source, /hasCompanyToken\(companyId\)/);
-    assert.match(source, /activeMembership\(companyId\)/);
     assert.match(source, /allow read: if activeCompanyAccess\(companyId\)/);
   });
 
-  it('restricts uploads to active writer roles with matching metadata and backing document', async () => {
+  it('restricts uploads to active writer roles with matching object metadata', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
     assert.match(source, /function canWriteCompanyDocuments\(companyId\)/);
     includesWriterRoles(source);
 
     assert.match(source, /request\.auth\.token\.companyRole\s+in\s+\[|isWriterRole\(request\.auth\.token\.companyRole\)/);
-    assert.match(source, /activeMembershipRole\(companyId\)\s+in\s+\[|isWriterRole\(activeMembershipRole\(companyId\)\)/);
-
-    assert.match(source, /function documentExists\(companyId, documentId\)/);
-    assert.match(source, /\/documents\/documents\/\$\(documentId\)/);
-    assert.match(source, /\.data\.companyId\s*==\s*companyId/);
+    assert.doesNotMatch(source, /activeMembershipRole/);
+    assert.doesNotMatch(source, /function documentExists/);
 
     assert.match(source, /function isValidMetadata\(companyId, documentId\)/);
     assert.match(source, /request\.resource\.metadata/);
@@ -53,7 +44,6 @@ describe('Cloud Storage rules static invariants', () => {
 
     assert.match(source, /allow create: if/);
     assert.match(source, /canWriteCompanyDocuments\(companyId\)/);
-    assert.match(source, /documentExists\(companyId, documentId\)/);
     assert.match(source, /isValidMetadata\(companyId, documentId\)/);
     assert.match(source, /request\.resource\.size\s*>\s*0/);
     assert.match(source, /request\.resource\.size\s*<\s*15 \* 1024 \* 1024/);

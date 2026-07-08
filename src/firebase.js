@@ -7,7 +7,9 @@ import {
   persistentMultipleTabManager,
 } from 'firebase/firestore';
 import { connectStorageEmulator, getStorage } from 'firebase/storage';
+import { validateFrontendEnv } from './config/env.js';
 
+const env = validateFrontendEnv(import.meta.env);
 const runtimeConfig = typeof window !== 'undefined' ? window.GEMAILLA_FIREBASE_CONFIG || {} : {};
 
 const PLACEHOLDER_PATTERN = /^(TU_|YOUR_|<|\$\{)/i;
@@ -34,12 +36,12 @@ function shouldUseFirebaseEmulators(projectId) {
 }
 
 const firebaseConfig = {
-  apiKey: getConfigValue(import.meta.env.VITE_FIREBASE_API_KEY, runtimeConfig.apiKey),
-  authDomain: getConfigValue(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, runtimeConfig.authDomain),
-  projectId: getConfigValue(import.meta.env.VITE_FIREBASE_PROJECT_ID, runtimeConfig.projectId),
-  storageBucket: getConfigValue(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, runtimeConfig.storageBucket),
-  messagingSenderId: getConfigValue(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, runtimeConfig.messagingSenderId),
-  appId: getConfigValue(import.meta.env.VITE_FIREBASE_APP_ID, runtimeConfig.appId),
+  apiKey: getConfigValue(env.VITE_FIREBASE_API_KEY, runtimeConfig.apiKey),
+  authDomain: getConfigValue(env.VITE_FIREBASE_AUTH_DOMAIN, runtimeConfig.authDomain),
+  projectId: getConfigValue(env.VITE_FIREBASE_PROJECT_ID, runtimeConfig.projectId),
+  storageBucket: getConfigValue(env.VITE_FIREBASE_STORAGE_BUCKET, runtimeConfig.storageBucket),
+  messagingSenderId: getConfigValue(env.VITE_FIREBASE_MESSAGING_SENDER_ID, runtimeConfig.messagingSenderId),
+  appId: getConfigValue(env.VITE_FIREBASE_APP_ID, runtimeConfig.appId),
 };
 
 const useFirebaseEmulators = shouldUseFirebaseEmulators(firebaseConfig.projectId);

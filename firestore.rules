@@ -50,47 +50,33 @@ service cloud.firestore {
       return companyId + '_' + currentUid();
     }
 
-    function companyExists(companyId) {
-      return exists(/databases/$(database)/documents/companies/$(companyId));
-    }
-
-    function isCompanyOwner(companyId) {
-      return signedIn()
-        && companyExists(companyId)
-        && get(/databases/$(database)/documents/companies/$(companyId)).data.ownerUid == currentUid();
-    }
-
     function hasActiveMembership(companyId) {
-      let memberId = membershipId(companyId);
-      return signedIn()
-        && exists(/databases/$(database)/documents/companyMembers/$(memberId))
-        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.get('status', null) == 'active';
+      return sameCompany(companyId)
+        && request.auth.token.get('membershipStatus', null) == 'active';
     }
 
     function memberRole(companyId) {
-      let memberId = membershipId(companyId);
-      return get(/databases/$(database)/documents/companyMembers/$(memberId)).data.get('role', null);
+      return hasActiveMembership(companyId) ? request.auth.token.get('companyRole', null) : null;
+    }
+
+    function isCompanyOwner(companyId) {
+      return memberRole(companyId) == 'owner';
     }
 
     function hasAnyCompanyRole(companyId, roles) {
-      return hasActiveMembership(companyId) && memberRole(companyId) in roles;
+      return memberRole(companyId) in roles;
     }
 
     function canReadCompany(companyId) {
-      return sameCompany(companyId)
-        && (isCompanyOwner(companyId) || hasActiveMembership(companyId));
+      return hasActiveMembership(companyId);
     }
 
     function canWriteCompany(companyId) {
-      return sameCompany(companyId)
-        && (isCompanyOwner(companyId)
-          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']));
+      return hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']);
     }
 
     function canManageCompany(companyId) {
-      return sameCompany(companyId)
-        && (isCompanyOwner(companyId)
-          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']));
+      return hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']);
     }
 
     // Roles que el actor puede asignar. Solo el dueño real de la empresa

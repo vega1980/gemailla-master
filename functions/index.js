@@ -3,6 +3,9 @@ const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { defineSecret } = require('firebase-functions/params');
+const { validateFunctionsEnv } = require('./env');
+
+validateFunctionsEnv();
 
 admin.initializeApp();
 

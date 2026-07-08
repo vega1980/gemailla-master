@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { validateFunctionsEnv } = require('./env');
 
 const DEFAULT_LLM_PROVIDER = 'openai';
 const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini';
@@ -26,17 +27,18 @@ function getString(value, fallback) {
 }
 
 function getEnvAiRuntimeConfig() {
-  const provider = getString(process.env.LLM_PROVIDER, DEFAULT_LLM_PROVIDER).toLowerCase();
-  const model = getString(process.env.LLM_MODEL || process.env.OPENAI_MODEL, provider === 'openai' ? DEFAULT_OPENAI_MODEL : 'default');
+  const env = validateFunctionsEnv();
+  const provider = getString(env.LLM_PROVIDER, DEFAULT_LLM_PROVIDER).toLowerCase();
+  const model = getString(env.LLM_MODEL || env.OPENAI_MODEL, provider === 'openai' ? DEFAULT_OPENAI_MODEL : 'default');
   return {
     provider,
     model,
-    rateLimitWindowMs: getPositiveNumber(process.env.AI_RATE_LIMIT_WINDOW_MS, DEFAULT_RATE_LIMIT_WINDOW_MS),
-    rateLimitMaxRequests: getPositiveNumber(process.env.AI_RATE_LIMIT_MAX_REQUESTS, DEFAULT_RATE_LIMIT_MAX_REQUESTS),
-    dailyTokenLimit: getPositiveNumber(process.env.AI_DAILY_TOKEN_LIMIT, DEFAULT_DAILY_TOKEN_LIMIT),
-    dailyBudgetUsd: getPositiveNumber(process.env.AI_DAILY_BUDGET_USD, DEFAULT_DAILY_BUDGET_USD),
-    reservedOutputTokens: getPositiveNumber(process.env.AI_RESERVED_OUTPUT_TOKENS, DEFAULT_RESERVED_OUTPUT_TOKENS),
-    costPer1kTokensUsd: getPositiveNumber(process.env.AI_COST_PER_1K_TOKENS_USD, DEFAULT_COST_PER_1K_TOKENS_USD),
+    rateLimitWindowMs: getPositiveNumber(env.AI_RATE_LIMIT_WINDOW_MS, DEFAULT_RATE_LIMIT_WINDOW_MS),
+    rateLimitMaxRequests: getPositiveNumber(env.AI_RATE_LIMIT_MAX_REQUESTS, DEFAULT_RATE_LIMIT_MAX_REQUESTS),
+    dailyTokenLimit: getPositiveNumber(env.AI_DAILY_TOKEN_LIMIT, DEFAULT_DAILY_TOKEN_LIMIT),
+    dailyBudgetUsd: getPositiveNumber(env.AI_DAILY_BUDGET_USD, DEFAULT_DAILY_BUDGET_USD),
+    reservedOutputTokens: getPositiveNumber(env.AI_RESERVED_OUTPUT_TOKENS, DEFAULT_RESERVED_OUTPUT_TOKENS),
+    costPer1kTokensUsd: getPositiveNumber(env.AI_COST_PER_1K_TOKENS_USD, DEFAULT_COST_PER_1K_TOKENS_USD),
     source: 'env',
   };
 }
