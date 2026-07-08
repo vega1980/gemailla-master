@@ -5,6 +5,7 @@ import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Download
 import { useToast } from '@/components/ui/use-toast';
 import { parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
 import { importTransactions, prepareTransactionImport, recordTransactionImportFailure } from '@/app/useCases/financeUseCases';
+import { runTransactionImport } from '@/features/erp/services/transactionImportPresenter';
 
 const EXPECTED_COLUMNS = ['tipo', 'monto', 'descripcion', 'fecha', 'categoria', 'metodo_pago'];
 
@@ -54,24 +55,18 @@ export default function ImportTransactions({ companyId, onSuccess }) {
     setStep('preview');
   };
 
-  const handleImport = async () => {
-    if (!rows.length) return;
-    setImporting(true);
-    const created = await importTransactions({
-      rows,
-      companyId,
-      importLog: {
-        fileName: fileRef.current?.files?.[0]?.name || 'transacciones.csv',
-        errorCount: errors.length,
-        status: errors.length ? 'partial' : 'success',
-        errors,
-      },
-    });
-    setImportedCount(created.length);
-    setImporting(false);
-    setStep('done');
-    onSuccess?.();
-  };
+  const handleImport = () => runTransactionImport({
+    rows,
+    companyId,
+    fileName: fileRef.current?.files?.[0]?.name,
+    errors,
+    importTransactions,
+    setImportedCount,
+    setImporting,
+    setStep,
+    toast,
+    onSuccess,
+  });
 
   const downloadTemplate = () => {
     const csv = [
