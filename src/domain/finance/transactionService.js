@@ -123,7 +123,6 @@ function pickAllowedDraftFields(draft = {}) {
 export function normalizeTransactionDraft(draft = {}, companyId) {
   assertCompanyId(companyId);
   const {
-    tipo,
     monto,
     descripcion,
     fecha,
