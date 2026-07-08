@@ -153,7 +153,7 @@ export function prepareTransactionImportRows(rows = [], companyId, options = {})
 
   rows.forEach((row, index) => {
     try {
-      const normalized = normalizeTransactionDraft(row, companyId, options);
+      const normalized = normalizeTransactionDraft(row, companyId);
       if (!normalized.description) errors.push(`Fila ${index + 2}: descripción vacía; se importará sin descripción.`);
       validRows.push(normalized);
     } catch (error) {
