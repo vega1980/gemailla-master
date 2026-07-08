@@ -568,19 +568,25 @@ async function getLlmModel(provider) {
 
 async function callOpenAIProvider({ apiKey, prompt, documentContext = '', user, authorization, correlationId, model }) {
   const startedAt = Date.now();
+  const configuredTimeoutMs = Number(
+    process.env.OPENAI_TIMEOUT_MS
+    || process.env.AI_REQUEST_TIMEOUT_MS
+    || 45000,
+  );
+  const timeoutMs = Number.isFinite(configuredTimeoutMs) && configuredTimeoutMs > 0 ? configuredTimeoutMs : 45000;
   const controller = new AbortController();
-  const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS || 45000);
   const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+
   let response;
   try {
     response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
-      signal: controller.signal,
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'X-Correlation-Id': correlationId,
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model,
         input: [
@@ -611,7 +617,6 @@ ${documentContext}`,
       }),
     });
   } catch (error) {
-    clearTimeout(timeoutHandle);
     if (error.name === 'AbortError') {
       structuredLog('ERROR', 'openai_request_timeout', {
         correlationId,

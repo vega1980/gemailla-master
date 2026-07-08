@@ -33,11 +33,19 @@ async function seedStorageAcl() {
     companyId,
     ownerUid: owner.uid,
     memberships: [
+      { userUid: owner.uid, userEmail: owner.claims.email, role: 'director', status: 'active' },
       { userUid: director.uid, userEmail: director.claims.email, role: 'director', status: 'active' },
       { userUid: viewer.uid, userEmail: viewer.claims.email, role: 'viewer', status: 'active' },
     ],
   });
-  await seedCompany({ companyId: otherCompanyId, ownerUid: 'other-storage-owner-uid' });
+
+  await seedCompany({
+    companyId: otherCompanyId,
+    ownerUid: otherOwner.uid,
+    memberships: [
+      { userUid: otherOwner.uid, userEmail: otherOwner.claims.email, role: 'director', status: 'active' },
+    ],
+  });
 
   await assertAllowed(firestoreSet(`documents/${documentId}`, {
     companyId,
