@@ -568,8 +568,12 @@ async function getLlmModel(provider) {
 
 async function callOpenAIProvider({ apiKey, prompt, documentContext = '', user, authorization, correlationId, model }) {
   const startedAt = Date.now();
-  const configuredTimeoutMs = Number(process.env.OPENAI_TIMEOUT_MS);
-  const timeoutMs = Number.isFinite(configuredTimeoutMs) && configuredTimeoutMs > 0 ? configuredTimeoutMs : 30000;
+  const configuredTimeoutMs = Number(
+    process.env.OPENAI_TIMEOUT_MS
+    || process.env.AI_REQUEST_TIMEOUT_MS
+    || 45000,
+  );
+  const timeoutMs = Number.isFinite(configuredTimeoutMs) && configuredTimeoutMs > 0 ? configuredTimeoutMs : 45000;
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
