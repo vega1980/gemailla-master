@@ -57,9 +57,10 @@ service firebase.storage {
     }
 
     function documentExists(companyId, documentId) {
-      return firestore.get(
+      let data = firestore.get(
         /databases/(default)/documents/documents/$(documentId)
-      ).data.companyId == companyId;
+      ).data;
+      return data != null && data.companyId == companyId;
     }
 
     function isValidMetadata(companyId, documentId) {
