@@ -3,62 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Loader2, Download, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { format } from 'date-fns';
 import { parseSpreadsheetFile, validateRequiredColumns } from '@/features/imports/spreadsheetImport';
-import { createTransactionImportLog, importTransactions } from '@/app/useCases/financeUseCases';
+import { importTransactions, prepareTransactionImport, recordTransactionImportFailure } from '@/app/useCases/financeUseCases';
 
 const EXPECTED_COLUMNS = ['tipo', 'monto', 'descripcion', 'fecha', 'categoria', 'metodo_pago'];
-
-const CATEGORY_MAP = {
-  ventas: 'ventas', servicios: 'servicios', inversiones: 'inversiones',
-  'otros ingresos': 'otros_ingresos', nomina: 'nómina', nómina: 'nómina',
-  renta: 'renta', 'servicios profesionales': 'servicios_profesionales',
-  materiales: 'materiales', marketing: 'marketing', impuestos: 'impuestos',
-  seguros: 'seguros', mantenimiento: 'mantenimiento', tecnologia: 'tecnología',
-  tecnología: 'tecnología', transporte: 'transporte', 'otros gastos': 'otros_gastos',
-};
-
-const PAYMENT_MAP = {
-  efectivo: 'efectivo', transferencia: 'transferencia',
-  'tarjeta credito': 'tarjeta_credito', 'tarjeta débito': 'tarjeta_debito',
-  'tarjeta debito': 'tarjeta_debito', cheque: 'cheque',
-};
-
-
-function normalizeRow(row, companyId) {
-  const tipo = row.tipo?.toLowerCase().includes('gasto') ? 'gasto' : 'ingreso';
-  const monto = parseFloat(row.monto?.replace(/[$,\s]/g, '') || '0');
-  const rawCat = row.categoria?.toLowerCase().trim();
-  const category = CATEGORY_MAP[rawCat] || (tipo === 'ingreso' ? 'ventas' : 'otros_gastos');
-  const rawPayment = row.metodo_pago?.toLowerCase().trim();
-  const paymentMethod = PAYMENT_MAP[rawPayment] || 'transferencia';
-
-  // Parse date: try yyyy-mm-dd, dd/mm/yyyy, mm/dd/yyyy
-  let date = format(new Date(), 'yyyy-MM-dd');
-  if (row.fecha) {
-    const raw = row.fecha.trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-      date = raw;
-    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
-      const [d, m, y] = raw.split('/');
-      date = `${y}-${m}-${d}`;
-    } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(raw)) {
-      const [m, d, y] = raw.split('/');
-      date = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-    }
-  }
-
-  return {
-    companyId: companyId,
-    type: tipo,
-    amount: monto,
-    description: row.descripcion || '',
-    date,
-    category,
-    paymentMethod,
-    status: 'confirmed',
-  };
-}
 
 export default function ImportTransactions({ companyId, onSuccess }) {
   const [open, setOpen] = useState(false);
@@ -83,28 +31,26 @@ export default function ImportTransactions({ companyId, onSuccess }) {
       const parsed = await parseSpreadsheetFile(file);
       const columnErrors = validateRequiredColumns(parsed, ['monto']);
       if (columnErrors.length) throw new Error(columnErrors.join(' '));
-      await processRows(parsed, file);
+      processRows(parsed, file);
     } catch (err) {
       setStep('upload');
       toast({ title: 'Error en la importación', description: err.message, variant: 'destructive' });
-      await createTransactionImportLog({ companyId, fileName: file.name, validCount: 0, errorCount: 1, status: 'failed', errors: [err.message] });
+      await recordTransactionImportFailure({ companyId, fileName: file.name, errorCount: 1, errors: [err.message] });
     }
   };
 
-  const processRows = async (parsed, file) => {
-    const valid = [];
-    const errs = [];
-    parsed.forEach((row, i) => {
-      const monto = parseFloat((row.monto || '').replace(/[$,\s]/g, '') || '0');
-      if (monto <= 0) { errs.push(`Fila ${i + 2}: Monto inválido (${row.monto})`); return; }
-      if (!row.descripcion) errs.push(`Fila ${i + 2}: descripción vacía; se importará sin descripción.`);
-      valid.push(normalizeRow(row, companyId));
-    });
-    if (!valid.length) {
-      await createTransactionImportLog({ companyId, fileName: file.name, validCount: 0, errorCount: errs.length, status: 'failed', errors: errs });
+  const processRows = (parsed, file) => {
+    const prepared = prepareTransactionImport({ rows: parsed, companyId });
+    if (!prepared.rows.length) {
+      recordTransactionImportFailure({
+        companyId,
+        fileName: file.name,
+        errorCount: prepared.errors.length,
+        errors: prepared.errors,
+      }).catch(() => null);
     }
-    setRows(valid);
-    setErrors(errs);
+    setRows(prepared.rows);
+    setErrors(prepared.errors);
     setStep('preview');
   };
 
