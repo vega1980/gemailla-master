@@ -16,27 +16,8 @@ service firebase.storage {
         && request.auth.token.membershipStatus == 'active';
     }
 
-    function membershipId(companyId) {
-      return companyId + '_' + request.auth.uid;
-    }
-
-    function activeMembership(companyId) {
-      let memberId = membershipId(companyId);
-      let member = firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data;
-      return signedIn()
-        && member.companyId == companyId
-        && member.userUid == request.auth.uid
-        && member.status == 'active';
-    }
-
     function activeCompanyAccess(companyId) {
-      return hasCompanyToken(companyId)
-        && activeMembership(companyId);
-    }
-
-    function activeMembershipRole(companyId) {
-      let memberId = membershipId(companyId);
-      return firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.role;
+      return hasCompanyToken(companyId);
     }
 
     function isWriterRole(role) {
@@ -45,8 +26,7 @@ service firebase.storage {
 
     function canWriteCompanyDocuments(companyId) {
       return activeCompanyAccess(companyId)
-        && isWriterRole(request.auth.token.companyRole)
-        && isWriterRole(activeMembershipRole(companyId));
+        && isWriterRole(request.auth.token.companyRole);
     }
 
     function hasExistingObjectMetadata(companyId, documentId) {
@@ -56,11 +36,6 @@ service firebase.storage {
         && resource.metadata.documentId == documentId;
     }
 
-    function documentExists(companyId, documentId) {
-      return firestore.get(
-        /databases/(default)/documents/documents/$(documentId)
-      ).data.companyId == companyId;
-    }
 
     function isValidMetadata(companyId, documentId) {
       let md = request.resource.metadata;
@@ -94,7 +69,6 @@ service firebase.storage {
                     && request.resource.size < 15 * 1024 * 1024
                     && contentTypeMatchesExtension(fileName)
                     && canWriteCompanyDocuments(companyId)
-                    && documentExists(companyId, documentId)
                     && isValidMetadata(companyId, documentId);
 
       // Files are immutable once created — updates and deletes are never allowed
