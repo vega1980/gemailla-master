@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyEntityQueryKey, useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
@@ -16,6 +15,7 @@ import TransactionFormDialog from '@/features/erp/components/TransactionFormDial
 import TransactionList from '@/features/erp/components/TransactionList';
 import TransactionStats from '@/features/erp/components/TransactionStats';
 import { format } from 'date-fns';
+import { archiveTransaction, calculateTransactionTotals, createTransaction } from '@/app/useCases/financeUseCases';
 
 function createEmptyTransactionForm() {
   return {
@@ -49,7 +49,7 @@ export default function ERP() {
   const { data: transactions = [], isLoading } = useCompanyTransactions(activeCompany);
 
   const createMutation = useMutation({
-    mutationFn: (data) => firebase.entities.Transaction.create(data),
+    mutationFn: (data) => createTransaction(data, activeCompany.id),
     onSuccess: async (transaction) => {
       await logAction({
         companyId: activeCompany.id,
@@ -68,7 +68,7 @@ export default function ERP() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => firebase.entities.Transaction.archive(id),
+    mutationFn: archiveTransaction,
     onSuccess: invalidateTransactions,
   });
 
@@ -77,23 +77,12 @@ export default function ERP() {
     [filterType, transactions],
   );
 
-  const transactionTotals = useMemo(() => {
-    const totalIngresos = transactions
-      .filter((transaction) => transaction.type === 'ingreso')
-      .reduce((sum, transaction) => sum + (transaction.amount || 0), 0);
-    const totalGastos = transactions
-      .filter((transaction) => transaction.type === 'gasto')
-      .reduce((sum, transaction) => sum + (transaction.amount || 0), 0);
-
-    return { totalIngresos, totalGastos };
-  }, [transactions]);
+  const transactionTotals = useMemo(() => calculateTransactionTotals(transactions), [transactions]);
 
   function handleSubmit(event) {
     event.preventDefault();
     createMutation.mutate({
       ...formData,
-      companyId: activeCompany.id,
-      amount: parseFloat(formData.amount),
     });
   }
 
