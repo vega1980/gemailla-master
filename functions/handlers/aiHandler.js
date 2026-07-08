@@ -479,6 +479,57 @@ async function validateCompanyAccess({ user, companyId }) {
   return { companyRef, company, role, membership };
 }
 
+
+function normalizeStorageMetadata(metadata = {}) {
+  return metadata.metadata && typeof metadata.metadata === 'object' ? metadata.metadata : {};
+}
+
+function isValidDocumentStoragePath({ companyId, documentId, storagePath }) {
+  const normalizedPath = String(storagePath || '').trim();
+  const normalizedCompanyId = String(companyId || '').trim();
+  const normalizedDocumentId = String(documentId || '').trim();
+  if (!normalizedPath || !normalizedCompanyId || !normalizedDocumentId) return false;
+  if (normalizedPath.includes('..') || normalizedPath.includes('//')) return false;
+  const parts = normalizedPath.split('/');
+  return parts.length === 5
+    && parts[0] === 'companies'
+    && parts[1] === normalizedCompanyId
+    && parts[2] === 'documents'
+    && parts[3] === normalizedDocumentId
+    && Boolean(parts[4]);
+}
+
+
+function isStorageObjectNotFound(error) {
+  return error?.code === 404
+    || error?.code === '404'
+    || error?.code === 'storage/object-not-found'
+    || error?.statusCode === 404
+    || error?.response?.statusCode === 404
+    || error?.errors?.some?.((entry) => entry?.reason === 'notFound');
+}
+
+async function validateDocumentStorageObject({ companyId, document }) {
+  const storagePath = String(document?.storagePath || '').trim();
+  if (!isValidDocumentStoragePath({ companyId, documentId: document?.id, storagePath })) {
+    fail(403, 'Ruta de almacenamiento del documento no coincide con la empresa y documento validados.');
+  }
+
+  let metadata;
+  try {
+    [metadata] = await admin.storage().bucket().file(storagePath).getMetadata();
+  } catch (error) {
+    fail(isStorageObjectNotFound(error) ? 404 : 403, 'Objeto de almacenamiento del documento no válido o sin acceso.');
+  }
+
+  const customMetadata = normalizeStorageMetadata(metadata);
+  if (customMetadata.companyId !== companyId || customMetadata.documentId !== document.id) {
+    fail(403, 'Metadatos de almacenamiento del documento no coinciden con la empresa y documento validados.');
+  }
+
+  return { ...document, storagePath };
+}
+
 async function validateRequestedDocuments({ companyId, documentIds, storagePaths }) {
   const documentRefs = [];
   const seenDocIds = new Set();
@@ -490,7 +541,7 @@ async function validateRequestedDocuments({ companyId, documentIds, storagePaths
     if (data.companyId !== companyId) fail(403, 'Documento solicitado no pertenece a la empresa validada.');
     if (!seenDocIds.has(docSnap.id)) {
       seenDocIds.add(docSnap.id);
-      documentRefs.push({ id: docSnap.id, ...data });
+      documentRefs.push(await validateDocumentStorageObject({ companyId, document: { id: docSnap.id, ...data } }));
     }
   }
 
@@ -505,7 +556,7 @@ async function validateRequestedDocuments({ companyId, documentIds, storagePaths
     const docSnap = querySnap.docs[0];
     if (!seenDocIds.has(docSnap.id)) {
       seenDocIds.add(docSnap.id);
-      documentRefs.push({ id: docSnap.id, ...(docSnap.data() || {}) });
+      documentRefs.push(await validateDocumentStorageObject({ companyId, document: { id: docSnap.id, ...(docSnap.data() || {}) } }));
     }
   }
 

@@ -152,11 +152,12 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'a
             file(storagePath) {
               const file = storageFiles[storagePath] || {
                 buffer: Buffer.from('%PDF-1.4\nBT (Contexto financiero validado) Tj ET\n%%EOF', 'latin1'),
-                metadata: { size: 54, contentType: 'application/pdf', name: storagePath },
+                metadata: { size: 54, contentType: 'application/pdf', name: storagePath, metadata: { companyId: storagePath.split('/')[1], documentId: storagePath.split('/')[3] } },
               };
               return {
                 async getMetadata() {
-                  return [{ size: file.metadata?.size || file.buffer.length, contentType: file.metadata?.contentType, name: file.metadata?.name || storagePath }];
+                  if (file.metadataError) throw file.metadataError;
+                  return [{ size: file.metadata?.size || file.buffer.length, contentType: file.metadata?.contentType, name: file.metadata?.name || storagePath, metadata: file.metadata?.metadata || {} }];
                 },
                 async download() {
                   return [file.buffer];
@@ -251,15 +252,17 @@ function seedBase(overrides = {}) {
       memberCompany_blockedRole: { companyId: 'memberCompany', userUid: 'blockedRole', status: 'active', role: 'guest' },
     },
     documents: {
-      validDoc: { companyId: 'validCompany', storagePath: 'companies/validCompany/doc.pdf' },
-      otherTenantDoc: { companyId: 'otherCompany', storagePath: 'companies/otherCompany/doc.pdf' },
+      validDoc: { companyId: 'validCompany', storagePath: 'companies/validCompany/documents/validDoc/doc.pdf' },
+      otherTenantDoc: { companyId: 'otherCompany', storagePath: 'companies/otherCompany/documents/otherTenantDoc/doc.pdf' },
+      forgedPathDoc: { companyId: 'validCompany', storagePath: 'companies/otherCompany/documents/forgedPathDoc/doc.pdf' },
+      forgedMetadataDoc: { companyId: 'validCompany', storagePath: 'companies/validCompany/documents/forgedMetadataDoc/doc.pdf' },
     },
     aiRateLimits: overrides.aiRateLimits || {},
     aiUsage: overrides.aiUsage || {},
   });
 }
 
-async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-token', body, fetchImpl, origin } = {}) {
+async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-token', body, fetchImpl, origin, storageFiles = {} } = {}) {
   const handler = await loadAiEndpoint({
     store,
     verifyIdToken: async (receivedToken) => {
@@ -267,6 +270,7 @@ async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-
       return { uid };
     },
     fetchImpl: fetchImpl || (async () => ({ ok: true, status: 200, async json() { return { output_text: 'Respuesta IA de prueba' }; } })),
+    storageFiles,
   });
   const res = createRes();
   await handler(createReq({ token, body, origin }), res);
@@ -412,6 +416,48 @@ describe('endpoint IA', () => {
 
     assert.equal(res.statusCode, 403);
     assert.match(res.payload.error, /no pertenece a la empresa validada/);
+  });
+
+  it('responde 403 cuando storagePath no coincide con empresa y documento validados', async () => {
+    const res = await exercise({ body: { companyId: 'validCompany', prompt: 'Analiza documento', documentIds: ['forgedPathDoc'] } });
+
+    assert.equal(res.statusCode, 403);
+    assert.match(res.payload.error, /Ruta de almacenamiento/);
+  });
+
+  it('responde 403 cuando los metadatos del objeto no coinciden con empresa y documento validados', async () => {
+    const res = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Analiza documento', documentIds: ['forgedMetadataDoc'] },
+      storageFiles: {
+        'companies/validCompany/documents/forgedMetadataDoc/doc.pdf': {
+          buffer: Buffer.from('%PDF-1.4\nBT (Contexto financiero validado) Tj ET\n%%EOF', 'latin1'),
+          metadata: {
+            size: 54,
+            contentType: 'application/pdf',
+            name: 'companies/validCompany/documents/forgedMetadataDoc/doc.pdf',
+            metadata: { companyId: 'otherCompany', documentId: 'forgedMetadataDoc' },
+          },
+        },
+      },
+    });
+
+    assert.equal(res.statusCode, 403);
+    assert.match(res.payload.error, /Metadatos de almacenamiento/);
+  });
+
+  it('responde 404 cuando el objeto Storage no existe con código string', async () => {
+    const res = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Analiza documento', documentIds: ['validDoc'] },
+      storageFiles: {
+        'companies/validCompany/documents/validDoc/doc.pdf': {
+          buffer: Buffer.from('', 'utf8'),
+          metadataError: { code: '404' },
+        },
+      },
+    });
+
+    assert.equal(res.statusCode, 404);
+    assert.match(res.payload.error, /Objeto de almacenamiento/);
   });
 
   it('responde 200 en el caso válido y registra costo de IA', async () => {
