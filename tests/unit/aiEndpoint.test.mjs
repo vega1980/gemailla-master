@@ -478,6 +478,60 @@ describe('endpoint IA', () => {
   });
 
 
+  it('envía response_json_schema a OpenAI y devuelve el JSON estructurado en la respuesta', async () => {
+    let openAiRequestBody;
+    const schema = {
+      type: 'object',
+      properties: {
+        docType: { type: 'string' },
+        total: { type: 'number' },
+      },
+      required: ['docType', 'total'],
+    };
+
+    const res = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Analiza documento', response_json_schema: schema },
+      fetchImpl: async (_url, options) => {
+        openAiRequestBody = JSON.parse(options.body);
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { output_text: JSON.stringify({ docType: 'factura', total: 123.45 }), usage: { total_tokens: 12 } };
+          },
+        };
+      },
+    });
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(openAiRequestBody.text.format, {
+      type: 'json_schema',
+      name: 'gemailla_structured_response',
+      schema,
+      strict: false,
+    });
+    assert.equal(res.payload.docType, 'factura');
+    assert.equal(res.payload.total, 123.45);
+    assert.deepEqual(res.payload.response, { docType: 'factura', total: 123.45 });
+  });
+
+  it('responde 502 si OpenAI no entrega JSON válido para response_json_schema', async () => {
+    const res = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Analiza documento', response_json_schema: { type: 'object', properties: { ok: { type: 'boolean' } } } },
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return { output_text: 'texto libre no json', usage: { total_tokens: 4 } };
+        },
+      }),
+    });
+
+    assert.equal(res.statusCode, 502);
+    assert.match(res.payload.error, /JSON válido/);
+  });
+
+
   it('revierte la reserva cuando OpenAI devuelve 502', async () => {
     const store = seedBase();
 

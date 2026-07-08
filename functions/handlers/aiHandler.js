@@ -20,6 +20,7 @@ const MAX_REQUESTED_DOCUMENTS = 25;
 const MAX_CORRELATION_ID_LENGTH = 160;
 const MAX_LOG_STRING_LENGTH = 500;
 const MAX_LOG_DEPTH = 5;
+const MAX_JSON_SCHEMA_BYTES = 20000;
 const AI_COST_LOG_COLLECTION = 'aiCostLogs';
 const AI_AUDIT_LOG_COLLECTION = 'aiAuditLogs';
 const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'openai', 'gemini.R', 'groqR']);
@@ -422,6 +423,70 @@ function getPrompt(body = {}) {
 }
 
 
+function getResponseJsonSchema(body = {}) {
+  const schema = body.response_json_schema;
+  if (schema === undefined || schema === null || schema === '') return null;
+  if (typeof schema !== 'object' || Array.isArray(schema)) {
+    const error = new Error('response_json_schema debe ser un objeto JSON Schema.');
+    error.status = 400;
+    throw error;
+  }
+
+  let serialized = '';
+  try {
+    serialized = JSON.stringify(schema);
+  } catch (_error) {
+    const error = new Error('response_json_schema debe ser serializable como JSON.');
+    error.status = 400;
+    throw error;
+  }
+
+  if (Buffer.byteLength(serialized, 'utf8') > MAX_JSON_SCHEMA_BYTES) {
+    const error = new Error(`response_json_schema excede el límite de ${MAX_JSON_SCHEMA_BYTES} bytes.`);
+    error.status = 413;
+    throw error;
+  }
+
+  if (schema.type && schema.type !== 'object') {
+    const error = new Error('response_json_schema debe describir un objeto JSON en su raíz.');
+    error.status = 400;
+    throw error;
+  }
+
+  return JSON.parse(serialized);
+}
+
+function buildOpenAIResponseFormat(responseJsonSchema) {
+  if (!responseJsonSchema) return {};
+  return {
+    text: {
+      format: {
+        type: 'json_schema',
+        name: 'gemailla_structured_response',
+        schema: responseJsonSchema,
+        strict: false,
+      },
+    },
+  };
+}
+
+function parseStructuredOutput(outputText, correlationId) {
+  try {
+    const parsed = JSON.parse(outputText);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      const error = new Error('El proveedor LLM no devolvió un objeto JSON estructurado.');
+      error.status = 502;
+      throw error;
+    }
+    return parsed;
+  } catch (error) {
+    if (error.status) throw error;
+    structuredLog('ERROR', 'openai_structured_json_parse_failed', { correlationId, message: error.message });
+    const parseError = new Error('El proveedor LLM no devolvió JSON válido para response_json_schema.');
+    parseError.status = 502;
+    throw parseError;
+  }
+}
 
 function requireCompanyId(body = {}) {
   const companyId = typeof body.companyId === 'string' ? body.companyId.trim() : '';
@@ -566,7 +631,7 @@ async function getLlmModel(provider) {
   return config.model || (provider === 'openai' ? 'gpt-4o-mini' : 'default');
 }
 
-async function callOpenAIProvider({ apiKey, prompt, documentContext = '', user, authorization, correlationId, model }) {
+async function callOpenAIProvider({ apiKey, prompt, documentContext = '', user, authorization, correlationId, model, responseJsonSchema = null }) {
   const startedAt = Date.now();
   const controller = new AbortController();
   const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS || 45000);
@@ -598,6 +663,7 @@ ${documentContext}`,
             content: prompt,
           },
         ],
+        ...buildOpenAIResponseFormat(responseJsonSchema),
         metadata: {
           firebase_uid: user.uid || 'unknown',
           company_id: authorization.companyId,
@@ -661,10 +727,12 @@ ${documentContext}`,
     model,
   });
 
-  return { outputText, latencyMs, provider: 'openai', model, usage: payload.usage || {} };
+  const structuredResponse = responseJsonSchema ? parseStructuredOutput(outputText, correlationId) : null;
+
+  return { outputText, structuredResponse, latencyMs, provider: 'openai', model, usage: payload.usage || {} };
 }
 
-async function askLLM({ prompt, documentContext = '', user, authorization, correlationId }) {
+async function askLLM({ prompt, documentContext = '', user, authorization, correlationId, responseJsonSchema = null }) {
   const provider = await getLlmProvider();
   const model = await getLlmModel(provider);
 
@@ -681,7 +749,7 @@ async function askLLM({ prompt, documentContext = '', user, authorization, corre
     throw error;
   }
 
-  return callOpenAIProvider({ apiKey, prompt, documentContext, user, authorization, correlationId, model });
+  return callOpenAIProvider({ apiKey, prompt, documentContext, user, authorization, correlationId, model, responseJsonSchema });
 }
 
 
@@ -722,6 +790,7 @@ async function aiHandler(req, res) {
   try {
     user = await verifyFirebaseUser(req);
     const prompt = getPrompt(req.body);
+    const responseJsonSchema = getResponseJsonSchema(req.body);
     authorization = await authorizeAiRequest({ user, body: req.body || {} });
     const documentContext = await buildDocumentContext(authorization.documents);
     const promptWithContext = documentContext ? `${prompt}
@@ -758,7 +827,7 @@ ${documentContext}` : prompt;
       estimatedCostUsd: roundCostUsd(reservation.estimatedCostUsd),
     });
 
-    const { outputText, provider, model, usage } = await askLLM({ prompt, documentContext, user, authorization, correlationId });
+    const { outputText, structuredResponse, provider, model, usage } = await askLLM({ prompt, documentContext, user, authorization, correlationId, responseJsonSchema });
 
     const reconciliation = await reconcileAiReservation({
       user,
@@ -800,7 +869,8 @@ ${documentContext}` : prompt;
     });
 
     res.status(200).json({
-      response: outputText,
+      ...(structuredResponse && typeof structuredResponse === 'object' ? structuredResponse : {}),
+      response: structuredResponse || outputText,
       provider,
       model,
       tokens: reconciliation.tokens,
@@ -898,4 +968,6 @@ module.exports = {
   validateCompanyAccess,
   requireCompanyId,
   askLLM,
+  getResponseJsonSchema,
+  buildOpenAIResponseFormat,
 };
