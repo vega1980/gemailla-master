@@ -22,11 +22,13 @@ service firebase.storage {
 
     function activeMembership(companyId) {
       let memberId = membershipId(companyId);
-      let member = firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data;
+      let member = firestore.get(/databases/(default)/documents/companyMembers/$(memberId));
       return signedIn()
-        && member.companyId == companyId
-        && member.userUid == request.auth.uid
-        && member.status == 'active';
+        && member != null
+        && member.data != null
+        && member.data.companyId == companyId
+        && member.data.userUid == request.auth.uid
+        && member.data.status == 'active';
     }
 
     function activeCompanyAccess(companyId) {
@@ -36,7 +38,8 @@ service firebase.storage {
 
     function activeMembershipRole(companyId) {
       let memberId = membershipId(companyId);
-      return firestore.get(/databases/(default)/documents/companyMembers/$(memberId)).data.role;
+      let member = firestore.get(/databases/(default)/documents/companyMembers/$(memberId));
+      return member != null && member.data != null ? member.data.get('role', null) : null;
     }
 
     function isWriterRole(role) {
@@ -57,10 +60,12 @@ service firebase.storage {
     }
 
     function documentExists(companyId, documentId) {
-      let docData = firestore.get(
+      let doc = firestore.get(
         /databases/(default)/documents/documents/$(documentId)
-      ).data;
-      return docData != null && docData.companyId == companyId;
+      );
+      return doc != null
+        && doc.data != null
+        && doc.data.companyId == companyId;
     }
 
     function isValidMetadata(companyId, documentId) {
