@@ -14,8 +14,10 @@ describe('Firebase project and deploy configuration invariants', () => {
   it('keeps production and staging Firebase project aliases', async () => {
     const config = await readJson(FIREBASERC);
 
-    assert.equal(config.projects.default, 'gemailla-enterprise');
-    assert.equal(config.projects.staging, 'gemailla-enterprise-staging');
+    assert.deepEqual(config.projects, {
+      default: 'gemailla-enterprise',
+      staging: 'gemailla-enterprise-staging',
+    });
   });
 
   it('publishes Hosting from dist and routes API rewrites to the expected functions', async () => {
