@@ -42,3 +42,7 @@ test-results/
 renv/library/
 renv/staging/
 .firebase/
+
+# Playwright test artifacts
+test-results/
+playwright-report/
