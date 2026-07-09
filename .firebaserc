@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "gemailla-enterprise"
+    "default": "gemailla-enterprise",
+    "staging": "gemailla-enterprise-staging"
   }
 }
