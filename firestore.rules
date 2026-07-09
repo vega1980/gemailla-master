@@ -64,12 +64,15 @@ service cloud.firestore {
       let memberId = membershipId(companyId);
       return signedIn()
         && exists(/databases/$(database)/documents/companyMembers/$(memberId))
-        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.get('status', null) == 'active';
+        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.companyId == companyId
+        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.userUid == currentUid()
+        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.status == 'active';
     }
 
     function memberRole(companyId) {
       let memberId = membershipId(companyId);
-      return get(/databases/$(database)/documents/companyMembers/$(memberId)).data.get('role', null);
+      let member = get(/databases/$(database)/documents/companyMembers/$(memberId)).data;
+      return member != null ? member.get('role', null) : null;
     }
 
     function hasAnyCompanyRole(companyId, roles) {
