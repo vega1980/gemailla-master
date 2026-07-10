@@ -81,19 +81,17 @@ service cloud.firestore {
 
     function canReadCompany(companyId) {
       return sameCompany(companyId)
-        && (isCompanyOwner(companyId) || hasActiveMembership(companyId));
+        && hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado']);
     }
 
     function canWriteCompany(companyId) {
       return sameCompany(companyId)
-        && (isCompanyOwner(companyId)
-          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']));
+        && hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']);
     }
 
     function canManageCompany(companyId) {
       return sameCompany(companyId)
-        && (isCompanyOwner(companyId)
-          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']));
+        && hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']);
     }
 
     // Roles que el actor puede asignar. Solo el dueño real de la empresa
@@ -186,40 +184,29 @@ service cloud.firestore {
         && ownerUidUnchangedOrSelf();
     }
 
-    // Si el documento declara companyId, debe ser escribible por el usuario.
-    // Sin companyId (documento estrictamente personal), ownerUid abre la puerta.
     function companyScopeValid(data) {
-      return !hasCompanyId(data) || canWriteCompany(data.companyId);
+      return hasCompanyId(data) && canWriteCompany(data.companyId);
     }
 
     function canCreateOwnedOrCompanyRecord() {
       return signedIn()
         && auditCreateFieldsAreSafe(request.resource.data)
         && ownerUidIsSelfOrMissing(request.resource.data)
-        && companyScopeValid(request.resource.data)
-        && (
-          (hasCompanyId(request.resource.data) && canWriteCompany(request.resource.data.companyId))
-          || hasOwnerUid(request.resource.data)
-        );
+        && companyScopeValid(request.resource.data);
     }
 
     function canReadOwnedOrCompanyRecord() {
       return signedIn()
-        && (
-          (hasCompanyId(resource.data) && canReadCompany(resource.data.companyId))
-          || hasOwnerUid(resource.data)
-        );
+        && hasCompanyId(resource.data)
+        && canReadCompany(resource.data.companyId);
     }
 
     function canUpdateOwnedOrCompanyRecord() {
       return signedIn()
         && auditUpdateFieldsAreSafe()
         && ownerUidUnchangedOrSelf()
-        && companyScopeValid(request.resource.data)
-        && (
-          (hasCompanyId(resource.data) && companyIdUnchanged() && canWriteCompany(resource.data.companyId))
-          || hasOwnerUid(resource.data)
-        );
+        && companyIdUnchanged()
+        && companyScopeValid(request.resource.data);
     }
 
 
@@ -261,17 +248,15 @@ service cloud.firestore {
     }
 
     function canCreateAiBudget() {
-      return isAdmin()
-        && hasCompanyId(request.resource.data)
-        && sameCompany(request.resource.data.companyId);
+      return hasCompanyId(request.resource.data)
+        && canManageCompany(request.resource.data.companyId);
     }
 
     function canUpdateAiBudget() {
-      return isAdmin()
-        && hasCompanyId(resource.data)
+      return hasCompanyId(resource.data)
         && hasCompanyId(request.resource.data)
         && request.resource.data.companyId == resource.data.companyId
-        && sameCompany(resource.data.companyId);
+        && canManageCompany(resource.data.companyId);
     }
 
     function canReadAiFinancialData(data) {
@@ -476,6 +461,10 @@ service cloud.firestore {
       allow read: if canReadOwnedOrCompanyRecord();
       allow update: if canUpdateOwnedOrCompanyRecord();
       allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
