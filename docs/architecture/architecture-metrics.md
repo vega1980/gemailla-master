@@ -1,14 +1,14 @@
 # Métricas de arquitectura
 
-Generado: 2026-07-03T01:50:53.916Z
+Generado: 2026-07-10T14:30:28.762Z
 
 ## Resumen
 
 | Métrica | Valor |
 | --- | --- |
-| Archivos medidos | 228 |
-| Dependencias internas | 555 |
-| Paquetes externos importados | 51 |
+| Archivos medidos | 237 |
+| Dependencias internas | 533 |
+| Paquetes externos importados | 55 |
 | Grupos de líneas duplicadas | 30 |
 
 ## Top acoplamiento entre módulos
@@ -16,20 +16,20 @@ Generado: 2026-07-03T01:50:53.916Z
 | Relación | Imports |
 | --- | --- |
 | src:components -> src:lib | 52 |
-| src:pages -> src:components | 51 |
+| src:pages -> src:components | 46 |
 | feature:crm -> src:components | 30 |
-| src:pages -> src:lib | 29 |
 | src:components -> src:components | 26 |
+| src:modules -> src:components | 24 |
+| src:pages -> src:lib | 23 |
 | feature:hr -> src:components | 21 |
 | feature:operations -> src:components | 21 |
-| src:modules -> src:components | 19 |
 | feature:finance -> src:components | 16 |
 | feature:erp -> src:components | 14 |
-| src:modules -> src:modules | 14 |
+| src:modules -> src:lib | 14 |
 | feature:dashboard -> src:components | 12 |
-| src:app -> src:pages | 12 |
-| src:infrastructure -> src:infrastructure | 8 |
-| src:modules -> src:lib | 8 |
+| src:modules -> src:modules | 12 |
+| src:app -> src:pages | 11 |
+| src:lib -> src:lib | 9 |
 
 ## Hotspots por fan-in/fan-out
 
@@ -37,19 +37,19 @@ Generado: 2026-07-03T01:50:53.916Z
 | --- | --- | --- | --- |
 | src/components/ui/button.jsx | 55 | 1 | 56 |
 | src/lib/utils.js | 45 | 0 | 45 |
-| src/api/firebaseClient.js | 32 | 10 | 42 |
-| src/lib/companyContext.jsx | 22 | 4 | 26 |
-| src/modules/ai/services/aiService.js | 24 | 2 | 26 |
+| src/api/firebaseClient.js | 31 | 10 | 41 |
+| src/lib/companyContext.jsx | 22 | 7 | 29 |
 | src/components/ui/badge.jsx | 21 | 1 | 22 |
 | src/lib/companyEntityQueries.js | 20 | 1 | 21 |
 | src/components/ui/input.jsx | 19 | 1 | 20 |
 | src/components/ui/select.jsx | 18 | 1 | 19 |
-| src/modules/documents/pages/DocumentsPage.jsx | 3 | 16 | 19 |
 | src/components/ui/dialog.jsx | 17 | 1 | 18 |
-| src/modules/ai/pages/AIAssistantPage.jsx | 2 | 15 | 17 |
-| src/app/routes.jsx | 1 | 15 | 16 |
-| src/modules/companies/pages/CompaniesPage.jsx | 3 | 13 | 16 |
+| src/modules/documents/pages/DocumentsPage.jsx | 1 | 16 | 17 |
 | src/components/shared/EmptyState.jsx | 15 | 0 | 15 |
+| src/lib/AuthContext.jsx | 14 | 1 | 15 |
+| src/modules/ai/pages/AIAssistantPage.jsx | 1 | 14 | 15 |
+| src/pages/ERP.jsx | 1 | 14 | 15 |
+| src/components/shared/PageHeader.jsx | 14 | 0 | 14 |
 
 ## Paquetes externos más importados
 
@@ -57,7 +57,8 @@ Generado: 2026-07-03T01:50:53.916Z
 | --- | --- |
 | react | 127 |
 | lucide-react | 86 |
-| date-fns | 49 |
+| date-fns | 48 |
+| @modules/ai | 25 |
 | @tanstack/react-query | 17 |
 | framer-motion | 17 |
 | recharts | 15 |
@@ -69,7 +70,6 @@ Generado: 2026-07-03T01:50:53.916Z
 | @radix-ui/react-slot | 4 |
 | jspdf | 3 |
 | zod | 3 |
-| @radix-ui/react-dialog | 2 |
 
 ## Duplicación textual candidata
 

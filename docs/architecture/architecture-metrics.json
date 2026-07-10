@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-03T01:50:53.916Z",
+  "generatedAt": "2026-07-10T14:30:28.762Z",
   "scope": [
     "src",
     "functions"
   ],
   "totals": {
-    "files": 228,
-    "internalDependencies": 555,
-    "externalPackages": 51,
+    "files": 237,
+    "internalDependencies": 533,
+    "externalPackages": 55,
     "duplicateLineGroups": 30
   },
   "externalPackages": [
@@ -21,7 +21,11 @@
     },
     {
       "name": "date-fns",
-      "count": 49
+      "count": 48
+    },
+    {
+      "name": "@modules/ai",
+      "count": 25
     },
     {
       "name": "@tanstack/react-query",
@@ -70,6 +74,14 @@
     {
       "name": "@radix-ui/react-dialog",
       "count": 2
+    },
+    {
+      "name": "@modules/companies",
+      "count": 1
+    },
+    {
+      "name": "@modules/documents",
+      "count": 1
     },
     {
       "name": "@radix-ui/react-accordion",
@@ -198,18 +210,6 @@
     {
       "name": "react-dom",
       "count": 1
-    },
-    {
-      "name": "react-hook-form",
-      "count": 1
-    },
-    {
-      "name": "react-resizable-panels",
-      "count": 1
-    },
-    {
-      "name": "tailwind-merge",
-      "count": 1
     }
   ],
   "moduleCoupling": [
@@ -219,19 +219,23 @@
     },
     {
       "edge": "src:pages -> src:components",
-      "count": 51
+      "count": 46
     },
     {
       "edge": "feature:crm -> src:components",
       "count": 30
     },
     {
-      "edge": "src:pages -> src:lib",
-      "count": 29
-    },
-    {
       "edge": "src:components -> src:components",
       "count": 26
+    },
+    {
+      "edge": "src:modules -> src:components",
+      "count": 24
+    },
+    {
+      "edge": "src:pages -> src:lib",
+      "count": 23
     },
     {
       "edge": "feature:hr -> src:components",
@@ -242,10 +246,6 @@
       "count": 21
     },
     {
-      "edge": "src:modules -> src:components",
-      "count": 19
-    },
-    {
       "edge": "feature:finance -> src:components",
       "count": 16
     },
@@ -254,7 +254,7 @@
       "count": 14
     },
     {
-      "edge": "src:modules -> src:modules",
+      "edge": "src:modules -> src:lib",
       "count": 14
     },
     {
@@ -262,15 +262,19 @@
       "count": 12
     },
     {
-      "edge": "src:app -> src:pages",
+      "edge": "src:modules -> src:modules",
       "count": 12
     },
     {
-      "edge": "src:infrastructure -> src:infrastructure",
-      "count": 8
+      "edge": "src:app -> src:pages",
+      "count": 11
     },
     {
-      "edge": "src:modules -> src:lib",
+      "edge": "src:lib -> src:lib",
+      "count": 9
+    },
+    {
+      "edge": "src:infrastructure -> src:infrastructure",
       "count": 8
     },
     {
@@ -290,6 +294,10 @@
       "count": 6
     },
     {
+      "edge": "src:modules -> src:api",
+      "count": 6
+    },
+    {
       "edge": "feature:crm -> src:api",
       "count": 5
     },
@@ -306,23 +314,11 @@
       "count": 5
     },
     {
-      "edge": "src:lib -> src:lib",
-      "count": 5
-    },
-    {
-      "edge": "src:modules -> src:api",
-      "count": 5
-    },
-    {
       "edge": "src:pages -> feature:erp",
       "count": 5
     },
     {
       "edge": "feature:documents -> src:lib",
-      "count": 4
-    },
-    {
-      "edge": "feature:predictive -> src:modules",
       "count": 4
     },
     {
@@ -358,15 +354,7 @@
       "count": 4
     },
     {
-      "edge": "src:pages -> src:modules",
-      "count": 4
-    },
-    {
-      "edge": "feature:client -> src:modules",
-      "count": 3
-    },
-    {
-      "edge": "feature:crm -> src:modules",
+      "edge": "feature:erp -> feature:erp",
       "count": 3
     },
     {
@@ -412,6 +400,18 @@
     {
       "edge": "src:shared -> src:hooks",
       "count": 3
+    },
+    {
+      "edge": "feature:dashboard -> feature:dashboard",
+      "count": 2
+    },
+    {
+      "edge": "feature:dashboard -> src:api",
+      "count": 2
+    },
+    {
+      "edge": "feature:documents -> feature:documents",
+      "count": 2
     }
   ],
   "hotspots": [
@@ -429,21 +429,15 @@
     },
     {
       "file": "src/api/firebaseClient.js",
-      "incoming": 32,
+      "incoming": 31,
       "outgoing": 10,
-      "score": 42
+      "score": 41
     },
     {
       "file": "src/lib/companyContext.jsx",
       "incoming": 22,
-      "outgoing": 4,
-      "score": 26
-    },
-    {
-      "file": "src/modules/ai/services/aiService.js",
-      "incoming": 24,
-      "outgoing": 2,
-      "score": 26
+      "outgoing": 7,
+      "score": 29
     },
     {
       "file": "src/components/ui/badge.jsx",
@@ -470,34 +464,16 @@
       "score": 19
     },
     {
-      "file": "src/modules/documents/pages/DocumentsPage.jsx",
-      "incoming": 3,
-      "outgoing": 16,
-      "score": 19
-    },
-    {
       "file": "src/components/ui/dialog.jsx",
       "incoming": 17,
       "outgoing": 1,
       "score": 18
     },
     {
-      "file": "src/modules/ai/pages/AIAssistantPage.jsx",
-      "incoming": 2,
-      "outgoing": 15,
-      "score": 17
-    },
-    {
-      "file": "src/app/routes.jsx",
+      "file": "src/modules/documents/pages/DocumentsPage.jsx",
       "incoming": 1,
-      "outgoing": 15,
-      "score": 16
-    },
-    {
-      "file": "src/modules/companies/pages/CompaniesPage.jsx",
-      "incoming": 3,
-      "outgoing": 13,
-      "score": 16
+      "outgoing": 16,
+      "score": 17
     },
     {
       "file": "src/components/shared/EmptyState.jsx",
@@ -509,6 +485,12 @@
       "file": "src/lib/AuthContext.jsx",
       "incoming": 14,
       "outgoing": 1,
+      "score": 15
+    },
+    {
+      "file": "src/modules/ai/pages/AIAssistantPage.jsx",
+      "incoming": 1,
+      "outgoing": 14,
       "score": 15
     },
     {
@@ -524,13 +506,31 @@
       "score": 14
     },
     {
+      "file": "src/lib/observability.js",
+      "incoming": 10,
+      "outgoing": 4,
+      "score": 14
+    },
+    {
+      "file": "src/modules/companies/pages/CompaniesPage.jsx",
+      "incoming": 1,
+      "outgoing": 13,
+      "score": 14
+    },
+    {
+      "file": "src/app/routes.jsx",
+      "incoming": 1,
+      "outgoing": 12,
+      "score": 13
+    },
+    {
       "file": "src/components/ui/label.jsx",
       "incoming": 11,
       "outgoing": 1,
       "score": 12
     },
     {
-      "file": "src/features/hr/components/PerformanceManager.jsx",
+      "file": "src/pages/FinancialHub.jsx",
       "incoming": 1,
       "outgoing": 11,
       "score": 12
@@ -836,6 +836,20 @@
       ]
     },
     {
+      "line": "const admin = require('firebase-admin');",
+      "occurrences": 8,
+      "files": [
+        "functions/config.js",
+        "functions/handlers/aiHandler.js",
+        "functions/handlers/companyMembershipClaimsHandler.js",
+        "functions/handlers/documentContextBuilder.js",
+        "functions/handlers/orphanDocumentStorageCleanup.js",
+        "functions/handlers/syncCompanyClaimsHandler.js",
+        "functions/index.js",
+        "functions/tests/documentContextBuilder.test.js"
+      ]
+    },
+    {
       "line": "{save.isPending && <Loader2 className=\"w-4 h-4 animate-spin\" />}",
       "occurrences": 7,
       "files": [
@@ -909,19 +923,6 @@
     },
     {
       "line": "const [editing, setEditing] = useState(null);",
-      "occurrences": 7,
-      "files": [
-        "src/features/crm/components/ClientDirectory.jsx",
-        "src/features/crm/components/DealPipeline.jsx",
-        "src/features/crm/components/InteractionHistory.jsx",
-        "src/features/hr/components/EmployeeDirectory.jsx",
-        "src/features/hr/components/PayrollManager.jsx",
-        "src/features/hr/components/PerformanceManager.jsx",
-        "src/features/operations/components/StrategicKPIs.jsx"
-      ]
-    },
-    {
-      "line": "const [form, setForm] = useState(EMPTY);",
       "occurrences": 7,
       "files": [
         "src/features/crm/components/ClientDirectory.jsx",
