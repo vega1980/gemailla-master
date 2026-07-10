@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { auth, login as loginWithEmailAndPassword, onAuthStateChanged } from '@/infrastructure/firebase/auth';
+import { authService } from '@/shared/infrastructure/auth/firebaseAuth';
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -10,23 +10,10 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = authService.subscribeToAuthChanges((domainUser) => {
       setAuthError(null);
-
-      if (currentUser) {
-        const authUid = currentUser?.uid || currentUser?.id;
-        setUser({
-          id: authUid,
-          uid: authUid,
-          email: currentUser.email,
-          fullName: currentUser.displayName,
-          role: 'user',
-        });
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
+      setUser(domainUser);
+      setIsAuthenticated(Boolean(domainUser));
       setIsLoadingAuth(false);
     }, (error) => {
       setUser(null);
@@ -35,15 +22,16 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(false);
     });
 
-    return unsubscribe;
+    return () => unsubscribe();
   }, []);
 
-  const login = useCallback((email, password) => loginWithEmailAndPassword(email, password), []);
+  const login = useCallback((email, password) => authService.login(email, password), []);
 
   const logout = useCallback(async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
-    await auth.signOut();
+    await authService.logout();
+
     if (shouldRedirect && typeof window !== 'undefined') {
       window.location.assign('/');
     }
@@ -67,6 +55,10 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+
+  if (!ctx) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+
   return ctx;
 };

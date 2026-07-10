@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCompanyTransactions } from '@/lib/companyEntityQueries';
 import { useCompany } from '@/lib/companyContext';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import PageHeader from '@/components/shared/PageHeader';
 import StatCard from '@/components/shared/StatCard';
 import EmptyState from '@/components/shared/EmptyState';
