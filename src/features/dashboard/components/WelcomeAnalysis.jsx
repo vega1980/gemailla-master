@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import { Sparkles, X, TrendingUp, AlertTriangle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';

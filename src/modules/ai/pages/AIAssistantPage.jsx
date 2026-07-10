@@ -4,7 +4,7 @@ import { createCorrelationId } from '@/lib/observability';
 import { useCompanyAiConversations } from '@/lib/companyEntityQueries';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import PageHeader from '@/components/shared/PageHeader';
 import EmptyState from '@/components/shared/EmptyState';
 import { logAction } from '@/lib/auditLogger';

@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import { CompanyProvider } from '@/lib/companyContext';
 import { SubscriptionProvider } from '@/lib/subscriptionContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';

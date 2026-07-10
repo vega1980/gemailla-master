@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '@/lib/AuthContext';
+import { useAuth } from '@/app/providers/AuthProvider';
 import AuthErrorPage from '@/components/auth/AuthErrorPage';
 import LoadingState from '@/components/shared/LoadingState';
 
