@@ -19,18 +19,30 @@ function extractMatchBlock(src, path) {
 }
 
 describe('firestore.rules static security invariants', () => {
-  it('C1: companyScopeValid requires an explicit writable companyId for owned-or-company create/update', async () => {
+  it('C1: owned-or-company records support explicit tenant scope or unchanged personal owner scope', async () => {
     const src = await readFile(RULES, 'utf8');
     const companyScopeValid = extractFunction(src, 'companyScopeValid');
+    const personalScopeValid = extractFunction(src, 'personalScopeValid');
+    const personalScopeUnchanged = extractFunction(src, 'personalScopeUnchanged');
     const createOwnedOrCompany = extractFunction(src, 'canCreateOwnedOrCompanyRecord');
     const readOwnedOrCompany = extractFunction(src, 'canReadOwnedOrCompanyRecord');
     const updateOwnedOrCompany = extractFunction(src, 'canUpdateOwnedOrCompanyRecord');
 
     assert.match(companyScopeValid, /hasCompanyId\(data\)\s*&&\s*canWriteCompany\(data\.companyId\)/);
-    assert.doesNotMatch(companyScopeValid, /!hasCompanyId\(data\)/);
-    assert.match(createOwnedOrCompany, /companyScopeValid\(request\.resource\.data\)/);
-    assert.match(readOwnedOrCompany, /hasCompanyId\(resource\.data\)[\s\S]*canReadCompany\(resource\.data\.companyId\)/);
-    assert.match(updateOwnedOrCompany, /companyIdUnchanged\(\)[\s\S]*companyScopeValid\(request\.resource\.data\)/);
+    assert.match(personalScopeValid, /!hasCompanyId\(data\)\s*&&\s*hasOwnerUid\(data\)/);
+    assert.match(personalScopeUnchanged, /!hasCompanyId\(resource\.data\)[\s\S]*!hasCompanyId\(request\.resource\.data\)[\s\S]*hasOwnerUid\(resource\.data\)[\s\S]*hasOwnerUid\(request\.resource\.data\)/);
+    assert.match(createOwnedOrCompany, /companyScopeValid\(request\.resource\.data\)[\s\S]*personalScopeValid\(request\.resource\.data\)/);
+    assert.match(readOwnedOrCompany, /hasCompanyId\(resource\.data\)[\s\S]*canReadCompany\(resource\.data\.companyId\)[\s\S]*personalScopeValid\(resource\.data\)/);
+    assert.match(updateOwnedOrCompany, /companyIdUnchanged\(\)[\s\S]*companyScopeValid\(request\.resource\.data\)[\s\S]*personalScopeUnchanged\(\)/);
+  });
+
+  it('D1: validDocumentEnvelope is complete and not truncated', async () => {
+    const src = await readFile(RULES, 'utf8');
+    const validDocumentEnvelope = extractFunction(src, 'validDocumentEnvelope');
+
+    assert.match(validDocumentEnvelope, /data\.fileSize is number[\s\S]*data\.fileSize <= 15 \* 1024 \* 1024[\s\S]*data\.contentType is string/);
+    assert.match(validDocumentEnvelope, /hasNoPublicDocumentUrls\(data\);\s*\}/);
+    assert.doesNotMatch(src, /&&\s*d\s*(?:$|\n)/);
   });
 
   it('C2: company access requires active membership and allowed roles, with default deny fallback', async () => {

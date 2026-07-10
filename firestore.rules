@@ -188,25 +188,43 @@ service cloud.firestore {
       return hasCompanyId(data) && canWriteCompany(data.companyId);
     }
 
+    function personalScopeValid(data) {
+      return !hasCompanyId(data) && hasOwnerUid(data);
+    }
+
+    function personalScopeUnchanged() {
+      return !hasCompanyId(resource.data)
+        && !hasCompanyId(request.resource.data)
+        && hasOwnerUid(resource.data)
+        && hasOwnerUid(request.resource.data);
+    }
+
     function canCreateOwnedOrCompanyRecord() {
       return signedIn()
         && auditCreateFieldsAreSafe(request.resource.data)
         && ownerUidIsSelfOrMissing(request.resource.data)
-        && companyScopeValid(request.resource.data);
+        && (
+          companyScopeValid(request.resource.data)
+          || personalScopeValid(request.resource.data)
+        );
     }
 
     function canReadOwnedOrCompanyRecord() {
       return signedIn()
-        && hasCompanyId(resource.data)
-        && canReadCompany(resource.data.companyId);
+        && (
+          (hasCompanyId(resource.data) && canReadCompany(resource.data.companyId))
+          || personalScopeValid(resource.data)
+        );
     }
 
     function canUpdateOwnedOrCompanyRecord() {
       return signedIn()
         && auditUpdateFieldsAreSafe()
         && ownerUidUnchangedOrSelf()
-        && companyIdUnchanged()
-        && companyScopeValid(request.resource.data);
+        && (
+          (companyIdUnchanged() && companyScopeValid(request.resource.data))
+          || personalScopeUnchanged()
+        );
     }
 
 

@@ -578,15 +578,15 @@ describe('Firestore security rules', () => {
     }, viewer), 'viewer ai budget write');
   });
 
-  it('allows subscriptions only inside the active company tenant', async () => {
+  it('allows subscriptions either inside the active company tenant or as ownerUid-only personal records', async () => {
     await assertAllowed(firestoreGet('subscriptions/company-subscription', owner), 'owner company subscription read');
     await assertAllowed(firestoreGet('subscriptions/company-subscription', director), 'director company subscription read');
     await assertDenied(firestoreGet('subscriptions/company-subscription', outsider), 'outsider company subscription read');
 
-    await assertDenied(firestoreGet('subscriptions/outsider-subscription', outsider), 'ownerUid-only subscription read without company tenant');
+    await assertAllowed(firestoreGet('subscriptions/outsider-subscription', outsider), 'ownerUid-only subscription owner read');
     await assertDenied(firestoreGet('subscriptions/outsider-subscription', director), 'unrelated user subscription read');
 
-    await assertDenied(firestoreSet('subscriptions/director-owned-subscription', {
+    await assertAllowed(firestoreSet('subscriptions/director-owned-subscription', {
       ownerUid: director.uid,
       status: 'active',
       plan: 'basic',
