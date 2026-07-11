@@ -1,5 +1,5 @@
 const admin = require('firebase-admin');
-const { requireCompanyId, validateCompanyAccess } = require('./aiHandler');
+const { requireCompanyId, validateCompanyMembershipAccess } = require('./aiHandler');
 
 
 function getBearerToken(req) {
@@ -33,7 +33,7 @@ async function syncCompanyClaimsHandler(req, res) {
   try {
     const user = await verifyFirebaseUser(req);
     const companyId = requireCompanyId(req.body || {});
-    const access = await validateCompanyAccess({ user, companyId });
+    const access = await validateCompanyMembershipAccess({ user, companyId });
 
     return res.status(200).json({
       success: true,

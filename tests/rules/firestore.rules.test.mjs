@@ -77,6 +77,54 @@ async function seedFirestoreAcl() {
     plan: 'basic',
   }), 'admin user subscription seed');
 
+  await assertAllowed(firestoreSet(`companyEntitlements/${companyId}`, {
+    companyId,
+    plan: 'pro',
+    status: 'active',
+    aiAccess: true,
+    currentPeriodEnd: '2026-12-31T00:00:00.000Z',
+    graceUntil: '2027-01-07T00:00:00.000Z',
+    source: 'test',
+    updatedAt: '2026-07-11T00:00:00.000Z',
+    migrationVersion: 1,
+  }), 'admin company entitlement seed');
+
+  await assertAllowed(firestoreSet(`companyEntitlements/${otherCompanyId}`, {
+    companyId: otherCompanyId,
+    plan: 'pro',
+    status: 'active',
+    aiAccess: true,
+    currentPeriodEnd: '2026-12-31T00:00:00.000Z',
+    source: 'test',
+    updatedAt: '2026-07-11T00:00:00.000Z',
+    migrationVersion: 1,
+  }), 'admin other company entitlement seed');
+
+  await assertAllowed(firestoreSet(`companyMetrics/${companyId}`, {
+    companyId,
+    totalIncome: 1000,
+    totalExpenses: 250,
+    netCashFlow: 750,
+    updatedAt: '2026-07-11T00:00:00.000Z',
+  }), 'admin company metrics seed');
+
+  await assertAllowed(firestoreSet(`companyMonthlyMetrics/${companyId}_2026-07`, {
+    companyId,
+    month: '2026-07',
+    totalIncome: 1000,
+    totalExpenses: 250,
+    netCashFlow: 750,
+    updatedAt: '2026-07-11T00:00:00.000Z',
+  }), 'admin company monthly metrics seed');
+
+  await assertAllowed(firestoreSet(`companyInvitations/invitation-seed`, {
+    companyId,
+    userEmail: 'invitee@gemailla.test',
+    role: 'viewer',
+    status: 'pending',
+    tokenHash: 'hash',
+  }), 'admin company invitation seed');
+
   await assertAllowed(firestoreSet('aiUsage/company-usage', {
     companyId,
     tokens: 100,
@@ -197,6 +245,62 @@ describe('Firestore security rules', () => {
       companyId,
       dailyLimitUsd: 999,
     }, viewer), 'viewer ai budget update');
+  });
+
+  it('restricts company entitlements to member reads and backend-only writes', async () => {
+    await assertAllowed(firestoreGet(`companyEntitlements/${companyId}`, owner), 'owner entitlement read');
+    await assertAllowed(firestoreGet(`companyEntitlements/${companyId}`, director), 'active member entitlement read');
+    await assertAllowed(firestoreGet(`companyEntitlements/${companyId}`, viewer), 'viewer entitlement read');
+
+    await assertDenied(firestoreGet(`companyEntitlements/${companyId}`, outsider), 'outsider entitlement read');
+    await assertDenied(firestoreGet(`companyEntitlements/${otherCompanyId}`, director), 'member of company A reading company B entitlement');
+    await assertDenied(firestoreGet(`companyEntitlements/${companyId}`, null), 'anonymous entitlement read');
+
+    await assertDenied(firestoreSet(`companyEntitlements/client-created`, {
+      companyId,
+      plan: 'enterprise',
+      status: 'active',
+      aiAccess: true,
+    }, owner), 'frontend entitlement create');
+    await assertDenied(firestorePatch(`companyEntitlements/${companyId}`, {
+      plan: 'enterprise',
+      aiAccess: true,
+    }, owner), 'frontend entitlement update');
+    await assertDenied(firestoreDelete(`companyEntitlements/${companyId}`, owner), 'frontend entitlement delete');
+  });
+
+  it('restricts metric reads to active members and keeps metrics/invitations backend-write-only', async () => {
+    await assertAllowed(firestoreGet(`companyMetrics/${companyId}`, owner), 'owner company metrics read');
+    await assertAllowed(firestoreGet(`companyMetrics/${companyId}`, viewer), 'viewer company metrics read');
+    await assertAllowed(firestoreGet(`companyMonthlyMetrics/${companyId}_2026-07`, director), 'director monthly metrics read');
+
+    await assertDenied(firestoreGet(`companyMetrics/${companyId}`, outsider), 'outsider company metrics read');
+    await assertDenied(firestoreGet(`companyMonthlyMetrics/${companyId}_2026-07`, inactive), 'inactive monthly metrics read');
+
+    await assertDenied(firestoreSet(`companyMetrics/client-created`, {
+      companyId,
+      totalIncome: 999999,
+    }, owner), 'frontend company metrics create');
+    await assertDenied(firestorePatch(`companyMetrics/${companyId}`, {
+      totalIncome: 999999,
+    }, owner), 'frontend company metrics update');
+    await assertDenied(firestoreDelete(`companyMetrics/${companyId}`, owner), 'frontend company metrics delete');
+
+    await assertDenied(firestoreSet(`companyMonthlyMetrics/${companyId}_2026-08`, {
+      companyId,
+      month: '2026-08',
+      totalIncome: 1,
+    }, owner), 'frontend monthly metrics create');
+    await assertDenied(firestorePatch(`companyMonthlyMetrics/${companyId}_2026-07`, {
+      totalIncome: 1,
+    }, owner), 'frontend monthly metrics update');
+    await assertDenied(firestoreDelete(`companyMonthlyMetrics/${companyId}_2026-07`, owner), 'frontend monthly metrics delete');
+    await assertDenied(firestoreGet('companyInvitations/invitation-seed', owner), 'frontend invitation read');
+    await assertDenied(firestoreSet('companyInvitations/client-created', {
+      companyId,
+      userEmail: 'invitee@gemailla.test',
+      status: 'pending',
+    }, owner), 'frontend invitation create');
   });
 
   it('allows a signed-in user without company claims to create a company with their initial owner membership atomically', async () => {

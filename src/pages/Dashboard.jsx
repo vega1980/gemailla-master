@@ -67,10 +67,6 @@ const STREAMING_STAGES = [
   { label: 'Balance vivo', detail: 'Caja y proyección' },
 ];
 
-function formatCurrency(value) {
-  return `$${Math.round(value).toLocaleString()}`;
-}
-
 const RECENT_ACTIVITY = [
   { label: 'Análisis completados', value: '15 hoy', icon: CheckCircle },
   { label: 'Documentos cargados', value: 'Estudios Q1.pdf', icon: FileText },
@@ -82,59 +78,54 @@ const ChartFallback = ({ height = 40 }) => (
   <div className="w-full rounded-lg bg-black/20" style={{ height }} aria-hidden="true" />
 );
 
-function buildMonthlyData(transactions) {
+function formatCurrency(value) {
+  const number = Number(value) || 0;
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(number);
+}
+
+function buildMonthlyData(monthlyMetrics) {
   const buckets = Array.from({ length: 6 }, (_, index) => {
     const date = new Date();
     date.setMonth(date.getMonth() - (5 - index));
+    const month = date.toISOString().slice(0, 7);
     return {
-      key: `${date.getFullYear()}-${date.getMonth()}`,
+      key: month,
       value: 0,
     };
   });
 
   const bucketByKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
 
-  transactions.forEach((transaction) => {
-    const rawDate = transaction.date || transaction.createdAt || transaction.updatedAt;
-    const date = rawDate ? new Date(rawDate) : null;
-    if (!date || Number.isNaN(date.getTime())) return;
-
-    const bucket = bucketByKey.get(`${date.getFullYear()}-${date.getMonth()}`);
+  monthlyMetrics.forEach((metric) => {
+    const bucket = bucketByKey.get(metric.month);
     if (!bucket) return;
-
-    const amount = Number(transaction.amount) || 0;
-    bucket.value += transaction.type === 'gasto' ? -amount : amount;
+    bucket.value = Math.max(Number(metric.netCashFlow) || 0, 0);
   });
 
-  return buckets.map((bucket) => ({ value: Math.max(bucket.value, 0) }));
+  return buckets.map((bucket) => ({ value: bucket.value }));
 }
 
-function getDashboardMetrics({ companies, documents, kpis, transactions }) {
-  const totalIngresos = transactions
-    .filter((transaction) => transaction.type === 'ingreso')
-    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
-
-  const alertCount = kpis.filter((kpi) => kpi.status === 'critico' || kpi.status === 'en_riesgo').length;
+function getDashboardMetrics({ companies, documents, transactions, companyMetric }) {
+  const alertCount = Number(companyMetric?.criticalKpiCount) || 0;
   const processingTasks = transactions.filter((transaction) => transaction.status === 'pending').length;
+  const documentCount = Number(companyMetric?.documentCount) || documents.length;
 
   return [
     { label: 'EMPRESAS ACTIVAS', value: companies.length, change: '+18%', icon: Building2, color: GOLD },
-    { label: 'DOCUMENTOS PROCESADOS', value: documents.length, change: '+24%', icon: BarChart3, color: MUTED_GOLD },
-    { label: 'ANÁLISIS IA', value: kpis.length, change: '+12%', icon: Zap, color: SOFT_GOLD },
+    { label: 'DOCUMENTOS PROCESADOS', value: documentCount, change: 'Agregado backend', icon: BarChart3, color: MUTED_GOLD },
+    { label: 'FLUJO NETO', value: formatCurrency(companyMetric?.netCashFlow), change: 'Agregado backend', icon: Zap, color: SOFT_GOLD },
     { label: 'ALERTAS ACTIVAS', value: alertCount, change: '-5%', icon: AlertTriangle, color: GOLD },
     { label: 'TAREAS EN PROCESO', value: processingTasks, change: '+7%', icon: Clock, color: MUTED_GOLD },
-    { label: 'AHORRO ESTIMADO', value: `$${(totalIngresos * 0.15).toLocaleString()}`, change: '+32%', icon: DollarSign, color: SOFT_GOLD },
+    { label: 'INGRESOS', value: formatCurrency(companyMetric?.totalIncome), change: 'Agregado backend', icon: DollarSign, color: SOFT_GOLD },
   ];
 }
 
-function getStreamingAccountingMetrics({ documents, transactions }) {
-  const income = transactions
-    .filter((transaction) => transaction.type === 'ingreso')
-    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
-  const expenses = transactions
-    .filter((transaction) => transaction.type === 'gasto')
-    .reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
-  const pendingDocuments = documents.filter((document) => document.status === 'pending' || document.status === 'processing').length;
+function getStreamingAccountingMetrics({ documents, companyMetric }) {
+  const pendingDocuments = Number(companyMetric?.pendingDocumentCount) || documents.filter((document) => document.status === 'pending' || document.status === 'processing').length;
   const internalStorageDocuments = documents.filter((document) => {
     const storagePath = String(document.storagePath || '');
     return storagePath.startsWith('companies/') && !storagePath.startsWith('http');
@@ -148,17 +139,14 @@ function getStreamingAccountingMetrics({ documents, transactions }) {
     return date.toDateString() === now.toDateString();
   }).length;
 
-  const netCashFlow = income - expenses;
-  const taxProvision = expenses * 0.16;
-
   return {
-    netCashFlow,
-    taxProvision,
-    projectedCash: netCashFlow - taxProvision,
     pendingDocuments,
     processedToday,
     secureDocuments: internalStorageDocuments,
     syncLagSeconds: Math.max(5, pendingDocuments * 7 + 5),
+    netCashFlow: formatCurrency(companyMetric?.netCashFlow),
+    totalIncome: formatCurrency(companyMetric?.totalIncome),
+    totalExpenses: formatCurrency(companyMetric?.totalExpenses),
   };
 }
 
@@ -262,14 +250,14 @@ function StreamingAccountingPanel({ metrics }) {
             </div>
           </div>
           <p className="text-sm leading-relaxed" style={{ color: 'rgba(232,213,163,0.78)' }}>
-            Cada pago entrante o XML/PDF validado actualiza impuestos, conciliación, balance general y flujo de caja sin esperar procesamiento batch ni cierre mensual.
+            El panel muestra totales financieros desde agregados backend. Las consultas acotadas del cliente se conservan solo para actividad reciente.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 text-right sm:grid-cols-5 lg:min-w-[620px]">
           {[
-            ['Flujo neto', formatCurrency(metrics.netCashFlow)],
-            ['Impuestos estimados', formatCurrency(metrics.taxProvision)],
-            ['Caja proyectada', formatCurrency(metrics.projectedCash)],
+            ['Flujo neto', metrics.netCashFlow],
+            ['Ingresos', metrics.totalIncome],
+            ['Gastos', metrics.totalExpenses],
             ['Docs seguros', metrics.secureDocuments],
             ['Hoy', metrics.processedToday],
           ].map(([label, value]) => (
@@ -418,18 +406,25 @@ function DashboardFooter() {
 
 export default function Dashboard() {
   const { activeCompany, loading: companyLoading, companies = [] } = useCompany();
-  const { transactions, documents, kpis } = useCompanyData(activeCompany?.id, {
-    queryNames: ['transactions', 'documents', 'kpis'],
+  const dashboardDataLimit = 100;
+  const {
+    transactions,
+    documents,
+    companyMetrics,
+    companyMonthlyMetrics,
+  } = useCompanyData(activeCompany?.id, {
+    queryNames: ['transactions', 'documents', 'companyMetrics', 'companyMonthlyMetrics'],
+    limit: dashboardDataLimit,
   });
-
-  const monthlyData = useMemo(() => buildMonthlyData(transactions), [transactions]);
+  const companyMetric = companyMetrics?.[0] || null;
+  const monthlyData = useMemo(() => buildMonthlyData(companyMonthlyMetrics || []), [companyMonthlyMetrics]);
   const metricCards = useMemo(
-    () => getDashboardMetrics({ companies, documents, kpis, transactions }),
-    [companies, documents, kpis, transactions],
+    () => getDashboardMetrics({ companies, documents, transactions, companyMetric }),
+    [companies, documents, transactions, companyMetric],
   );
   const streamingAccountingMetrics = useMemo(
-    () => getStreamingAccountingMetrics({ documents, transactions }),
-    [documents, transactions],
+    () => getStreamingAccountingMetrics({ documents, companyMetric }),
+    [documents, companyMetric],
   );
 
   if (companyLoading) return <LoadingState variant="screen" style={{ background: DARK_BACKGROUND }} />;

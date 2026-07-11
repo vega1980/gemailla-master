@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { XMLParser } = require('fast-xml-parser');
 // unpdf: extracción PDF sin binarios nativos, apta para serverless. Evita el
 // parser regex manual (ReDoS + object streams no soportados).
 
@@ -62,21 +63,58 @@ function assertSupportedMagicNumber({ buffer, contentType, fileName, storagePath
   return detectedType;
 }
 
+function normalizeXmlKey(key = '') {
+  return String(key).replace(/^@_/, '').split(':').pop().toLowerCase();
+}
+
+function parseCfdiXmlSummary(xml) {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '@_',
+    removeNSPrefix: true,
+    parseTagValue: false,
+    parseAttributeValue: false,
+    trimValues: true,
+    processEntities: false,
+    allowBooleanAttributes: false,
+  });
+  const parsed = parser.parse(xml);
+  const lines = [];
+  const wanted = new Set([
+    'uuid', 'rfc', 'total', 'subtotal', 'fecha', 'folio', 'serie', 'moneda', 'metodopago',
+    'formapago', 'tipodecomprobante', 'nombre', 'usocfdi',
+  ]);
+
+  function visit(node, path = []) {
+    if (!node || typeof node !== 'object' || lines.length >= 180) return;
+    if (Array.isArray(node)) {
+      node.forEach((item) => visit(item, path));
+      return;
+    }
+
+    for (const [key, value] of Object.entries(node)) {
+      if (key.startsWith('@_')) {
+        const normalizedKey = normalizeXmlKey(key);
+        if (wanted.has(normalizedKey) && value !== undefined && value !== null && String(value).trim()) {
+          lines.push(`${path.join('.')}.${key.slice(2)}=${String(value).trim()}`);
+        }
+      } else if (value && typeof value === 'object') {
+        visit(value, [...path, key.split(':').pop()]);
+      }
+    }
+  }
+
+  visit(parsed);
+  return lines.join('\n');
+}
+
 function stripXmlTags(xml) {
   if (XML_DOCTYPE_PATTERN.test(xml) || XML_ENTITY_PATTERN.test(xml) || XML_DOCTYPE_EXTERNAL_PATTERN.test(xml)) {
     const error = new Error('XML rechazado: no se permiten DTD, ENTITY ni referencias externas.');
     error.status = 400;
     throw error;
   }
-  return xml
-    .replace(/<\?xml[\s\S]*?\?>/gi, ' ')
-    .replace(/<!--([\s\S]*?)-->/g, ' ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
+  return parseCfdiXmlSummary(xml);
 }
 
 function warnDocumentContext(eventName, payload = {}) {
@@ -200,5 +238,6 @@ module.exports = {
   detectFileType,
   assertSupportedMagicNumber,
   stripXmlTags,
+  parseCfdiXmlSummary,
   extractPdfText,
 };

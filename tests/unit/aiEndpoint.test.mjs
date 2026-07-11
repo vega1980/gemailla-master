@@ -250,6 +250,10 @@ function seedBase(overrides = {}) {
       memberCompany_inactiveMember: { companyId: 'memberCompany', userUid: 'inactiveMember', status: 'inactive', role: 'admin' },
       memberCompany_blockedRole: { companyId: 'memberCompany', userUid: 'blockedRole', status: 'active', role: 'guest' },
     },
+    companyEntitlements: {
+      validCompany: { companyId: 'validCompany', plan: 'pro', status: 'active', aiAccess: true, currentPeriodEnd: '2999-01-01T00:00:00.000Z', source: 'test', updatedAt: '2026-07-11T00:00:00.000Z', migrationVersion: 1 },
+      memberCompany: { companyId: 'memberCompany', plan: 'pro', status: 'active', aiAccess: true, currentPeriodEnd: '2999-01-01T00:00:00.000Z', source: 'test', updatedAt: '2026-07-11T00:00:00.000Z', migrationVersion: 1 },
+    },
     documents: {
       validDoc: { companyId: 'validCompany', storagePath: 'companies/validCompany/documents/validDoc/doc.pdf' },
       otherTenantDoc: { companyId: 'otherCompany', storagePath: 'companies/otherCompany/documents/otherTenantDoc/doc.pdf' },
