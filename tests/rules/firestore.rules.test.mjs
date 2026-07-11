@@ -469,20 +469,27 @@ describe('Firestore security rules', () => {
     );
   });
 
-  it('denies company records when the auth companyId claim does not match the document tenant', async () => {
-    const mismatchedEditor = {
+  it('allows active members to access company records without a companyId token claim', async () => {
+    const editorWithoutCompanyClaim = {
       uid: editor.uid,
-      claims: { email: editor.claims.email, email_verified: true, companyId: otherCompanyId, companyRole: 'editor' },
+      claims: { email: editor.claims.email, email_verified: true },
     };
 
-    await assertDenied(firestoreGet('documents/protected-doc', mismatchedEditor), 'mismatched claim document read');
-    await assertDenied(firestorePatch('transactions/protected-tx', {
+    await assertAllowed(
+      firestoreGet(`companyMembers/${companyId}_${editor.uid}`, editorWithoutCompanyClaim),
+      'member without companyId claim can read own membership',
+    );
+    await assertAllowed(
+      firestoreGet('documents/protected-doc', editorWithoutCompanyClaim),
+      'member without companyId claim can read company document',
+    );
+    await assertAllowed(firestorePatch('transactions/protected-tx', {
       companyId,
       ownerUid: owner.uid,
       status: 'active',
       type: 'ingreso',
       amount: 400,
-    }, mismatchedEditor), 'mismatched claim transaction update');
+    }, editorWithoutCompanyClaim), 'member without companyId claim can update company transaction');
   });
 
   it('allows company administrators to read AI usage and budgets for their company', async () => {
