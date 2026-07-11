@@ -2,7 +2,6 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useAuth } from '@/app/providers/AuthProvider';
 import { getSavedActiveCompanyId, saveActiveCompanyId } from '@/features/companies/services/activeCompanyStorage';
 import { loadCompanyContextData } from '@/features/companies/services/companyMembershipService';
-import { firebase } from '@/api/firebaseClient';
 import { CorrelationScope, getScopedCorrelationId } from '@/lib/correlationScopes';
 import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
 import { printTraceTree, registerTrace } from '@/lib/traceDebugger';
@@ -28,8 +27,6 @@ export function CompanyProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [memberships, setMemberships] = useState([]);
   const mountedRef = useRef(true);
-  const syncInProgressRef = useRef(false);
-  const pendingSyncCompanyRef = useRef(null);
   const pageCorrelationIdRef = useRef(getScopedCorrelationId(CorrelationScope.PAGE));
   const providerStartTimeRef = useRef(getNowMs());
   const operationCountRef = useRef(0);
@@ -143,52 +140,11 @@ export function CompanyProvider({ children }) {
     };
   }, [loadCompanies]);
 
-  const syncActiveCompanyClaims = useCallback(async (company) => {
-    if (!company?.id || !user) return;
-    if (syncInProgressRef.current) {
-      pendingSyncCompanyRef.current = company;
-      return;
-    }
-    syncInProgressRef.current = true;
-    try {
-      const claimsCorrelationId = ensureCorrelationId('', 'company_claims');
-      await firebase.functions.invoke('syncCompanyClaims', {
-        companyId: company.id,
-        correlationId: claimsCorrelationId,
-        parentCorrelationId: pageCorrelationIdRef.current,
-      });
-      operationCountRef.current += 1;
-      registerTrace(claimsCorrelationId, pageCorrelationIdRef.current, 'syncCompanyClaims');
-      logFrontendEvent('company_operation', {
-        correlationId: claimsCorrelationId,
-        parentCorrelationId: pageCorrelationIdRef.current,
-        ...userContextRef.current,
-        activeCompanyId: company.id,
-        operation: 'sync_claims',
-      });
-      await user.getIdToken(true);
-    } catch (error) {
-      console.warn('No se pudieron sincronizar los claims de empresa activa:', error);
-    } finally {
-      syncInProgressRef.current = false;
-      const pendingCompany = pendingSyncCompanyRef.current;
-      pendingSyncCompanyRef.current = null;
-      if (pendingCompany?.id && pendingCompany.id !== company.id) {
-        syncActiveCompanyClaims(pendingCompany);
-      }
-    }
-  }, [user]);
-
-  useEffect(() => {
-    syncActiveCompanyClaims(activeCompany);
-  }, [activeCompany, syncActiveCompanyClaims]);
-
   const switchCompany = useCallback((company) => {
     if (!company?.id) return;
     setActiveCompany(company);
     saveActiveCompanyId(company.id);
-    syncActiveCompanyClaims(company);
-  }, [syncActiveCompanyClaims]);
+  }, []);
 
   const value = useMemo(() => ({
     companies,

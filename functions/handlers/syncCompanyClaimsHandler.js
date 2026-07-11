@@ -1,8 +1,6 @@
 const admin = require('firebase-admin');
 const { requireCompanyId, validateCompanyAccess } = require('./aiHandler');
 
-const COMPANY_ADMIN_ROLES = new Set(['owner', 'director', 'admin']);
-const AI_ALLOWED_ROLES = new Set(['owner', 'director', 'admin', 'editor']);
 
 function getBearerToken(req) {
   const authHeader = req.get('authorization') || '';
@@ -27,30 +25,29 @@ async function verifyFirebaseUser(req) {
   }
 }
 
-function getRoleForClaims(role) {
-  const normalized = String(role || '').trim().toLowerCase();
-  return AI_ALLOWED_ROLES.has(normalized) || COMPANY_ADMIN_ROLES.has(normalized) ? normalized : 'viewer';
-}
-
 async function syncCompanyClaimsHandler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método no permitido.' });
+  }
 
   try {
     const user = await verifyFirebaseUser(req);
     const companyId = requireCompanyId(req.body || {});
     const access = await validateCompanyAccess({ user, companyId });
-    const companyRole = getRoleForClaims(access.role);
-    await admin.auth().setCustomUserClaims(user.uid, {
+
+    return res.status(200).json({
+      success: true,
       companyId,
-      companyRole,
-      role: companyRole,
+      companyRole: access.role,
       membershipStatus: 'active',
+      claimsUpdated: false,
+      authorizationSource: 'companyMembers',
     });
-    return res.status(200).json({ success: true, companyId, companyRole, membershipStatus: 'active' });
   } catch (error) {
-    const status = Number(error?.status) || 500;
-    return res.status(status).json({ error: error?.message || 'No se pudieron sincronizar los claims.' });
+    return res.status(Number(error?.status) || 500).json({
+      error: error?.message || 'No se pudieron validar los permisos de empresa.',
+    });
   }
 }
 
-module.exports = { getRoleForClaims, syncCompanyClaimsHandler };
+module.exports = { syncCompanyClaimsHandler };
