@@ -9,15 +9,6 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
-    function tokenCompanyId() {
-      return signedIn() ? request.auth.token.companyId : null;
-    }
-
-    function tokenMatchesCompany(companyId) {
-      return signedIn()
-        && (tokenCompanyId() == null || tokenCompanyId() == companyId);
-    }
-
     function isNonEmptyString(value) {
       return value is string && value.size() > 0;
     }
@@ -91,20 +82,17 @@ service cloud.firestore {
 
     function canReadCompany(companyId) {
       return isNonEmptyString(companyId)
-        && tokenMatchesCompany(companyId)
         && (isCompanyOwner(companyId) || isActiveMember(companyId));
     }
 
     function canWriteCompany(companyId) {
       return isNonEmptyString(companyId)
-        && tokenMatchesCompany(companyId)
         && (isCompanyOwner(companyId)
           || hasCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']));
     }
 
     function canManageCompany(companyId) {
       return isNonEmptyString(companyId)
-        && tokenMatchesCompany(companyId)
         && (isCompanyOwner(companyId)
           || hasCompanyRole(companyId, ['owner', 'director', 'admin']));
     }
@@ -335,9 +323,8 @@ service cloud.firestore {
         );
 
       allow read: if signedIn()
-        && hasCompanyId(resource.data)
         && (
-          (hasField(resource.data, 'userUid') && resource.data.userUid == currentUid())
+          resource.data.userUid == currentUid()
           || canManageCompany(resource.data.companyId)
         );
 

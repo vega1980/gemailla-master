@@ -6,7 +6,9 @@ const FIRESTORE_RULES_PATH = new URL('../../firestore.rules', import.meta.url);
 const STORAGE_RULES_PATH = new URL('../../storage.rules', import.meta.url);
 
 const mutableTenantClaimPatterns = [
+  /request\.auth\.token\.companyId/,
   /request\.auth\.token\.companyRole/,
+  /request\.auth\.token\.role/,
   /request\.auth\.token\.membershipStatus/,
   /request\.auth\.token\.get\('companyId'/,
   /request\.auth\.token\.get\('companyRole'/,
@@ -15,24 +17,23 @@ const mutableTenantClaimPatterns = [
 ];
 
 describe('multi-tenant rules authorization source', () => {
-  it('does not authorize Firestore tenant access from mutable tenant custom claims', async () => {
+  it('authorizes Firestore tenant access from active membership documents, not tenant custom claims', async () => {
     const source = await readFile(FIRESTORE_RULES_PATH, 'utf8');
 
     for (const pattern of mutableTenantClaimPatterns) {
       assert.doesNotMatch(source, pattern);
     }
 
-    assert.match(source, /function tokenCompanyId\(\)/);
-    assert.match(source, /request\.auth\.token\.companyId/);
-    assert.match(source, /function tokenMatchesCompany\(companyId\)/);
-    assert.match(source, /tokenCompanyId\(\) == null \|\| tokenCompanyId\(\) == companyId/);
-    assert.match(source, /function canReadCompany\(companyId\)[\s\S]*tokenMatchesCompany\(companyId\)/);
-    assert.match(source, /function canWriteCompany\(companyId\)[\s\S]*tokenMatchesCompany\(companyId\)/);
-    assert.match(source, /function canManageCompany\(companyId\)[\s\S]*tokenMatchesCompany\(companyId\)/);
+    assert.doesNotMatch(source, /function tokenCompanyId\(\)/);
+    assert.doesNotMatch(source, /function tokenMatchesCompany\(companyId\)/);
+    assert.doesNotMatch(source, /function authCompanyMatches\(companyId\)/);
     assert.match(source, /function membershipPath\(companyId\)/);
     assert.match(source, /\/documents\/companyMembers\/\$\(membershipId\(companyId\)\)/);
     assert.match(source, /function isActiveMember\(companyId\)/);
     assert.match(source, /membershipData\(companyId\)\.get\('status', null\) == 'active'/);
+    assert.match(source, /function canReadCompany\(companyId\)[\s\S]*\(isCompanyOwner\(companyId\) \|\| isActiveMember\(companyId\)\)/);
+    assert.match(source, /function canWriteCompany\(companyId\)[\s\S]*hasCompanyRole\(companyId, \['owner', 'director', 'admin', 'editor'\]\)/);
+    assert.match(source, /function canManageCompany\(companyId\)[\s\S]*hasCompanyRole\(companyId, \['owner', 'director', 'admin'\]\)/);
   });
 
   it('does not authorize Storage tenant access from mutable tenant custom claims', async () => {

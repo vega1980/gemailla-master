@@ -8,7 +8,7 @@ admin.initializeApp();
 
 const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const aiExports = require('./handlers/aiHandler');
-const { syncCompanyClaimsHandler, getRoleForClaims } = require('./handlers/syncCompanyClaimsHandler');
+const { syncCompanyClaimsHandler } = require('./handlers/syncCompanyClaimsHandler');
 const { functionsRouterHandler } = require('./handlers/functionsRouter');
 const { cleanupOrphanDocumentStorageHandler } = require('./handlers/orphanDocumentStorageCleanup');
 const { revokeMembershipUserRefreshTokens } = require('./handlers/companyMembershipClaimsHandler');
@@ -29,5 +29,4 @@ exports._test = {
   functionsRouterHandler,
   cleanupOrphanDocumentStorageHandler,
   revokeMembershipUserRefreshTokens,
-  getRoleForClaims,
 };
