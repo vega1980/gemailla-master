@@ -6,7 +6,6 @@ const FIRESTORE_RULES_PATH = new URL('../../firestore.rules', import.meta.url);
 const STORAGE_RULES_PATH = new URL('../../storage.rules', import.meta.url);
 
 const mutableTenantClaimPatterns = [
-  /request\.auth\.token\.companyId/,
   /request\.auth\.token\.companyRole/,
   /request\.auth\.token\.membershipStatus/,
   /request\.auth\.token\.get\('companyId'/,
@@ -23,6 +22,13 @@ describe('multi-tenant rules authorization source', () => {
       assert.doesNotMatch(source, pattern);
     }
 
+    assert.match(source, /function tokenCompanyId\(\)/);
+    assert.match(source, /request\.auth\.token\.companyId/);
+    assert.match(source, /function tokenMatchesCompany\(companyId\)/);
+    assert.match(source, /tokenCompanyId\(\) == null \|\| tokenCompanyId\(\) == companyId/);
+    assert.match(source, /function canReadCompany\(companyId\)[\s\S]*tokenMatchesCompany\(companyId\)/);
+    assert.match(source, /function canWriteCompany\(companyId\)[\s\S]*tokenMatchesCompany\(companyId\)/);
+    assert.match(source, /function canManageCompany\(companyId\)[\s\S]*tokenMatchesCompany\(companyId\)/);
     assert.match(source, /function membershipPath\(companyId\)/);
     assert.match(source, /\/documents\/companyMembers\/\$\(membershipId\(companyId\)\)/);
     assert.match(source, /function isActiveMember\(companyId\)/);
