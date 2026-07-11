@@ -109,7 +109,7 @@ export function buildProactiveAccountingActions({ company = {}, documents = [], 
 }
 
 async function listEntity(entity, companyId, limit = 100) {
-  const page = await entity.list({ where: [{ field: 'companyId', operator: '==', value: companyId }], limit });
+  const page = await entity.listByCompany(companyId, { limit });
   return Array.isArray(page) ? page : page.items || [];
 }
 
