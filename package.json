@@ -23,6 +23,7 @@
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install": "playwright install chromium",
+    "pretest:e2e:emulators": "node scripts/ensure-firestore-emulator-cache.mjs",
     "test:e2e:emulators": "firebase emulators:exec --only auth,firestore,storage --project demo-gemailla-e2e \"wait-on http://127.0.0.1:8080 http://127.0.0.1:9099 http://127.0.0.1:9199 && npm run test:e2e\"",
     "validate:env": "node scripts/validate-env.js",
     "validate:env:functions": "node scripts/validate-env.js --functions",
