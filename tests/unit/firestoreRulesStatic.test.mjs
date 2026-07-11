@@ -19,15 +19,43 @@ function extractMatchBlock(src, path) {
 }
 
 describe('firestore.rules static security invariants', () => {
-  it('C1: companyScopeValid exists and is enforced for owned-or-company create/update', async () => {
+  it('C1: owned-or-company records support explicit tenant scope or unchanged personal owner scope', async () => {
     const src = await readFile(RULES, 'utf8');
     const companyScopeValid = extractFunction(src, 'companyScopeValid');
+    const personalScopeValid = extractFunction(src, 'personalScopeValid');
+    const personalScopeUnchanged = extractFunction(src, 'personalScopeUnchanged');
     const createOwnedOrCompany = extractFunction(src, 'canCreateOwnedOrCompanyRecord');
+    const readOwnedOrCompany = extractFunction(src, 'canReadOwnedOrCompanyRecord');
     const updateOwnedOrCompany = extractFunction(src, 'canUpdateOwnedOrCompanyRecord');
 
-    assert.match(companyScopeValid, /!hasCompanyId\(data\)\s*\|\|\s*canWriteCompany\(data\.companyId\)/);
-    assert.match(createOwnedOrCompany, /companyScopeValid\(request\.resource\.data\)/);
-    assert.match(updateOwnedOrCompany, /companyScopeValid\(request\.resource\.data\)/);
+    assert.match(companyScopeValid, /hasCompanyId\(data\)\s*&&\s*canWriteCompany\(data\.companyId\)/);
+    assert.match(personalScopeValid, /!hasCompanyId\(data\)\s*&&\s*hasOwnerUid\(data\)/);
+    assert.match(personalScopeUnchanged, /!hasCompanyId\(resource\.data\)[\s\S]*!hasCompanyId\(request\.resource\.data\)[\s\S]*hasOwnerUid\(resource\.data\)[\s\S]*hasOwnerUid\(request\.resource\.data\)/);
+    assert.match(createOwnedOrCompany, /companyScopeValid\(request\.resource\.data\)[\s\S]*personalScopeValid\(request\.resource\.data\)/);
+    assert.match(readOwnedOrCompany, /hasCompanyId\(resource\.data\)[\s\S]*canReadCompany\(resource\.data\.companyId\)[\s\S]*personalScopeValid\(resource\.data\)/);
+    assert.match(updateOwnedOrCompany, /companyIdUnchanged\(\)[\s\S]*companyScopeValid\(request\.resource\.data\)[\s\S]*personalScopeUnchanged\(\)/);
+  });
+
+  it('D1: validDocumentEnvelope is complete and not truncated', async () => {
+    const src = await readFile(RULES, 'utf8');
+    const validDocumentEnvelope = extractFunction(src, 'validDocumentEnvelope');
+
+    assert.match(validDocumentEnvelope, /data\.fileSize is number[\s\S]*data\.fileSize <= 15 \* 1024 \* 1024[\s\S]*data\.contentType is string/);
+    assert.match(validDocumentEnvelope, /hasNoPublicDocumentUrls\(data\);\s*\}/);
+    assert.doesNotMatch(src, /&&\s*d\s*(?:$|\n)/);
+  });
+
+  it('C2: company access requires active membership and allowed roles, with default deny fallback', async () => {
+    const src = await readFile(RULES, 'utf8');
+    const canReadCompany = extractFunction(src, 'canReadCompany');
+    const canWriteCompany = extractFunction(src, 'canWriteCompany');
+    const canManageCompany = extractFunction(src, 'canManageCompany');
+
+    assert.match(canReadCompany, /sameCompany\(companyId\)[\s\S]*hasAnyCompanyRole\(companyId, \['owner', 'director', 'admin', 'editor', 'viewer', 'invitado'\]\)/);
+    assert.match(canWriteCompany, /sameCompany\(companyId\)[\s\S]*hasAnyCompanyRole\(companyId, \['owner', 'director', 'admin', 'editor'\]\)/);
+    assert.match(canManageCompany, /sameCompany\(companyId\)[\s\S]*hasAnyCompanyRole\(companyId, \['owner', 'director', 'admin'\]\)/);
+    assert.match(src, /match\s+\/\{document=\*\*\}\s*\{\s*allow read, write: if false;\s*\}/);
+    assert.doesNotMatch(src, /allow\s+(read|write|create|update|delete|list|get)(?:\s*,\s*(?:read|write|create|update|delete|list|get))*\s*:\s*if\s+true\s*;/);
   });
 
   it('A1: non-owner company managers cannot assign owner or director roles', async () => {
