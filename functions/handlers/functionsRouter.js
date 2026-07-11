@@ -1,8 +1,11 @@
 const { syncCompanyClaimsHandler } = require('./syncCompanyClaimsHandler');
+const { acceptCompanyInvitationHandler, inviteCompanyMemberHandler } = require('./companyInviteHandler');
 const { handleCorsPolicy } = require('../policies/httpPolicy');
 
 const FUNCTION_HANDLERS = new Map([
   ['syncCompanyClaims', syncCompanyClaimsHandler],
+  ['inviteCompanyMember', inviteCompanyMemberHandler],
+  ['acceptCompanyInvitation', acceptCompanyInvitationHandler],
 ]);
 
 function getFunctionNameFromRequest(req) {

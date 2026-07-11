@@ -10,8 +10,8 @@
 export const DOMAIN_COVERAGE = Object.freeze({
   core: Object.freeze({
     label: 'Núcleo multiempresa',
-    entities: Object.freeze(['User', 'Company', 'CompanyMember', 'AuditLog']),
-    companyQueries: Object.freeze(['auditLogs']),
+    entities: Object.freeze(['User', 'Company', 'CompanyMember', 'CompanyMetric', 'CompanyMonthlyMetric', 'AuditLog']),
+    companyQueries: Object.freeze(['companyMetrics', 'companyMonthlyMetrics', 'auditLogs']),
   }),
   documents: Object.freeze({
     label: 'Gestión documental',

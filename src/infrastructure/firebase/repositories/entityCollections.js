@@ -4,6 +4,8 @@ export const ENTITY_COLLECTIONS = Object.freeze({
   User: 'users',
   Company: 'companies',
   CompanyMember: 'companyMembers',
+  CompanyMetric: 'companyMetrics',
+  CompanyMonthlyMetric: 'companyMonthlyMetrics',
   Document: 'documents',
   Transaction: 'transactions',
   AuditLog: 'auditLogs',

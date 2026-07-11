@@ -77,11 +77,14 @@ export async function createCompanyForCurrentUser(companyData = {}, user = {}) {
 
 export async function addCompanyMember(companyId, memberData = {}) {
   if (!companyId) throw new Error('companyId es obligatorio para agregar miembros.');
-  return firebase.entities.CompanyMember.create({
+  const userEmail = String(memberData.userEmail || memberData.email || '').trim().toLowerCase();
+  if (!userEmail) throw new Error('userEmail es obligatorio para invitar miembros.');
+
+  const response = await firebase.functions.invoke('inviteCompanyMember', {
     companyId,
-    userEmail: memberData.userEmail,
+    userEmail,
     userName: memberData.userName || '',
     role: memberData.role,
-    status: ACTIVE_STATUS,
   });
+  return response?.data || response;
 }

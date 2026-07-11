@@ -15,6 +15,7 @@ const RELEASE_METADATA = Object.freeze({
 const ACTIVE_STATUSES = new Set(['active', 'activo']);
 const COMPANY_ADMIN_ROLES = new Set(['owner', 'director', 'admin']);
 const AI_ALLOWED_ROLES = new Set(['owner', 'director', 'admin', 'editor']);
+const AI_ENABLED_PLANS = new Set(['pro', 'enterprise']);
 const COMPANY_ID_PATTERN = /^[A-Za-z0-9_-]{1,160}$/;
 const MAX_REQUESTED_DOCUMENTS = 25;
 const MAX_CORRELATION_ID_LENGTH = 160;
@@ -535,7 +536,7 @@ function validateDocumentStoragePrefix(document) {
   }
 }
 
-async function validateCompanyAccess({ user, companyId }) {
+async function validateCompanyMembershipAccess({ user, companyId }) {
   const companyRef = admin.firestore().collection('companies').doc(companyId);
   const companySnap = await companyRef.get();
   if (!companySnap.exists) fail(403, 'Empresa no válida o sin acceso.');
@@ -561,6 +562,54 @@ async function validateCompanyAccess({ user, companyId }) {
   if (!AI_ALLOWED_ROLES.has(role)) fail(403, 'Tu rol no permite usar IA en esta empresa.');
 
   return { companyRef, company, role, membership };
+}
+
+async function validateCompanyAccess({ user, companyId }) {
+  const access = await validateCompanyMembershipAccess({ user, companyId });
+  await validateAiPlanAccess({ companyId, user });
+  return access;
+}
+
+function isFutureDate(value, now = new Date()) {
+  if (!value) return false;
+  let date;
+  if (typeof value?.toDate === 'function') {
+    date = value.toDate();
+  } else if (value instanceof Date) {
+    date = value;
+  } else if (typeof value === 'number') {
+    date = new Date(value);
+  } else if (typeof value === 'string') {
+    date = new Date(value);
+  } else {
+    return false;
+  }
+  return !Number.isNaN(date.getTime()) && date.getTime() > now.getTime();
+}
+
+function isActiveCompanyEntitlement(entitlement, now = new Date()) {
+  const status = String(entitlement?.status || '').trim().toLowerCase();
+  if (!['active', 'trialing', 'activo'].includes(status)) return false;
+  if (isFutureDate(entitlement.currentPeriodEnd, now)) return true;
+  return isFutureDate(entitlement.graceUntil, now);
+}
+
+async function getCompanyEntitlement(companyId) {
+  const snap = await admin.firestore().collection('companyEntitlements').doc(companyId).get();
+  if (!snap.exists) return null;
+  return { id: snap.id, ...(snap.data() || {}) };
+}
+
+async function validateAiPlanAccess({ companyId }) {
+  const entitlement = await getCompanyEntitlement(companyId);
+  if (!entitlement || entitlement.companyId !== companyId || !isActiveCompanyEntitlement(entitlement)) {
+    fail(403, 'IA requiere un entitlement activo de empresa validado en backend.');
+  }
+
+  const plan = String(entitlement.plan || '').trim().toLowerCase();
+  if (!AI_ENABLED_PLANS.has(plan) || entitlement.aiAccess !== true) {
+    fail(403, 'El plan actual no habilita IA en backend.');
+  }
 }
 
 async function validateRequestedDocuments({ companyId, documentIds, storagePaths }) {
@@ -966,6 +1015,11 @@ module.exports = {
   reconcileAiReservation,
   calculateActualAiUsage,
   validateCompanyAccess,
+  validateCompanyMembershipAccess,
+  validateAiPlanAccess,
+  isFutureDate,
+  isActiveCompanyEntitlement,
+  getCompanyEntitlement,
   requireCompanyId,
   askLLM,
   getResponseJsonSchema,

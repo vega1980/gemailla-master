@@ -7,6 +7,8 @@ export const COMPANY_ENTITY_GC_TIME = 30 * 60 * 1000;
 
 export const COMPANY_ENTITY_QUERIES = Object.freeze({
   transactions: { entity: 'Transaction', orderBy: '-date', limit: COMPANY_ENTITY_DEFAULT_LIMIT },
+  companyMetrics: { entity: 'CompanyMetric', orderBy: '-updatedAt', limit: 1 },
+  companyMonthlyMetrics: { entity: 'CompanyMonthlyMetric', orderBy: '-month', limit: 6 },
   documents: { entity: 'Document', orderBy: '-createdAt', limit: COMPANY_ENTITY_DEFAULT_LIMIT },
   kpis: { entity: 'KPI', orderBy: '-createdAt', limit: COMPANY_ENTITY_DEFAULT_LIMIT },
   projects: { entity: 'Project', orderBy: '-createdAt', limit: COMPANY_ENTITY_DEFAULT_LIMIT },

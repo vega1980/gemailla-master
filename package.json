@@ -35,7 +35,9 @@
     "smoke:staging": "node scripts/smoke-staging.mjs",
     "measure:architecture": "node scripts/measure-architecture.js",
     "migrate:archived": "node scripts/migrate-deleted-to-archived.mjs",
-    "pretest:rules:emulators": "node scripts/ensure-firestore-emulator-cache.mjs"
+    "pretest:rules:emulators": "node scripts/ensure-firestore-emulator-cache.mjs",
+    "backfill:company-entitlements": "node scripts/backfill-company-entitlements.mjs --dry-run",
+    "backfill:company-entitlements:apply": "node scripts/backfill-company-entitlements.mjs --apply"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.14",

@@ -470,6 +470,25 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /companyEntitlements/{companyId} {
+      allow read: if hasActiveMembership(companyId) || isCompanyOwner(companyId);
+      allow create, update, delete: if false;
+    }
+
+    match /companyInvitations/{invitationId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /companyMetrics/{companyId} {
+      allow read: if hasActiveMembership(companyId) || isCompanyOwner(companyId);
+      allow create, update, delete: if false;
+    }
+
+    match /companyMonthlyMetrics/{metricId} {
+      allow read: if hasCompanyId(resource.data) && (hasActiveMembership(resource.data.companyId) || isCompanyOwner(resource.data.companyId));
+      allow create, update, delete: if false;
+    }
+
     match /predictionLogs/{id} {
       allow create: if canCreateOwnedOrCompanyRecord();
       allow read: if canReadOwnedOrCompanyRecord();
