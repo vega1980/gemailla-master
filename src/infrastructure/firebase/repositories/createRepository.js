@@ -24,6 +24,7 @@ const MAX_PAGE_SIZE = 100;
 const MAX_BATCH_SIZE = 450;
 const MAX_IN_QUERY_VALUES = 30;
 const ABORT_ERROR_NAME = 'AbortError';
+const DOCUMENT_ID_ORDER_FIELD = documentId();
 
 function normalizeLimit(value) {
   const parsed = Number(value || DEFAULT_PAGE_SIZE);
@@ -155,14 +156,30 @@ function requireCompanyId(companyId, operation) {
   return normalizedCompanyId;
 }
 
+function isDocumentIdOrderClause(orderClause) {
+  return orderClause?.field === DOCUMENT_ID_ORDER_FIELD || orderClause?.field === '__name__';
+}
+
+function normalizeOrderBy(orderByOption) {
+  const clauses = Array.isArray(orderByOption)
+    ? [...orderByOption]
+    : orderByOption
+      ? [orderByOption]
+      : [{ field: 'createdAt', direction: 'desc' }];
+
+  if (!clauses.some(isDocumentIdOrderClause)) {
+    clauses.push({ field: DOCUMENT_ID_ORDER_FIELD, direction: clauses.at(-1)?.direction || 'desc' });
+  }
+
+  return clauses;
+}
+
 function normalizeDomainListOptions(options = {}) {
   const normalizedOptions = {
     ...options,
+    where: Array.isArray(options.where) ? options.where : [],
     limit: normalizeLimit(options.limit),
-    orderBy: options.orderBy || [
-      { field: 'createdAt', direction: 'desc' },
-      { field: documentId(), direction: 'desc' },
-    ],
+    orderBy: normalizeOrderBy(options.orderBy),
   };
 
   return normalizedOptions;
@@ -171,25 +188,25 @@ function normalizeDomainListOptions(options = {}) {
 function assertBoundedListOptions(options, operation) {
   const hasWhere = Array.isArray(options?.where) && options.where.length > 0;
   const hasLimit = options?.limit !== undefined && options?.limit !== null;
-  const hasOrder = Array.isArray(options?.orderBy) ? options.orderBy.length > 0 : Boolean(options?.orderBy);
+  const normalizedOrderClauses = normalizeOrderBy(options?.orderBy);
+  const hasStableOrder = normalizedOrderClauses.some(isDocumentIdOrderClause);
 
-  if (!hasWhere || !hasLimit || !hasOrder) {
-    throw new Error(`${operation} requiere filtros, límite explícito y orden estable.`);
+  if (!hasWhere || !hasLimit || !hasStableOrder) {
+    throw new Error(`${operation} requiere filtros, límite explícito y orden estable con desempate por documentId.`);
   }
 }
 
 function buildCompanyOptions(companyId, options = {}, extraWhere = []) {
   const normalizedCompanyId = requireCompanyId(companyId, 'La consulta por compañía');
   const normalizedOptions = normalizeDomainListOptions(options);
-  const whereClauses = [
-    { field: 'companyId', operator: '==', value: normalizedCompanyId },
-    ...extraWhere,
-    ...(Array.isArray(normalizedOptions.where) ? normalizedOptions.where : []),
-  ];
 
   return {
     ...normalizedOptions,
-    where: whereClauses,
+    where: [
+      { field: 'companyId', operator: '==', value: normalizedCompanyId },
+      ...extraWhere,
+      ...normalizedOptions.where,
+    ],
   };
 }
 
@@ -300,9 +317,10 @@ export const createRepository = (collectionName) => {
       throw new Error(`Lectura no acotada bloqueada: ${collectionName}.list() requiere filtros, límite y orden explícitos.`);
     }
     assertBoundedListOptions(options, `${collectionName}.list()`);
+    const normalizedOptions = normalizeDomainListOptions(options);
 
-    const snapshot = await getDocs(buildQuery(collectionRef, options));
-    const pageSize = normalizeLimit(options.limit);
+    const snapshot = await getDocs(buildQuery(collectionRef, normalizedOptions));
+    const pageSize = normalizedOptions.limit;
 
     return {
       items: serializeQuerySnapshot(snapshot),
