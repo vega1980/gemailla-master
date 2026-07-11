@@ -24,6 +24,7 @@ const MAX_PAGE_SIZE = 100;
 const MAX_BATCH_SIZE = 450;
 const MAX_IN_QUERY_VALUES = 30;
 const ABORT_ERROR_NAME = 'AbortError';
+const DOCUMENT_ID_ORDER_FIELD = documentId();
 
 function normalizeLimit(value) {
   const parsed = Number(value || DEFAULT_PAGE_SIZE);
@@ -133,8 +134,9 @@ function buildQuery(collectionRef, options = {}) {
     }
   }
 
-  if (options.orderBy) {
-    constraints.push(orderBy(options.orderBy.field, options.orderBy.direction || 'asc'));
+  const orderClauses = Array.isArray(options.orderBy) ? options.orderBy : [options.orderBy].filter(Boolean);
+  for (const orderClause of orderClauses) {
+    constraints.push(orderBy(orderClause.field, orderClause.direction || 'asc'));
   }
 
   if (options.cursor) {
@@ -144,6 +146,68 @@ function buildQuery(collectionRef, options = {}) {
   constraints.push(firestoreLimit(normalizeLimit(options.limit)));
 
   return query(collectionRef, ...constraints);
+}
+
+function requireCompanyId(companyId, operation) {
+  const normalizedCompanyId = String(companyId || '').trim();
+  if (!normalizedCompanyId) {
+    throw new Error(`${operation} requiere companyId explícito.`);
+  }
+  return normalizedCompanyId;
+}
+
+function isDocumentIdOrderClause(orderClause) {
+  return orderClause?.field === DOCUMENT_ID_ORDER_FIELD || orderClause?.field === '__name__';
+}
+
+function normalizeOrderBy(orderByOption) {
+  const clauses = Array.isArray(orderByOption)
+    ? [...orderByOption]
+    : orderByOption
+      ? [orderByOption]
+      : [{ field: 'createdAt', direction: 'desc' }];
+
+  if (!clauses.some(isDocumentIdOrderClause)) {
+    clauses.push({ field: DOCUMENT_ID_ORDER_FIELD, direction: clauses.at(-1)?.direction || 'desc' });
+  }
+
+  return clauses;
+}
+
+function normalizeDomainListOptions(options = {}) {
+  const normalizedOptions = {
+    ...options,
+    where: Array.isArray(options.where) ? options.where : [],
+    limit: normalizeLimit(options.limit),
+    orderBy: normalizeOrderBy(options.orderBy),
+  };
+
+  return normalizedOptions;
+}
+
+function assertBoundedListOptions(options, operation) {
+  const hasWhere = Array.isArray(options?.where) && options.where.length > 0;
+  const hasLimit = options?.limit !== undefined && options?.limit !== null;
+  const normalizedOrderClauses = normalizeOrderBy(options?.orderBy);
+  const hasStableOrder = normalizedOrderClauses.some(isDocumentIdOrderClause);
+
+  if (!hasWhere || !hasLimit || !hasStableOrder) {
+    throw new Error(`${operation} requiere filtros, límite explícito y orden estable con desempate por documentId.`);
+  }
+}
+
+function buildCompanyOptions(companyId, options = {}, extraWhere = []) {
+  const normalizedCompanyId = requireCompanyId(companyId, 'La consulta por compañía');
+  const normalizedOptions = normalizeDomainListOptions(options);
+
+  return {
+    ...normalizedOptions,
+    where: [
+      { field: 'companyId', operator: '==', value: normalizedCompanyId },
+      ...extraWhere,
+      ...normalizedOptions.where,
+    ],
+  };
 }
 
 export const createRepository = (collectionName) => {
@@ -244,20 +308,41 @@ export const createRepository = (collectionName) => {
     return dedupedResults;
   };
 
+  /**
+   * @deprecated Usa listByCompany, listPageByCompany o findByCompanyAndStatus.
+   * list() solo se conserva para llamadas legacy con opciones explícitas y acotadas.
+   */
   const list = async (options) => {
     if (!options || Object.keys(options).length === 0) {
-      const snapshot = await getDocs(collectionRef);
-      return serializeQuerySnapshot(snapshot);
+      throw new Error(`Lectura no acotada bloqueada: ${collectionName}.list() requiere filtros, límite y orden explícitos.`);
     }
+    assertBoundedListOptions(options, `${collectionName}.list()`);
+    const normalizedOptions = normalizeDomainListOptions(options);
 
-    const snapshot = await getDocs(buildQuery(collectionRef, options));
-    const pageSize = normalizeLimit(options.limit);
+    const snapshot = await getDocs(buildQuery(collectionRef, normalizedOptions));
+    const pageSize = normalizedOptions.limit;
 
     return {
       items: serializeQuerySnapshot(snapshot),
       lastCursor: snapshot.docs.at(-1) || null,
       hasMore: snapshot.docs.length === pageSize,
     };
+  };
+
+  const listByCompany = (companyId, options = {}) => list(buildCompanyOptions(companyId, options));
+
+  const listPageByCompany = (companyId, cursor = null, limit = DEFAULT_PAGE_SIZE) => list(buildCompanyOptions(companyId, {
+    cursor,
+    limit,
+  }));
+
+  const findByCompanyAndStatus = (companyId, status, options = {}) => {
+    const normalizedStatus = String(status || '').trim();
+    if (!normalizedStatus) throw new Error('findByCompanyAndStatus requiere status explícito.');
+
+    return list(buildCompanyOptions(companyId, options, [
+      { field: 'status', operator: '==', value: normalizedStatus },
+    ]));
   };
 
   const filter = async (field, operator, value) => {
@@ -358,6 +443,9 @@ export const createRepository = (collectionName) => {
     getMany,
     filterIn,
     list,
+    listByCompany,
+    listPageByCompany,
+    findByCompanyAndStatus,
     filter,
     create,
     createWithId,
