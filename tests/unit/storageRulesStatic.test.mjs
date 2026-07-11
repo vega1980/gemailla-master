@@ -11,12 +11,11 @@ function includesWriterRoles(source) {
 }
 
 describe('Cloud Storage rules static invariants', () => {
-  it('requires an active tenant token before granting company object access', async () => {
+  it('requires an active Firestore membership before granting company object access', async () => {
     const source = await readFile(STORAGE_RULES_PATH, 'utf8');
 
-    assert.match(source, /function hasCompanyToken\(companyId\)/);
-    assert.match(source, /request\.auth\.token\.companyId\s*==\s*companyId/);
-    assert.match(source, /request\.auth\.token\.membershipStatus\s*==\s*'active'/);
+    assert.doesNotMatch(source, /request\.auth\.token\.companyId/);
+    assert.doesNotMatch(source, /request\.auth\.token\.membershipStatus/);
 
     assert.match(source, /function membershipId\(companyId\)/);
     assert.match(source, /function activeMembership\(companyId\)/);
@@ -27,8 +26,7 @@ describe('Cloud Storage rules static invariants', () => {
     assert.match(source, /\.data\.status\s*==\s*'active'|member\.status\s*==\s*'active'/);
 
     assert.match(source, /function activeCompanyAccess\(companyId\)/);
-    assert.match(source, /hasCompanyToken\(companyId\)/);
-    assert.match(source, /activeMembership\(companyId\)/);
+    assert.match(source, /return activeMembership\(companyId\)/);
     assert.match(source, /allow read: if activeCompanyAccess\(companyId\)/);
   });
 
@@ -38,7 +36,7 @@ describe('Cloud Storage rules static invariants', () => {
     assert.match(source, /function canWriteCompanyDocuments\(companyId\)/);
     includesWriterRoles(source);
 
-    assert.match(source, /request\.auth\.token\.companyRole\s+in\s+\[|isWriterRole\(request\.auth\.token\.companyRole\)/);
+    assert.doesNotMatch(source, /request\.auth\.token\.companyRole/);
     assert.match(source, /activeMembershipRole\(companyId\)\s+in\s+\[|isWriterRole\(activeMembershipRole\(companyId\)\)/);
 
     assert.match(source, /function documentExists\(companyId, documentId\)/);

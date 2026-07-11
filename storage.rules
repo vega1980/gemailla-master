@@ -10,12 +10,6 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function hasCompanyToken(companyId) {
-      return signedIn()
-        && request.auth.token.companyId == companyId
-        && request.auth.token.membershipStatus == 'active';
-    }
-
     function membershipId(companyId) {
       return companyId + '_' + request.auth.uid;
     }
@@ -32,8 +26,7 @@ service firebase.storage {
     }
 
     function activeCompanyAccess(companyId) {
-      return hasCompanyToken(companyId)
-        && activeMembership(companyId);
+      return activeMembership(companyId);
     }
 
     function activeMembershipRole(companyId) {
@@ -48,7 +41,6 @@ service firebase.storage {
 
     function canWriteCompanyDocuments(companyId) {
       return activeCompanyAccess(companyId)
-        && isWriterRole(request.auth.token.companyRole)
         && isWriterRole(activeMembershipRole(companyId));
     }
 
