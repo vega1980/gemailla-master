@@ -9,21 +9,17 @@ service cloud.firestore {
       return request.auth.uid;
     }
 
-    function currentCompanyId() {
-      return request.auth.token.get('companyId', '');
+    function tokenCompanyId() {
+      return signedIn() ? request.auth.token.companyId : null;
     }
 
-    function sameCompany(companyId) {
+    function tokenMatchesCompany(companyId) {
       return signedIn()
-        && companyId is string
-        && companyId.size() > 0
-        && currentCompanyId() == companyId;
+        && (tokenCompanyId() == null || tokenCompanyId() == companyId);
     }
 
-    function isAdmin() {
-      return signedIn()
-        && (request.auth.token.get('role', null) in ['owner', 'director', 'admin']
-          || request.auth.token.get('companyRole', null) in ['owner', 'director', 'admin']);
+    function isNonEmptyString(value) {
+      return value is string && value.size() > 0;
     }
 
     function hasField(data, field) {
@@ -31,9 +27,7 @@ service cloud.firestore {
     }
 
     function hasCompanyId(data) {
-      return hasField(data, 'companyId')
-        && data.companyId is string
-        && data.companyId.size() > 0;
+      return hasField(data, 'companyId') && isNonEmptyString(data.companyId);
     }
 
     function hasOwnerUid(data) {
@@ -50,6 +44,18 @@ service cloud.firestore {
       return companyId + '_' + currentUid();
     }
 
+    function membershipPath(companyId) {
+      return /databases/$(database)/documents/companyMembers/$(membershipId(companyId));
+    }
+
+    function membershipExists(companyId) {
+      return signedIn() && isNonEmptyString(companyId) && exists(membershipPath(companyId));
+    }
+
+    function membershipData(companyId) {
+      return get(membershipPath(companyId)).data;
+    }
+
     function companyExists(companyId) {
       return exists(/databases/$(database)/documents/companies/$(companyId));
     }
@@ -60,40 +66,55 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/companies/$(companyId)).data.ownerUid == currentUid();
     }
 
+    function isActiveMember(companyId) {
+      return membershipExists(companyId)
+        && membershipData(companyId).get('companyId', null) == companyId
+        && membershipData(companyId).get('userUid', null) == currentUid()
+        && membershipData(companyId).get('status', null) == 'active';
+    }
+
     function hasActiveMembership(companyId) {
-      let memberId = membershipId(companyId);
-      return signedIn()
-        && exists(/databases/$(database)/documents/companyMembers/$(memberId))
-        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.companyId == companyId
-        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.userUid == currentUid()
-        && get(/databases/$(database)/documents/companyMembers/$(memberId)).data.status == 'active';
+      return isActiveMember(companyId);
     }
 
     function memberRole(companyId) {
-      let memberId = membershipId(companyId);
-      let member = get(/databases/$(database)/documents/companyMembers/$(memberId)).data;
-      return member != null ? member.get('role', null) : null;
+      return membershipExists(companyId) ? membershipData(companyId).get('role', null) : null;
+    }
+
+    function hasCompanyRole(companyId, allowedRoles) {
+      return isActiveMember(companyId) && memberRole(companyId) in allowedRoles;
     }
 
     function hasAnyCompanyRole(companyId, roles) {
-      return hasActiveMembership(companyId) && memberRole(companyId) in roles;
+      return hasCompanyRole(companyId, roles);
     }
 
     function canReadCompany(companyId) {
-      return sameCompany(companyId)
-        && (isCompanyOwner(companyId) || hasActiveMembership(companyId));
+      return isNonEmptyString(companyId)
+        && tokenMatchesCompany(companyId)
+        && (isCompanyOwner(companyId) || isActiveMember(companyId));
     }
 
     function canWriteCompany(companyId) {
-      return sameCompany(companyId)
+      return isNonEmptyString(companyId)
+        && tokenMatchesCompany(companyId)
         && (isCompanyOwner(companyId)
-          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']));
+          || hasCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']));
     }
 
     function canManageCompany(companyId) {
-      return sameCompany(companyId)
+      return isNonEmptyString(companyId)
+        && tokenMatchesCompany(companyId)
         && (isCompanyOwner(companyId)
-          || hasAnyCompanyRole(companyId, ['owner', 'director', 'admin']));
+          || hasCompanyRole(companyId, ['owner', 'director', 'admin']));
+    }
+
+    function canCreateCompanyDocument(companyId) {
+      return isNonEmptyString(companyId) && canWriteCompany(companyId);
+    }
+
+    function belongsToCompany(data) {
+      return hasCompanyId(data) && canReadCompany(data.companyId);
     }
 
     // Roles que el actor puede asignar. Solo el dueño real de la empresa
@@ -261,17 +282,15 @@ service cloud.firestore {
     }
 
     function canCreateAiBudget() {
-      return isAdmin()
-        && hasCompanyId(request.resource.data)
-        && sameCompany(request.resource.data.companyId);
+      return hasCompanyId(request.resource.data)
+        && canManageCompany(request.resource.data.companyId);
     }
 
     function canUpdateAiBudget() {
-      return isAdmin()
-        && hasCompanyId(resource.data)
+      return hasCompanyId(resource.data)
         && hasCompanyId(request.resource.data)
         && request.resource.data.companyId == resource.data.companyId
-        && sameCompany(resource.data.companyId);
+        && canManageCompany(resource.data.companyId);
     }
 
     function canReadAiFinancialData(data) {
@@ -318,7 +337,7 @@ service cloud.firestore {
       allow read: if signedIn()
         && hasCompanyId(resource.data)
         && (
-          (sameCompany(resource.data.companyId) && hasField(resource.data, 'userUid') && resource.data.userUid == currentUid())
+          (hasField(resource.data, 'userUid') && resource.data.userUid == currentUid())
           || canManageCompany(resource.data.companyId)
         );
 
@@ -335,7 +354,7 @@ service cloud.firestore {
     }
 
     match /auditLogs/{logId} {
-      allow read: if isAdmin() && hasCompanyId(resource.data) && sameCompany(resource.data.companyId);
+      allow read: if hasCompanyId(resource.data) && canManageCompany(resource.data.companyId);
       allow write: if false;
     }
 
