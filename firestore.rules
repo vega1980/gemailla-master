@@ -21,6 +21,13 @@ service cloud.firestore {
       return hasField(data, 'companyId') && isNonEmptyString(data.companyId);
     }
 
+    function authCompanyMatches(companyId) {
+      return signedIn()
+        && isNonEmptyString(companyId)
+        && request.auth.token.companyId is string
+        && request.auth.token.companyId == companyId;
+    }
+
     function hasOwnerUid(data) {
       return hasField(data, 'ownerUid')
         && data.ownerUid is string
@@ -82,17 +89,20 @@ service cloud.firestore {
 
     function canReadCompany(companyId) {
       return isNonEmptyString(companyId)
+        && authCompanyMatches(companyId)
         && (isCompanyOwner(companyId) || isActiveMember(companyId));
     }
 
     function canWriteCompany(companyId) {
       return isNonEmptyString(companyId)
+        && authCompanyMatches(companyId)
         && (isCompanyOwner(companyId)
           || hasCompanyRole(companyId, ['owner', 'director', 'admin', 'editor']));
     }
 
     function canManageCompany(companyId) {
       return isNonEmptyString(companyId)
+        && authCompanyMatches(companyId)
         && (isCompanyOwner(companyId)
           || hasCompanyRole(companyId, ['owner', 'director', 'admin']));
     }

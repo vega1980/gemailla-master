@@ -475,6 +475,10 @@ describe('Firestore security rules', () => {
       claims: { email: editor.claims.email, email_verified: true, companyId: otherCompanyId, companyRole: 'editor' },
     };
 
+    await assertDenied(
+      firestoreGet(`companyMembers/${companyId}_${editor.uid}`, mismatchedEditor),
+      'mismatched claim member read',
+    );
     await assertDenied(firestoreGet('documents/protected-doc', mismatchedEditor), 'mismatched claim document read');
     await assertDenied(firestorePatch('transactions/protected-tx', {
       companyId,
