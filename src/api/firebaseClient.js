@@ -286,7 +286,7 @@ async function createCompanyWithInitialOwner(companyData = {}, membershipData = 
     userUid,
     userEmail: membershipData.userEmail || user?.email || '',
     userName: membershipData.userName || user?.displayName || user?.email || '',
-    role: membershipData.role || 'director',
+    role: membershipData.role || 'owner',
     status: membershipData.status || 'active',
   }));
 
