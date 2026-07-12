@@ -11,6 +11,9 @@
     "src/domain/finance/transactionService.js",
     "src/shared/constants/roles.js",
     "src/shared/constants/documentTypes.js",
+    "src/security/documentFileValidation.js",
+    "src/features/documents/constants/documentStatuses.js",
+    "src/shared/validation/commonSchemas.js",
     "src/shared/validation/companySchemas.js",
     "src/shared/validation/memberSchemas.js",
     "src/shared/validation/documentSchemas.js"
