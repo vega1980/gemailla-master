@@ -1,8 +1,16 @@
+// @ts-check
+
 import { z } from 'zod';
+import { optionalEmail, optionalTrimmedString, requiredTrimmedString } from './commonSchemas.js';
 
 export const companySchema = z.object({
-  name: z.string().trim().min(1, 'El nombre de la empresa es obligatorio.'),
-  rfc: z.string().trim().optional(),
-  industry: z.string().trim().optional(),
-  email: z.string().trim().email('Correo inválido.').optional().or(z.literal('')),
-});
+  name: requiredTrimmedString('El nombre de la empresa es obligatorio.'),
+  rfc: optionalTrimmedString,
+  industry: optionalTrimmedString,
+  address: optionalTrimmedString,
+  phone: optionalTrimmedString,
+  email: optionalEmail,
+  fiscalRegime: optionalTrimmedString,
+}).strict();
+
+/** @typedef {z.infer<typeof companySchema>} CompanyInput */
