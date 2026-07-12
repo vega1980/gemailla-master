@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useMemo } from 'react';
+import React, { lazy, Suspense, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -21,6 +21,8 @@ import {
   Zap,
 } from 'lucide-react';
 import LoadingState from '@/components/shared/LoadingState';
+import DashboardLoginDialog from '@/components/auth/DashboardLoginDialog';
+import { useAuth } from '@/app/providers/AuthProvider';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
 
@@ -150,7 +152,7 @@ function getStreamingAccountingMetrics({ documents, companyMetric }) {
   };
 }
 
-function DashboardHeader() {
+function DashboardHeader({ isAuthenticated, onLoginRequest }) {
   return (
     <div className="border-b" style={{ borderColor: 'rgba(197,160,89,0.2)' }}>
       <div className="flex items-center justify-between px-6 py-4">
@@ -174,7 +176,18 @@ function DashboardHeader() {
           <button type="button" aria-label="Abrir ayuda"><HelpCircle className="w-5 h-5 text-muted-foreground" /></button>
           <div className="flex items-center gap-2 pl-4 border-l" style={{ borderColor: 'rgba(197,160,89,0.2)' }}>
             <span className="text-sm" style={{ color: 'rgba(232,213,163,0.8)' }}>GEMAILLA IA</span>
-            <span className="text-xs" style={{ color: 'rgba(197,160,89,0.6)' }}>● Conectado</span>
+            {isAuthenticated ? (
+              <span className="text-xs" style={{ color: '#4caf50' }}>● Conectado</span>
+            ) : (
+              <button
+                type="button"
+                className="rounded-lg border px-3 py-2 text-xs font-semibold"
+                style={{ borderColor: 'rgba(240,208,128,0.45)', color: GOLD }}
+                onClick={() => onLoginRequest('/dashboard')}
+              >
+                Iniciar sesión
+              </button>
+            )}
             <div className="w-8 h-8 rounded-full" style={{ background: `linear-gradient(135deg, ${GOLD}, ${MUTED_GOLD})` }} />
           </div>
         </div>
@@ -187,13 +200,22 @@ function SectionTitle({ children, id }) {
   return <h2 id={id} className="text-lg font-bold mb-4" style={{ color: GOLD, letterSpacing: '0.05em' }}>{children}</h2>;
 }
 
-function QuickAccessModules() {
+function QuickAccessModules({ isAuthenticated, onLoginRequest }) {
   return (
     <section className="mb-8" aria-labelledby="quick-access-title">
       <SectionTitle id="quick-access-title">ACCESOS DIRECTOS</SectionTitle>
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
         {QUICK_MODULES.map((module) => (
-          <Link key={module.path} to={module.path} className="group">
+          <Link
+            key={module.path}
+            to={module.path}
+            className="group"
+            onClick={(event) => {
+              if (isAuthenticated) return;
+              event.preventDefault();
+              onLoginRequest(module.path);
+            }}
+          >
             <div
               className="rounded-xl p-3 text-center transition-all duration-300 hover:scale-105"
               style={{
@@ -405,6 +427,8 @@ function DashboardFooter() {
 }
 
 export default function Dashboard() {
+  const { isAuthenticated } = useAuth();
+  const [loginDestination, setLoginDestination] = useState(null);
   const { activeCompany, loading: companyLoading, companies = [] } = useCompany();
   const dashboardDataLimit = 100;
   const {
@@ -431,9 +455,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen" style={{ background: DARK_BACKGROUND }}>
-      <DashboardHeader />
+      <DashboardHeader
+        isAuthenticated={isAuthenticated}
+        onLoginRequest={setLoginDestination}
+      />
       <main className="p-6">
-        <QuickAccessModules />
+        <QuickAccessModules
+          isAuthenticated={isAuthenticated}
+          onLoginRequest={setLoginDestination}
+        />
         <StreamingAccountingPanel metrics={streamingAccountingMetrics} />
         <StatsCards cards={metricCards} monthlyData={monthlyData} />
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -446,6 +476,13 @@ export default function Dashboard() {
         <RecentActivityPanel />
       </main>
       <DashboardFooter />
+      <DashboardLoginDialog
+        open={Boolean(loginDestination)}
+        destinationPath={loginDestination}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setLoginDestination(null);
+        }}
+      />
     </div>
   );
 }
