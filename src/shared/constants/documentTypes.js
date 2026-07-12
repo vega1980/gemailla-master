@@ -1,3 +1,5 @@
+// @ts-check
+
 export const DOCUMENT_TYPES = Object.freeze({
   INVOICE: 'factura',
   CREDIT_NOTE: 'nota_credito',
@@ -9,4 +11,14 @@ export const DOCUMENT_TYPES = Object.freeze({
   OTHER: 'otro',
 });
 
-export const DOCUMENT_TYPE_OPTIONS = Object.values(DOCUMENT_TYPES);
+/** @type {readonly [import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType]} */
+export const DOCUMENT_TYPE_OPTIONS = [
+  DOCUMENT_TYPES.INVOICE,
+  DOCUMENT_TYPES.CREDIT_NOTE,
+  DOCUMENT_TYPES.RECEIPT,
+  DOCUMENT_TYPES.CONTRACT,
+  DOCUMENT_TYPES.BANK_STATEMENT,
+  DOCUMENT_TYPES.TAX_RETURN,
+  DOCUMENT_TYPES.PAYROLL,
+  DOCUMENT_TYPES.OTHER,
+];

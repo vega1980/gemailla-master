@@ -1,5 +1,9 @@
+// @ts-check
+
+/** @type {ReadonlySet<import('@/domain/dtos').TransactionType>} */
 const VALID_TRANSACTION_TYPES = new Set(['ingreso', 'gasto']);
 
+/** @type {Readonly<Record<string, string>>} */
 const CATEGORY_MAP = Object.freeze({
   ventas: 'ventas',
   servicios: 'servicios',
@@ -20,6 +24,7 @@ const CATEGORY_MAP = Object.freeze({
   'otros gastos': 'otros_gastos',
 });
 
+/** @type {Readonly<Record<string, string>>} */
 const PAYMENT_METHOD_MAP = Object.freeze({
   efectivo: 'efectivo',
   transferencia: 'transferencia',
@@ -30,20 +35,24 @@ const PAYMENT_METHOD_MAP = Object.freeze({
   cheque: 'cheque',
 });
 
+/** @param {unknown} companyId @returns {asserts companyId is string} */
 function assertCompanyId(companyId) {
   if (!companyId || typeof companyId !== 'string') {
     throw new Error('companyId es obligatorio para operar transacciones.');
   }
 }
 
+/** @param {unknown} value */
 function normalizeText(value) {
   return String(value ?? '').trim();
 }
 
+/** @param {unknown} value */
 function normalizeLookupKey(value) {
   return normalizeText(value).toLowerCase();
 }
 
+/** @param {unknown} amount */
 function normalizeAmount(amount) {
   const numericAmount = typeof amount === 'number'
     ? amount
@@ -54,23 +63,27 @@ function normalizeAmount(amount) {
   return numericAmount;
 }
 
+/** @param {Record<string, unknown>} draft */
 function normalizeType(draft = {}) {
   const explicitType = normalizeLookupKey(draft.type || draft.tipo);
   if (explicitType.includes('gasto')) return 'gasto';
-  if (VALID_TRANSACTION_TYPES.has(explicitType)) return explicitType;
+  if (VALID_TRANSACTION_TYPES.has(/** @type {import('@/domain/dtos').TransactionType} */ (explicitType))) return /** @type {import('@/domain/dtos').TransactionType} */ (explicitType);
   return 'ingreso';
 }
 
+/** @param {unknown} rawCategory @param {import('@/domain/dtos').TransactionType} type */
 function normalizeCategory(rawCategory, type) {
   const key = normalizeLookupKey(rawCategory);
   return CATEGORY_MAP[key] || (type === 'ingreso' ? 'ventas' : 'otros_gastos');
 }
 
+/** @param {unknown} rawPaymentMethod */
 function normalizePaymentMethod(rawPaymentMethod) {
   const key = normalizeLookupKey(rawPaymentMethod);
   return PAYMENT_METHOD_MAP[key] || 'transferencia';
 }
 
+/** @param {number} year @param {number} month @param {number} day */
 function assertValidDateParts(year, month, day) {
   const date = new Date(Date.UTC(year, month - 1, day));
   if (
@@ -82,6 +95,7 @@ function assertValidDateParts(year, month, day) {
   }
 }
 
+/** @param {unknown} rawDate */
 function normalizeDate(rawDate) {
   const raw = normalizeText(rawDate);
   let year;
@@ -105,6 +119,7 @@ function normalizeDate(rawDate) {
   return `${String(numericYear).padStart(4, '0')}-${String(numericMonth).padStart(2, '0')}-${String(numericDay).padStart(2, '0')}`;
 }
 
+/** @param {Record<string, unknown>} draft */
 function pickAllowedDraftFields(draft = {}) {
   return Object.fromEntries(
     [
@@ -120,6 +135,11 @@ function pickAllowedDraftFields(draft = {}) {
   );
 }
 
+/**
+ * @param {Record<string, unknown>} draft
+ * @param {string} companyId
+ * @returns {import('@/domain/dtos').TransactionDto}
+ */
 export function normalizeTransactionDraft(draft = {}, companyId) {
   assertCompanyId(companyId);
   const {
@@ -142,13 +162,20 @@ export function normalizeTransactionDraft(draft = {}, companyId) {
     date: normalizeDate(draft.date ?? fecha),
     category: normalizeCategory(category, type),
     paymentMethod: normalizePaymentMethod(paymentMethod),
-    status: draft.status || 'confirmed',
+    status: /** @type {import('@/domain/dtos').TransactionStatus} */ (draft.status || 'confirmed'),
   };
 }
 
+/**
+ * @param {Record<string, unknown>[]} rows
+ * @param {string} companyId
+ * @param {Record<string, unknown>} [options]
+ */
 export function prepareTransactionImportRows(rows = [], companyId, options = {}) {
   assertCompanyId(companyId);
+  /** @type {import('@/domain/dtos').TransactionDto[]} */
   const validRows = [];
+  /** @type {string[]} */
   const errors = [];
 
   rows.forEach((row, index) => {
@@ -157,13 +184,15 @@ export function prepareTransactionImportRows(rows = [], companyId, options = {})
       if (!normalized.description) errors.push(`Fila ${index + 2}: descripción vacía; se importará sin descripción.`);
       validRows.push(normalized);
     } catch (error) {
-      errors.push(`Fila ${index + 2}: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Error desconocido.';
+      errors.push(`Fila ${index + 2}: ${message}`);
     }
   });
 
   return { rows: validRows, errors };
 }
 
+/** @param {Array<Pick<import('@/domain/dtos').TransactionDto, 'amount' | 'type'>>} transactions */
 export function calculateTransactionTotals(transactions = []) {
   return transactions.reduce((totals, transaction) => {
     const amount = Number(transaction.amount || 0);
@@ -173,20 +202,27 @@ export function calculateTransactionTotals(transactions = []) {
   }, { totalIngresos: 0, totalGastos: 0 });
 }
 
+/**
+ * @param {{ transactions: { create(draft: import('@/domain/dtos').TransactionDto): Promise<unknown>, archive(id: string): Promise<unknown>, bulkCreate(rows: import('@/domain/dtos').TransactionDto[]): Promise<unknown[]> }, importLogs?: { create(payload: Record<string, unknown>): Promise<unknown> } }} repositories
+ */
 export function createTransactionService(repositories) {
   if (!repositories?.transactions) throw new Error('transactions repository requerido.');
 
   return Object.freeze({
+    /** @param {Record<string, unknown>} draft @param {string} companyId */
     create(draft, companyId) {
       return repositories.transactions.create(normalizeTransactionDraft(draft, companyId));
     },
+    /** @param {string} transactionId */
     archive(transactionId) {
       if (!transactionId) throw new Error('transactionId es obligatorio para archivar.');
       return repositories.transactions.archive(transactionId);
     },
+    /** @param {Record<string, unknown>[]} rows @param {string} companyId @param {Record<string, unknown>} [options] */
     prepareImport(rows, companyId, options) {
       return prepareTransactionImportRows(rows, companyId, options);
     },
+    /** @param {{ rows: Record<string, unknown>[], companyId: string, importLog?: Record<string, unknown> }} params */
     async bulkImport({ rows, companyId, importLog = {} }) {
       assertCompanyId(companyId);
       const normalizedRows = rows.map((row) => normalizeTransactionDraft(row, companyId));

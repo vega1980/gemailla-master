@@ -1,3 +1,5 @@
+// @ts-check
+
 export const ROLES = Object.freeze({
   DIRECTOR: 'director',
   ADMIN: 'admin',
@@ -5,4 +7,5 @@ export const ROLES = Object.freeze({
   GUEST: 'invitado',
 });
 
-export const COMPANY_ROLES = Object.values(ROLES);
+/** @type {readonly [import('@/domain/dtos').CompanyRole, import('@/domain/dtos').CompanyRole, import('@/domain/dtos').CompanyRole, import('@/domain/dtos').CompanyRole]} */
+export const COMPANY_ROLES = [ROLES.DIRECTOR, ROLES.ADMIN, ROLES.MEMBER, ROLES.GUEST];

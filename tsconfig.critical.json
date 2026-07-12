@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
     "paths": {
       "@/*": [
         "./src/*"
@@ -16,13 +20,10 @@
       "dom"
     ],
     "target": "esnext",
-    "checkJs": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "noEmit": true,
-    "allowJs": true,
     "maxNodeModuleJsDepth": 0
   },
   "include": [

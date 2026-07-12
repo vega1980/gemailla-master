@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc -p ./jsconfig.json",
+    "typecheck": "npm run typecheck:critical && tsc -p ./jsconfig.json",
     "serve": "firebase emulators:start --only hosting,auth,firestore,storage",
     "deploy": "firebase deploy",
     "deploy:hosting": "firebase deploy --only hosting",
@@ -37,7 +37,8 @@
     "migrate:archived": "node scripts/migrate-deleted-to-archived.mjs",
     "pretest:rules:emulators": "node scripts/ensure-firestore-emulator-cache.mjs",
     "backfill:company-entitlements": "node scripts/backfill-company-entitlements.mjs --dry-run",
-    "backfill:company-entitlements:apply": "node scripts/backfill-company-entitlements.mjs --apply"
+    "backfill:company-entitlements:apply": "node scripts/backfill-company-entitlements.mjs --apply",
+    "typecheck:critical": "tsc -p ./tsconfig.critical.json"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.14",
