@@ -91,6 +91,59 @@ describe('transaction domain service', () => {
     assert.throws(() => normalizeTransactionDraft({ amount: 10, date: '02/31/2026' }, 'company-1'), /fecha de la transacción no es válida/i);
   });
 
+
+  it('usa tipo como respaldo cuando type está ausente o vacío', () => {
+    assert.equal(normalizeTransactionDraft({ type: '', tipo: 'gasto', amount: 10, date: '2026-01-02' }, 'company-1').type, 'gasto');
+    assert.equal(normalizeTransactionDraft({ type: '   ', tipo: 'gasto', amount: 10, date: '2026-01-02' }, 'company-1').type, 'gasto');
+    assert.equal(normalizeTransactionDraft({ tipo: 'gasto', amount: 10, date: '2026-01-02' }, 'company-1').type, 'gasto');
+    assert.equal(normalizeTransactionDraft({ type: '', tipo: '', amount: 10, date: '2026-01-02' }, 'company-1').type, 'ingreso');
+    assert.throws(
+      () => normalizeTransactionDraft({ type: 'bono', tipo: 'gasto', amount: 10, date: '2026-01-02' }, 'company-1'),
+      /El tipo de transacción debe ser ingreso o gasto\./,
+    );
+  });
+
+  it('valida tipos, estados, montos y companyId sin conversiones silenciosas', () => {
+    assert.equal(normalizeTransactionDraft({ type: 'ingreso', amount: 10, date: '2026-01-02' }, ' company-1 ').type, 'ingreso');
+    assert.equal(normalizeTransactionDraft({ type: 'ingreso', amount: 10, date: '2026-01-02' }, ' company-1 ').companyId, 'company-1');
+    assert.equal(normalizeTransactionDraft({ type: 'gasto', amount: 10, date: '2026-01-02' }, 'company-1').type, 'gasto');
+    assert.equal(normalizeTransactionDraft({ amount: 10, date: '2026-01-02' }, 'company-1').type, 'ingreso');
+    assert.throws(
+      () => normalizeTransactionDraft({ type: 'gastos operativos', amount: 10, date: '2026-01-02' }, 'company-1'),
+      /El tipo de transacción debe ser ingreso o gasto\./,
+    );
+
+    assert.equal(normalizeTransactionDraft({ amount: 10, date: '2026-01-02' }, 'company-1').status, 'confirmed');
+    assert.equal(normalizeTransactionDraft({ amount: 10, date: '2026-01-02', status: 'pending' }, 'company-1').status, 'pending');
+    assert.equal(normalizeTransactionDraft({ amount: 10, date: '2026-01-02', status: 'archived' }, 'company-1').status, 'archived');
+    assert.throws(
+      () => normalizeTransactionDraft({ amount: 10, date: '2026-01-02', status: 'deleted' }, 'company-1'),
+      /El estado de la transacción no es válido\./,
+    );
+
+    assert.throws(() => normalizeTransactionDraft({ amount: '10abc', date: '2026-01-02' }, 'company-1'), /mayor a cero/);
+    assert.equal(normalizeTransactionDraft({ amount: '$3,500.50', date: '2026-01-02' }, 'company-1').amount, 3500.5);
+    assert.throws(() => normalizeTransactionDraft({ amount: 10, date: '2026-01-02' }, '   '), /companyId es obligatorio/);
+  });
+
+  it('convierte errores de importación en errores de fila', () => {
+    const prepared = prepareTransactionImportRows([
+      { type: 'ingreso', amount: '$3,500.50', date: '2026-01-02' },
+      { type: 'bono', amount: 10, date: '2026-01-02' },
+      { type: 'gasto', amount: '10abc', date: '2026-01-02' },
+      { type: 'ingreso', amount: 10, date: '2026-01-02', status: 'deleted' },
+    ], 'company-1');
+
+    assert.equal(prepared.rows.length, 1);
+    assert.equal(prepared.rows[0].amount, 3500.5);
+    assert.deepEqual(prepared.errors, [
+      'Fila 2: descripción vacía; se importará sin descripción.',
+      'Fila 3: El tipo de transacción debe ser ingreso o gasto.',
+      'Fila 4: El monto de la transacción debe ser mayor a cero.',
+      'Fila 5: El estado de la transacción no es válido.',
+    ]);
+  });
+
   it('ejecuta casos de uso con repositorios inyectados, sin depender de Firebase', async () => {
     const createdRows = [];
     const importLogs = [];

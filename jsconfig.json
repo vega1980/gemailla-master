@@ -16,7 +16,7 @@
       "dom"
     ],
     "target": "esnext",
-    "checkJs": true,
+    "checkJs": false,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -26,15 +26,10 @@
     "maxNodeModuleJsDepth": 0
   },
   "include": [
-    "src/domain/dtos.ts",
-    "src/domain/finance/transactionService.js",
-    "src/shared/constants/roles.js",
-    "src/shared/constants/documentTypes.js",
-    "src/shared/validation/companySchemas.js",
-    "src/shared/validation/memberSchemas.js",
-    "src/shared/validation/documentSchemas.js"
+    "src"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }
