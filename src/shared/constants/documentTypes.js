@@ -11,7 +11,7 @@ export const DOCUMENT_TYPES = Object.freeze({
   OTHER: 'otro',
 });
 
-/** @type {readonly [import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType, import('@/domain/dtos').DocumentType]} */
+/** @type {readonly ['factura', 'nota_credito', 'recibo', 'contrato', 'estado_cuenta', 'declaración', 'nómina', 'otro']} */
 export const DOCUMENT_TYPE_OPTIONS = [
   DOCUMENT_TYPES.INVOICE,
   DOCUMENT_TYPES.CREDIT_NOTE,

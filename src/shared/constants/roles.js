@@ -7,5 +7,5 @@ export const ROLES = Object.freeze({
   GUEST: 'invitado',
 });
 
-/** @type {readonly [import('@/domain/dtos').CompanyRole, import('@/domain/dtos').CompanyRole, import('@/domain/dtos').CompanyRole, import('@/domain/dtos').CompanyRole]} */
+/** @type {readonly ['director', 'admin', 'miembro', 'invitado']} */
 export const COMPANY_ROLES = [ROLES.DIRECTOR, ROLES.ADMIN, ROLES.MEMBER, ROLES.GUEST];

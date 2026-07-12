@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
-    "typecheck": "npm run typecheck:critical && tsc -p ./jsconfig.json",
+    "typecheck": "tsc -p ./jsconfig.json && npm run typecheck:critical",
     "serve": "firebase emulators:start --only hosting,auth,firestore,storage",
     "deploy": "firebase deploy",
     "deploy:hosting": "firebase deploy --only hosting",

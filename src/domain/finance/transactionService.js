@@ -3,6 +3,9 @@
 /** @type {ReadonlySet<import('@/domain/dtos').TransactionType>} */
 const VALID_TRANSACTION_TYPES = new Set(['ingreso', 'gasto']);
 
+/** @type {ReadonlySet<import('@/domain/dtos').TransactionStatus>} */
+const VALID_TRANSACTION_STATUSES = new Set(['confirmed', 'pending', 'archived']);
+
 /** @type {Readonly<Record<string, string>>} */
 const CATEGORY_MAP = Object.freeze({
   ventas: 'ventas',
@@ -37,7 +40,7 @@ const PAYMENT_METHOD_MAP = Object.freeze({
 
 /** @param {unknown} companyId @returns {asserts companyId is string} */
 function assertCompanyId(companyId) {
-  if (!companyId || typeof companyId !== 'string') {
+  if (typeof companyId !== 'string' || !companyId.trim()) {
     throw new Error('companyId es obligatorio para operar transacciones.');
   }
 }
@@ -54,9 +57,12 @@ function normalizeLookupKey(value) {
 
 /** @param {unknown} amount */
 function normalizeAmount(amount) {
+  const rawAmount = normalizeText(amount);
   const numericAmount = typeof amount === 'number'
     ? amount
-    : Number.parseFloat(String(amount ?? '').replace(/[$,\s]/g, ''));
+    : /^\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?$|^\$?\d+(?:\.\d+)?$/.test(rawAmount)
+      ? Number(rawAmount.replace(/[$,]/g, ''))
+      : Number.NaN;
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
     throw new Error('El monto de la transacción debe ser mayor a cero.');
   }
@@ -65,10 +71,19 @@ function normalizeAmount(amount) {
 
 /** @param {Record<string, unknown>} draft */
 function normalizeType(draft = {}) {
-  const explicitType = normalizeLookupKey(draft.type || draft.tipo);
-  if (explicitType.includes('gasto')) return 'gasto';
-  if (VALID_TRANSACTION_TYPES.has(/** @type {import('@/domain/dtos').TransactionType} */ (explicitType))) return /** @type {import('@/domain/dtos').TransactionType} */ (explicitType);
-  return 'ingreso';
+  const explicitType = normalizeLookupKey(draft.type);
+  const fallbackType = explicitType || normalizeLookupKey(draft.tipo);
+  if (!fallbackType) return 'ingreso';
+  if (VALID_TRANSACTION_TYPES.has(/** @type {import('@/domain/dtos').TransactionType} */ (fallbackType))) return /** @type {import('@/domain/dtos').TransactionType} */ (fallbackType);
+  throw new Error('El tipo de transacción debe ser ingreso o gasto.');
+}
+
+/** @param {unknown} rawStatus */
+function normalizeStatus(rawStatus) {
+  const status = normalizeLookupKey(rawStatus);
+  if (!status) return 'confirmed';
+  if (VALID_TRANSACTION_STATUSES.has(/** @type {import('@/domain/dtos').TransactionStatus} */ (status))) return /** @type {import('@/domain/dtos').TransactionStatus} */ (status);
+  throw new Error('El estado de la transacción no es válido.');
 }
 
 /** @param {unknown} rawCategory @param {import('@/domain/dtos').TransactionType} type */
@@ -155,14 +170,14 @@ export function normalizeTransactionDraft(draft = {}, companyId) {
 
   return {
     ...pickAllowedDraftFields(draft),
-    companyId,
+    companyId: companyId.trim(),
     type,
     amount: normalizeAmount(draft.amount ?? monto),
     description: normalizeText(draft.description ?? descripcion),
     date: normalizeDate(draft.date ?? fecha),
     category: normalizeCategory(category, type),
     paymentMethod: normalizePaymentMethod(paymentMethod),
-    status: /** @type {import('@/domain/dtos').TransactionStatus} */ (draft.status || 'confirmed'),
+    status: normalizeStatus(draft.status),
   };
 }
 
@@ -233,7 +248,7 @@ export function createTransactionService(repositories) {
       if (repositories.importLogs?.create && importLog.status) {
         await repositories.importLogs.create({
           ...importLog,
-          companyId,
+          companyId: companyId.trim(),
           type: 'transactions',
           validCount: created.length,
         });
