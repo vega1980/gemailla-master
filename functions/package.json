@@ -20,5 +20,8 @@
     "unpdf": "^1.5.1",
     "fast-xml-parser": "^5.3.4"
   },
-  "packageManager": "npm@11.4.2"
+  "packageManager": "npm@11.4.2",
+  "allowScripts": {
+    "protobufjs@7.6.4": true
+  }
 }
