@@ -26,8 +26,8 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
 
-const DashboardSparkline = lazy(() => import('@/pages/dashboard/DashboardCharts').then((module) => ({ default: module.DashboardSparkline })));
-const DashboardRealtimePie = lazy(() => import('@/pages/dashboard/DashboardCharts').then((module) => ({ default: module.DashboardRealtimePie })));
+const DashboardSparkline = lazy(() => import('@modules/dashboard/components/DashboardCharts').then((module) => ({ default: module.DashboardSparkline })));
+const DashboardRealtimePie = lazy(() => import('@modules/dashboard/components/DashboardCharts').then((module) => ({ default: module.DashboardRealtimePie })));
 
 const GOLD = '#f0d080';
 const DARK_BACKGROUND = '#050505';
