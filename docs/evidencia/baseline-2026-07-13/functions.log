@@ -1,0 +1,12 @@
+check=functions
+date_utc=2026-07-13T05:45:47Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=npm run test:functions
+node=v22.22.2
+npm=11.4.2
+classification_expected=NOT_RUN_PREREQUISITE_FAILED
+--- output ---
+NOT RUN: functions/node_modules was not installed from a clean install because npm registry access is blocked.
+--- result ---
+exit_code=not_run
+classification=NOT_RUN_PREREQUISITE_FAILED

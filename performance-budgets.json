@@ -3,7 +3,7 @@
   "sharedVendorMaxKb": 650,
   "routes": {
     "/dashboard": {
-      "module": "src/pages/Dashboard.jsx",
+      "module": "src/modules/dashboard/pages/DashboardPage.jsx",
       "routeMaxKb": 95,
       "allowedVendors": ["vendor-core", "vendor-firebase"]
     },
@@ -13,7 +13,7 @@
       "allowedVendors": ["vendor-core", "vendor-firebase"]
     },
     "/finance": {
-      "module": "src/pages/FinancialHub.jsx",
+      "module": "src/modules/finance/pages/FinancialHubPage.jsx",
       "routeMaxKb": 180,
       "allowedVendors": ["vendor-core", "vendor-firebase", "vendor-charts"]
     },

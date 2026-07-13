@@ -1,0 +1,17 @@
+check=measure-architecture
+date_utc=2026-07-13T05:45:45Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=npm run measure:architecture
+node=v22.22.2
+npm=11.4.2
+classification_expected=PASS
+--- output ---
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> gemailla-master@1.0.0 measure:architecture
+> node scripts/measure-architecture.js
+
+✅ Métricas de arquitectura generadas: docs/architecture/architecture-metrics.json, docs/architecture/architecture-metrics.md
+--- result ---
+exit_code=0
+classification=PASS
