@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const ROOT = resolve('.');
@@ -50,6 +50,28 @@ function toRepoPath(abs) {
   return relative(ROOT, abs).split(sep).join('/');
 }
 
+function normalizeRepoPath(path) {
+  return path.split(sep).join('/');
+}
+
+function resolveImportPath(importPath, importerRepoPath) {
+  if (importPath.startsWith('@/')) return importPath.replace('@/', 'src/');
+  if (importPath.startsWith('@modules/')) return importPath.replace('@modules/', 'src/modules/');
+  if (importPath.startsWith('./') || importPath.startsWith('../')) {
+    return normalizeRepoPath(relative(ROOT, resolve(ROOT, dirname(importerRepoPath), importPath)));
+  }
+  return importPath;
+}
+
+function stripSourceExtension(repoPath) {
+  return repoPath.replace(/\.(?:js|jsx|ts|tsx)$/, '');
+}
+
+function collectImportSpecifiers(source) {
+  const importPattern = /(?:import|export)\s+(?:[^'";]+\s+from\s+)?['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/g;
+  return [...source.matchAll(importPattern)].map((match) => match[1] || match[2]);
+}
+
 function collectSourceFiles(base = 'src') {
   const absBase = resolve(ROOT, base);
   if (!existsSync(absBase)) return [];
@@ -70,6 +92,103 @@ function validateLegacyDuplicateArchitecture(issues) {
     const repoPath = toRepoPath(abs);
     if (LEGACY_PAGE_COPY_PATTERN.test(repoPath)) {
       addIssue(issues, 'legacy-duplicates', repoPath, 'Archivo de página con sufijo legacy/backup/original detectado. Mantén una sola implementación activa por página.');
+    }
+  }
+}
+
+function validateRouteEntrypoints(issues) {
+  const routesPath = 'src/app/routes.jsx';
+  const absRoutesPath = resolve(ROOT, routesPath);
+  if (!existsSync(absRoutesPath)) return;
+
+  const source = readFileSync(absRoutesPath, 'utf8');
+  const modulePageEntrypointPattern = /^src\/modules\/[^/]+\/pages\/[^/]+Page$/;
+
+  for (const importPath of collectImportSpecifiers(source)) {
+    const resolvedImportPath = stripSourceExtension(resolveImportPath(importPath, routesPath));
+    const isPageEntrypointCandidate = resolvedImportPath.startsWith('src/pages/')
+      || resolvedImportPath.includes('/pages/')
+      || /Page$/.test(resolvedImportPath);
+    if (!isPageEntrypointCandidate) continue;
+
+    if (resolvedImportPath.startsWith('src/pages/')) {
+      addIssue(
+        issues,
+        'route-entrypoints',
+        routesPath,
+        'Las rutas de aplicación no deben importar directamente desde src/pages. Publica cada pantalla desde src/modules/<bounded-context>/pages para mantener una única frontera modular.',
+      );
+      continue;
+    }
+
+    if (!modulePageEntrypointPattern.test(resolvedImportPath)) {
+      addIssue(
+        issues,
+        'route-entrypoints',
+        routesPath,
+        `Ruta con import fuera de src/modules/<dominio>/pages: ${importPath}.`,
+      );
+    }
+  }
+}
+
+function validateModulePageBoundaries(issues) {
+  const moduleFiles = collectSourceFiles('src/modules');
+  const legacyPageWrapperPattern = /^\s*export\s+\{\s*default\s*\}\s+from\s+['"]([^'"]+)['"];\s*$/;
+
+  for (const abs of moduleFiles) {
+    const repoPath = toRepoPath(abs);
+    const source = readFileSync(abs, 'utf8');
+    const importSpecifiers = collectImportSpecifiers(source);
+    const importsFromSrcPages = importSpecifiers.some((importPath) => resolveImportPath(importPath, repoPath).startsWith('src/pages/'));
+
+    if (importsFromSrcPages) {
+      addIssue(
+        issues,
+        'module-page-boundaries',
+        repoPath,
+        'Los módulos no deben importar ni exportar desde src/pages. Mueve la implementación real al módulo correspondiente.',
+      );
+    }
+
+    const wrapperMatch = source.match(legacyPageWrapperPattern);
+    if (wrapperMatch && resolveImportPath(wrapperMatch[1], repoPath).startsWith('src/pages/')) {
+      addIssue(
+        issues,
+        'legacy-page-wrappers',
+        repoPath,
+        'Wrapper de una sola línea hacia una página legacy detectado. No ocultes src/pages detrás de facades: migra la implementación real.',
+      );
+    }
+  }
+}
+
+function validateUnusedModuleNameIndexes(issues) {
+  const modulesRoot = resolve(ROOT, 'src/modules');
+  if (!existsSync(modulesRoot)) return;
+
+  const sourceFiles = collectSourceFiles('src');
+  for (const entry of readdirSync(modulesRoot)) {
+    const indexPath = join(modulesRoot, entry, 'index.js');
+    if (!existsSync(indexPath)) continue;
+
+    const repoPath = toRepoPath(indexPath);
+    const source = readFileSync(indexPath, 'utf8').trim();
+    if (!/^export\s+const\s+moduleName\s*=\s*['"][^'"]+['"];?$/.test(source)) continue;
+
+    const importPattern = new RegExp(`['"](?:@modules/${entry}|@/modules/${entry})(?:/index)?['"]`);
+    const hasConsumer = sourceFiles.some((file) => {
+      if (file === indexPath) return false;
+      return importPattern.test(readFileSync(file, 'utf8'));
+    });
+
+    if (!hasConsumer) {
+      addIssue(
+        issues,
+        'unused-module-index',
+        repoPath,
+        'index.js solo exporta moduleName y no tiene consumidores. Elimínalo o añade una API pública real consumida.',
+      );
     }
   }
 }
@@ -178,6 +297,9 @@ function main() {
   const options = parseArgs(process.argv.slice(2));
   const issues = [];
   validateLegacyDuplicateArchitecture(issues);
+  validateRouteEntrypoints(issues);
+  validateModulePageBoundaries(issues);
+  validateUnusedModuleNameIndexes(issues);
   validateFirebaseImports(issues);
   validateFeatureCompanyGuards(issues);
   validateSensitiveViteVariables(issues);
