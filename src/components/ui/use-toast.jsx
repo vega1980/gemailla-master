@@ -1,8 +1,8 @@
 // Inspired by react-hot-toast library
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 8000;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -46,11 +46,22 @@ const _clearFromRemoveQueue = (toastId) => {
 
 export const reducer = (state, action) => {
   switch (action.type) {
-    case actionTypes.ADD_TOAST:
+    case actionTypes.ADD_TOAST: {
+      const existingIndex = state.toasts.findIndex((t) => t.id === action.toast.id);
+      if (existingIndex >= 0) {
+        return {
+          ...state,
+          toasts: state.toasts.map((t) =>
+            t.id === action.toast.id ? { ...t, ...action.toast, open: true } : t
+          ),
+        };
+      }
+
       return {
         ...state,
         toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
       };
+    }
 
     case actionTypes.UPDATE_TOAST:
       return {
@@ -110,8 +121,15 @@ function dispatch(action) {
   });
 }
 
+function stableToastId(props) {
+  return props.id || props.toastId || (props.variant === 'destructive'
+    ? `error:${props.title || ''}:${props.description || ''}`
+    : genId());
+}
+
 function toast({ ...props }) {
-  const id = genId();
+  const id = String(stableToastId(props));
+  delete props.toastId;
 
   const update = (props) =>
     dispatch({
@@ -121,6 +139,8 @@ function toast({ ...props }) {
 
   const dismiss = () =>
     dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id });
+
+  _clearFromRemoveQueue(id);
 
   dispatch({
     type: actionTypes.ADD_TOAST,
@@ -154,10 +174,14 @@ function useToast() {
     };
   }, [state]);
 
+  const dismiss = useCallback((toastId) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }), []);
+  const clearToasts = useCallback(() => dispatch({ type: actionTypes.REMOVE_TOAST }), []);
+
   return {
     ...state,
     toast,
-    dismiss: (toastId) => dispatch({ type: actionTypes.DISMISS_TOAST, toastId }),
+    dismiss,
+    clearToasts,
   };
 }
 

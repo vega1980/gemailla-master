@@ -82,7 +82,7 @@ service cloud.firestore {
 
     function canReadCompany(companyId) {
       return isNonEmptyString(companyId)
-        && (isCompanyOwner(companyId) || isActiveMember(companyId));
+        && isActiveMember(companyId);
     }
 
     function canWriteCompany(companyId) {

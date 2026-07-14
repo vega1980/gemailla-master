@@ -247,9 +247,9 @@ export const createRepository = (collectionName) => {
     try {
       for (const idChunk of idChunks) {
         throwIfAborted(signal);
-        const snapshot = await getDocs(query(collectionRef, where(documentId(), 'in', idChunk)));
+        const snapshots = await Promise.all(idChunk.map((id) => getDoc(doc(db, collectionName, id))));
         throwIfAborted(signal);
-        results.push(...serializeQuerySnapshot(snapshot));
+        results.push(...filterActiveRecords(snapshots.filter((snapshot) => snapshot.exists()).map(serializeDocSnapshot)));
       }
     } catch (error) {
       if (isAbortError(error)) {

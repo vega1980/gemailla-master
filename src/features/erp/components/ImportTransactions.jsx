@@ -17,14 +17,14 @@ export default function ImportTransactions({ companyId, onSuccess }) {
   const [importing, setImporting] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
   const fileRef = useRef();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
 
-  const reset = () => { setStep('upload'); setRows([]); setErrors([]); setImportedCount(0); };
+  const reset = () => { dismiss('error:import-transactions'); setStep('upload'); setRows([]); setErrors([]); setImportedCount(0); };
 
   const handleFile = async (file) => {
     if (!file) return;
     if (!companyId) {
-      toast({ title: 'Empresa requerida', description: 'Selecciona una empresa antes de importar transacciones.', variant: 'destructive' });
+      toast({ id: 'error:import-transactions', title: 'Empresa requerida', description: 'Selecciona una empresa antes de importar transacciones.', variant: 'destructive' });
       return;
     }
     setStep('processing');
@@ -35,7 +35,7 @@ export default function ImportTransactions({ companyId, onSuccess }) {
       processRows(parsed, file);
     } catch (err) {
       setStep('upload');
-      toast({ title: 'Error en la importación', description: err.message, variant: 'destructive' });
+      toast({ id: 'error:import-transactions', title: 'Error en la importación', description: err.message, variant: 'destructive' });
       await recordTransactionImportFailure({
         companyId,
         fileName: file.name,
