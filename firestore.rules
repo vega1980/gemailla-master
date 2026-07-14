@@ -21,8 +21,12 @@ service cloud.firestore {
       return hasField(data, 'companyId') && isNonEmptyString(data.companyId);
     }
 
-    function hasOwnerUid(data) {
-      return hasField(data, 'ownerUid')
+    function hasOwnerUidField(data) {
+      return hasField(data, 'ownerUid');
+    }
+
+    function isOwnedByCurrentUser(data) {
+      return hasOwnerUidField(data)
         && data.ownerUid is string
         && data.ownerUid == currentUid();
     }
@@ -180,11 +184,16 @@ service cloud.firestore {
         && request.resource.data.companyId == resource.data.companyId;
     }
 
-    function ownerUidUnchangedOrSelf() {
-      return !hasField(resource.data, 'ownerUid')
-        || !hasField(request.resource.data, 'ownerUid')
-        || request.resource.data.ownerUid == resource.data.ownerUid
-        || request.resource.data.ownerUid == currentUid();
+    function ownerUidUnchanged() {
+      return (hasOwnerUidField(resource.data)
+          && hasOwnerUidField(request.resource.data)
+          && request.resource.data.ownerUid == resource.data.ownerUid)
+        || (!hasOwnerUidField(resource.data)
+          && !hasOwnerUidField(request.resource.data));
+    }
+
+    function personalScopeUnchanged() {
+      return !hasCompanyId(resource.data) && !hasCompanyId(request.resource.data);
     }
 
     function canUpdateCompanyRecord() {
@@ -192,23 +201,24 @@ service cloud.firestore {
         && auditUpdateFieldsAreSafe()
         && companyIdUnchanged()
         && canWriteCompany(resource.data.companyId)
-        && ownerUidUnchangedOrSelf();
+        && ownerUidUnchanged();
     }
 
-    // Si el documento declara companyId, debe ser escribible por el usuario.
-    // Sin companyId (documento estrictamente personal), ownerUid abre la puerta.
     function companyScopeValid(data) {
       return !hasCompanyId(data) || canWriteCompany(data.companyId);
     }
 
+    // Si el documento declara companyId, solo la autorización empresarial abre acceso.
+    // Sin companyId (documento estrictamente personal), solo el ownership personal abre acceso.
     function canCreateOwnedOrCompanyRecord() {
       return signedIn()
         && auditCreateFieldsAreSafe(request.resource.data)
-        && ownerUidIsSelfOrMissing(request.resource.data)
         && companyScopeValid(request.resource.data)
         && (
-          (hasCompanyId(request.resource.data) && canWriteCompany(request.resource.data.companyId))
-          || hasOwnerUid(request.resource.data)
+          (hasCompanyId(request.resource.data)
+            && canWriteCompany(request.resource.data.companyId)
+            && ownerUidIsSelfOrMissing(request.resource.data))
+          || (!hasCompanyId(request.resource.data) && isOwnedByCurrentUser(request.resource.data))
         );
     }
 
@@ -216,18 +226,20 @@ service cloud.firestore {
       return signedIn()
         && (
           (hasCompanyId(resource.data) && canReadCompany(resource.data.companyId))
-          || hasOwnerUid(resource.data)
+          || (!hasCompanyId(resource.data) && isOwnedByCurrentUser(resource.data))
         );
     }
 
     function canUpdateOwnedOrCompanyRecord() {
       return signedIn()
         && auditUpdateFieldsAreSafe()
-        && ownerUidUnchangedOrSelf()
+        && ownerUidUnchanged()
         && companyScopeValid(request.resource.data)
         && (
-          (hasCompanyId(resource.data) && companyIdUnchanged() && canWriteCompany(resource.data.companyId))
-          || hasOwnerUid(resource.data)
+          (hasCompanyId(resource.data)
+            && companyIdUnchanged()
+            && canWriteCompany(resource.data.companyId))
+          || (personalScopeUnchanged() && isOwnedByCurrentUser(resource.data))
         );
     }
 
