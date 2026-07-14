@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-10T14:30:28.762Z",
+  "generatedAt": "2026-07-13T05:45:46.525Z",
   "scope": [
     "src",
     "functions"
   ],
   "totals": {
-    "files": 237,
-    "internalDependencies": 533,
-    "externalPackages": 55,
+    "files": 235,
+    "internalDependencies": 532,
+    "externalPackages": 66,
     "duplicateLineGroups": 30
   },
   "externalPackages": [
@@ -17,7 +17,7 @@
     },
     {
       "name": "lucide-react",
-      "count": 86
+      "count": 85
     },
     {
       "name": "date-fns",
@@ -64,11 +64,15 @@
       "count": 4
     },
     {
-      "name": "jspdf",
+      "name": "zod",
+      "count": 4
+    },
+    {
+      "name": "@modules/dashboard",
       "count": 3
     },
     {
-      "name": "zod",
+      "name": "jspdf",
       "count": 3
     },
     {
@@ -76,11 +80,51 @@
       "count": 2
     },
     {
+      "name": "@modules/activity",
+      "count": 1
+    },
+    {
+      "name": "@modules/audit",
+      "count": 1
+    },
+    {
+      "name": "@modules/client",
+      "count": 1
+    },
+    {
       "name": "@modules/companies",
       "count": 1
     },
     {
+      "name": "@modules/crm",
+      "count": 1
+    },
+    {
       "name": "@modules/documents",
+      "count": 1
+    },
+    {
+      "name": "@modules/erp",
+      "count": 1
+    },
+    {
+      "name": "@modules/finance",
+      "count": 1
+    },
+    {
+      "name": "@modules/hr",
+      "count": 1
+    },
+    {
+      "name": "@modules/operations",
+      "count": 1
+    },
+    {
+      "name": "@modules/predictions",
+      "count": 1
+    },
+    {
+      "name": "@modules/subscriptions",
       "count": 1
     },
     {
@@ -166,76 +210,28 @@
     {
       "name": "@radix-ui/react-tabs",
       "count": 1
-    },
-    {
-      "name": "@radix-ui/react-toggle",
-      "count": 1
-    },
-    {
-      "name": "@radix-ui/react-toggle-group",
-      "count": 1
-    },
-    {
-      "name": "@radix-ui/react-tooltip",
-      "count": 1
-    },
-    {
-      "name": "clsx",
-      "count": 1
-    },
-    {
-      "name": "cmdk",
-      "count": 1
-    },
-    {
-      "name": "embla-carousel-react",
-      "count": 1
-    },
-    {
-      "name": "fflate",
-      "count": 1
-    },
-    {
-      "name": "input-otp",
-      "count": 1
-    },
-    {
-      "name": "next-themes",
-      "count": 1
-    },
-    {
-      "name": "react-day-picker",
-      "count": 1
-    },
-    {
-      "name": "react-dom",
-      "count": 1
     }
   ],
   "moduleCoupling": [
     {
-      "edge": "src:components -> src:lib",
-      "count": 52
+      "edge": "src:modules -> src:components",
+      "count": 67
     },
     {
-      "edge": "src:pages -> src:components",
-      "count": 46
+      "edge": "src:components -> src:lib",
+      "count": 49
     },
     {
       "edge": "feature:crm -> src:components",
       "count": 30
     },
     {
+      "edge": "src:modules -> src:lib",
+      "count": 29
+    },
+    {
       "edge": "src:components -> src:components",
-      "count": 26
-    },
-    {
-      "edge": "src:modules -> src:components",
-      "count": 24
-    },
-    {
-      "edge": "src:pages -> src:lib",
-      "count": 23
+      "count": 27
     },
     {
       "edge": "feature:hr -> src:components",
@@ -254,31 +250,31 @@
       "count": 14
     },
     {
-      "edge": "src:modules -> src:lib",
-      "count": 14
-    },
-    {
       "edge": "feature:dashboard -> src:components",
       "count": 12
     },
     {
-      "edge": "src:modules -> src:modules",
+      "edge": "src:domain -> src:domain",
       "count": 12
     },
     {
-      "edge": "src:app -> src:pages",
+      "edge": "src:modules -> src:modules",
       "count": 11
-    },
-    {
-      "edge": "src:lib -> src:lib",
-      "count": 9
     },
     {
       "edge": "src:infrastructure -> src:infrastructure",
       "count": 8
     },
     {
+      "edge": "src:modules -> src:app",
+      "count": 8
+    },
+    {
       "edge": "feature:client -> src:components",
+      "count": 7
+    },
+    {
+      "edge": "src:lib -> src:lib",
       "count": 7
     },
     {
@@ -314,7 +310,11 @@
       "count": 5
     },
     {
-      "edge": "src:pages -> feature:erp",
+      "edge": "src:modules -> feature:erp",
+      "count": 5
+    },
+    {
+      "edge": "src:shared -> src:shared",
       "count": 5
     },
     {
@@ -322,11 +322,15 @@
       "count": 4
     },
     {
-      "edge": "src:app -> src:lib",
+      "edge": "src:components -> src:app",
       "count": 4
     },
     {
-      "edge": "src:lib -> src:api",
+      "edge": "src:modules -> feature:client",
+      "count": 4
+    },
+    {
+      "edge": "src:modules -> feature:crm",
       "count": 4
     },
     {
@@ -334,23 +338,15 @@
       "count": 4
     },
     {
-      "edge": "src:pages -> feature:client",
+      "edge": "src:modules -> feature:finance",
       "count": 4
     },
     {
-      "edge": "src:pages -> feature:crm",
+      "edge": "src:modules -> feature:operations",
       "count": 4
     },
     {
-      "edge": "src:pages -> feature:finance",
-      "count": 4
-    },
-    {
-      "edge": "src:pages -> feature:operations",
-      "count": 4
-    },
-    {
-      "edge": "src:pages -> feature:predictive",
+      "edge": "src:modules -> feature:predictive",
       "count": 4
     },
     {
@@ -382,15 +378,23 @@
       "count": 3
     },
     {
-      "edge": "src:lib -> src:infrastructure",
+      "edge": "src:app -> src:app",
       "count": 3
     },
     {
-      "edge": "src:pages -> feature:hr",
+      "edge": "src:app -> src:lib",
       "count": 3
     },
     {
-      "edge": "src:pages -> feature:support",
+      "edge": "src:lib -> src:api",
+      "count": 3
+    },
+    {
+      "edge": "src:lib -> src:app",
+      "count": 3
+    },
+    {
+      "edge": "src:modules -> feature:hr",
       "count": 3
     },
     {
@@ -407,10 +411,6 @@
     },
     {
       "edge": "feature:dashboard -> src:api",
-      "count": 2
-    },
-    {
-      "edge": "feature:documents -> feature:documents",
       "count": 2
     }
   ],
@@ -429,15 +429,15 @@
     },
     {
       "file": "src/api/firebaseClient.js",
-      "incoming": 31,
+      "incoming": 30,
       "outgoing": 10,
-      "score": 41
+      "score": 40
     },
     {
       "file": "src/lib/companyContext.jsx",
-      "incoming": 22,
-      "outgoing": 7,
-      "score": 29
+      "incoming": 21,
+      "outgoing": 6,
+      "score": 27
     },
     {
       "file": "src/components/ui/badge.jsx",
@@ -458,16 +458,22 @@
       "score": 20
     },
     {
+      "file": "src/components/ui/dialog.jsx",
+      "incoming": 18,
+      "outgoing": 1,
+      "score": 19
+    },
+    {
       "file": "src/components/ui/select.jsx",
       "incoming": 18,
       "outgoing": 1,
       "score": 19
     },
     {
-      "file": "src/components/ui/dialog.jsx",
-      "incoming": 17,
+      "file": "src/app/providers/AuthProvider.jsx",
+      "incoming": 16,
       "outgoing": 1,
-      "score": 18
+      "score": 17
     },
     {
       "file": "src/modules/documents/pages/DocumentsPage.jsx",
@@ -476,31 +482,13 @@
       "score": 17
     },
     {
-      "file": "src/components/shared/EmptyState.jsx",
-      "incoming": 15,
-      "outgoing": 0,
-      "score": 15
-    },
-    {
-      "file": "src/lib/AuthContext.jsx",
-      "incoming": 14,
-      "outgoing": 1,
-      "score": 15
-    },
-    {
       "file": "src/modules/ai/pages/AIAssistantPage.jsx",
       "incoming": 1,
       "outgoing": 14,
       "score": 15
     },
     {
-      "file": "src/pages/ERP.jsx",
-      "incoming": 1,
-      "outgoing": 14,
-      "score": 15
-    },
-    {
-      "file": "src/components/shared/PageHeader.jsx",
+      "file": "src/components/shared/EmptyState.jsx",
       "incoming": 14,
       "outgoing": 0,
       "score": 14
@@ -518,7 +506,19 @@
       "score": 14
     },
     {
-      "file": "src/app/routes.jsx",
+      "file": "src/modules/erp/pages/ERPPage.jsx",
+      "incoming": 0,
+      "outgoing": 14,
+      "score": 14
+    },
+    {
+      "file": "src/components/shared/PageHeader.jsx",
+      "incoming": 13,
+      "outgoing": 0,
+      "score": 13
+    },
+    {
+      "file": "src/domain/finance/transactionService.js",
       "incoming": 1,
       "outgoing": 12,
       "score": 13
@@ -530,9 +530,9 @@
       "score": 12
     },
     {
-      "file": "src/pages/FinancialHub.jsx",
-      "incoming": 1,
-      "outgoing": 11,
+      "file": "src/domain/dtos.ts",
+      "incoming": 12,
+      "outgoing": 0,
       "score": 12
     }
   ],
@@ -605,6 +605,20 @@
         "src/features/dashboard/components/WelcomeAnalysis.jsx",
         "src/features/finance/components/ReportDownloader.jsx",
         "src/features/finance/components/RiskManagement.jsx"
+      ]
+    },
+    {
+      "line": "const admin = require('firebase-admin');",
+      "occurrences": 13,
+      "files": [
+        "functions/config.js",
+        "functions/handlers/aiHandler.js",
+        "functions/handlers/companyInviteHandler.js",
+        "functions/handlers/companyMembershipClaimsHandler.js",
+        "functions/handlers/companyMetricsAggregationHandler.js",
+        "functions/handlers/documentContextBuilder.js",
+        "functions/handlers/orphanDocumentStorageCleanup.js",
+        "functions/handlers/syncCompanyClaimsHandler.js"
       ]
     },
     {
@@ -706,7 +720,7 @@
         "src/features/reports/components/ReportGenerator.jsx",
         "src/features/support/components/ClientDashboardShare.jsx",
         "src/features/support/components/SupportChatbot.jsx",
-        "src/pages/Audit.jsx"
+        "src/modules/audit/pages/AuditPage.jsx"
       ]
     },
     {
@@ -720,7 +734,7 @@
         "src/features/reports/components/ReportGenerator.jsx",
         "src/features/support/components/ClientDashboardShare.jsx",
         "src/features/support/components/SupportChatbot.jsx",
-        "src/pages/Audit.jsx"
+        "src/modules/audit/pages/AuditPage.jsx"
       ]
     },
     {
@@ -836,20 +850,6 @@
       ]
     },
     {
-      "line": "const admin = require('firebase-admin');",
-      "occurrences": 8,
-      "files": [
-        "functions/config.js",
-        "functions/handlers/aiHandler.js",
-        "functions/handlers/companyMembershipClaimsHandler.js",
-        "functions/handlers/documentContextBuilder.js",
-        "functions/handlers/orphanDocumentStorageCleanup.js",
-        "functions/handlers/syncCompanyClaimsHandler.js",
-        "functions/index.js",
-        "functions/tests/documentContextBuilder.test.js"
-      ]
-    },
-    {
       "line": "{save.isPending && <Loader2 className=\"w-4 h-4 animate-spin\" />}",
       "occurrences": 7,
       "files": [
@@ -905,7 +905,7 @@
         "src/components/ui/card.jsx",
         "src/features/operations/components/ProjectTracker.jsx",
         "src/features/operations/components/StrategicKPIs.jsx",
-        "src/pages/Dashboard.jsx"
+        "src/modules/dashboard/pages/DashboardPage.jsx"
       ]
     },
     {

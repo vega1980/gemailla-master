@@ -1,0 +1,12 @@
+check=npm-ci
+date_utc=2026-07-13T05:45:46Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=rm -rf node_modules functions/node_modules && npm ci
+node=v22.22.2
+npm=11.4.2
+classification_expected=NOT_RUN_PREREQUISITE_FAILED
+--- output ---
+NOT RUN: npm registry returned 403 during npm-network; clean install must not run without valid registry access.
+--- result ---
+exit_code=not_run
+classification=NOT_RUN_PREREQUISITE_FAILED

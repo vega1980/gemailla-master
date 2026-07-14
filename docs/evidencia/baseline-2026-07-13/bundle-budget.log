@@ -1,0 +1,23 @@
+check=bundle-budget
+date_utc=2026-07-13T05:45:44Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=npm run budget:bundle
+node=v22.22.2
+npm=11.4.2
+classification_expected=PASS
+--- output ---
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> gemailla-master@1.0.0 budget:bundle
+> node scripts/check-bundle-budgets.js
+
+Bundle budgets gzip:
+- vendors compartidos: 571.2 kB / 650.0 kB
+- /dashboard: 6.3 kB / 95.0 kB (src/modules/dashboard/pages/DashboardPage.jsx)
+- /documents: 6.6 kB / 120.0 kB (src/modules/documents/pages/DocumentsPage.jsx)
+- /finance: 16.8 kB / 180.0 kB (src/modules/finance/pages/FinancialHubPage.jsx)
+- /ai: 4.8 kB / 140.0 kB (src/modules/ai/pages/AIAssistantPage.jsx)
+✅ Presupuestos de bundle dentro del límite.
+--- result ---
+exit_code=0
+classification=PASS

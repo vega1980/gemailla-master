@@ -1,0 +1,26 @@
+check=emulator-setup
+date_utc=2026-07-13T05:24:33Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=bash -lc java -version; npx firebase-tools --version; ls -lah ~/.cache/firebase/emulators || true; npx firebase-tools setup:emulators:firestore
+node=v22.22.2
+npm=11.4.2
+classification_expected=BLOCKED_EMULATOR_DOWNLOAD
+--- output ---
+openjdk version "25.0.2" 2026-01-20
+OpenJDK Runtime Environment (build 25.0.2+10-69)
+OpenJDK 64-Bit Server VM (build 25.0.2+10-69, mixed mode, sharing)
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+15.23.0
+total 8.0K
+drwxr-xr-x 2 root root 4.0K Jul 13 05:21 .
+drwxr-xr-x 3 root root 4.0K Jul 13 05:21 ..
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+(node:14690) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+i  firestore: downloading cloud-firestore-emulator-v1.21.0.jar...
+⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection.
+
+Error: Failed to make request to https://storage.googleapis.com/firebase-preview-drop/emulator/cloud-firestore-emulator-v1.21.0.jar
+--- result ---
+exit_code=1
+classification=BLOCKED_EMULATOR_DOWNLOAD

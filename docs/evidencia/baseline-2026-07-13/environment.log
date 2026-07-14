@@ -1,0 +1,53 @@
+check=environment
+date_utc=2026-07-13T05:22:33Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=bash -lc source "$HOME/.nvm/nvm.sh" && nvm ls && nvm use 22 && node --version && npm --version && sed -n '/"engines"/,+5p' package.json && sed -n '/"engines"/,+5p' functions/package.json && java -version && (npx firebase-tools --version || true)
+node=v22.22.2
+npm=11.4.2
+classification_expected=PASS
+--- output ---
+       v18.20.8 *
+       v20.20.2 *
+->     v22.22.2 *
+       v24.15.0 *
+default -> 24 (-> v24.15.0 *)
+iojs -> N/A (default)
+node -> stable (-> v24.15.0 *) (default)
+stable -> 24.15 (-> v24.15.0 *) (default)
+unstable -> N/A (default)
+lts/* -> lts/krypton (-> v24.15.0 *)
+lts/argon -> v4.9.1 (-> N/A)
+lts/boron -> v6.17.1 (-> N/A)
+lts/carbon -> v8.17.0 (-> N/A)
+lts/dubnium -> v10.24.1 (-> N/A)
+lts/erbium -> v12.22.12 (-> N/A)
+lts/fermium -> v14.21.3 (-> N/A)
+lts/gallium -> v16.20.2 (-> N/A)
+lts/hydrogen -> v18.20.8 *
+lts/iron -> v20.20.2 *
+lts/jod -> v22.22.2 *
+lts/krypton -> v24.15.0 *
+Now using node v22.22.2 (npm v11.4.2)
+v22.22.2
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+11.4.2
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=11 <12"
+  },
+  "packageManager": "npm@11.4.2",
+  "allowScripts": {
+  "engines": {
+    "node": "22",
+    "npm": ">=11 <12"
+  },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+openjdk version "25.0.2" 2026-01-20
+OpenJDK Runtime Environment (build 25.0.2+10-69)
+OpenJDK 64-Bit Server VM (build 25.0.2+10-69, mixed mode, sharing)
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+15.23.0
+--- result ---
+exit_code=0
+classification=PASS

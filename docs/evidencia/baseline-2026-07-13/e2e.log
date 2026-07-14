@@ -1,0 +1,12 @@
+check=e2e
+date_utc=2026-07-13T05:46:43Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=npm run test:e2e
+node=v22.22.2
+npm=11.4.2
+classification_expected=NOT_RUN_PREREQUISITE_FAILED
+--- output ---
+NOT RUN: la validación E2E oficial para esta línea base es npm run test:e2e:emulators. No se ejecuta npm run test:e2e porque no inicia Auth, Firestore ni Storage; además npm ci no pudo ejecutarse por bloqueo de registry.
+--- result ---
+exit_code=not_run
+classification=NOT_RUN_PREREQUISITE_FAILED

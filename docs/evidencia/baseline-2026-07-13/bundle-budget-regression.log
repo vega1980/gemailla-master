@@ -1,0 +1,52 @@
+check=bundle-budget-regression
+date_utc=2026-07-13T05:45:45Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=node --test tests/unit/bundleBudgetConfig.test.mjs
+node=v22.22.2
+npm=11.4.2
+classification_expected=PASS
+--- output ---
+TAP version 13
+# Subtest: bundle budget configuration
+    # Subtest: uses modular route entries without legacy src/pages modules
+    ok 1 - uses modular route entries without legacy src/pages modules
+      ---
+      duration_ms: 1.061464
+      type: 'test'
+      ...
+    # Subtest: keeps the current numeric bundle limits unchanged
+    ok 2 - keeps the current numeric bundle limits unchanged
+      ---
+      duration_ms: 3.962761
+      type: 'test'
+      ...
+    # Subtest: does not keep legacy alias compatibility in the budget checker
+    ok 3 - does not keep legacy alias compatibility in the budget checker
+      ---
+      duration_ms: 0.521034
+      type: 'test'
+      ...
+    # Subtest: fails when a configured budget module is missing from the manifest
+    ok 4 - fails when a configured budget module is missing from the manifest
+      ---
+      duration_ms: 87.874953
+      type: 'test'
+      ...
+    1..4
+ok 1 - bundle budget configuration
+  ---
+  duration_ms: 94.889519
+  type: 'suite'
+  ...
+1..1
+# tests 4
+# suites 1
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 235.290539
+--- result ---
+exit_code=0
+classification=PASS

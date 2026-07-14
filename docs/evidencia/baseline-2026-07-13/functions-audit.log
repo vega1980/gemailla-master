@@ -1,0 +1,16 @@
+check=functions-audit
+date_utc=2026-07-13T05:45:48Z
+sha=08e53fca5a078a5bebd8c2422282f54d8d12ea96
+command=npm --prefix functions audit --audit-level=moderate
+node=v22.22.2
+npm=11.4.2
+classification_expected=BLOCKED_AUDIT_ENDPOINT
+--- output ---
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+npm warn audit 403 Forbidden - POST https://registry.npmjs.org/-/npm/v1/security/advisories/bulk
+Forbidden
+npm error audit endpoint returned an error
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-07-13T05_45_49_072Z-debug-0.log
+--- result ---
+exit_code=1
+classification=BLOCKED_AUDIT_ENDPOINT
