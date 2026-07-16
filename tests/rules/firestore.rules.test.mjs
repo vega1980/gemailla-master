@@ -59,9 +59,13 @@ async function seedFirestoreAcl() {
   await assertAllowed(firestoreSet('transactions/protected-tx', {
     companyId,
     ownerUid: owner.uid,
-    status: 'active',
+    status: 'confirmed',
     type: 'ingreso',
     amount: 100,
+    description: 'Ingreso protegido',
+    date: '2026-01-01',
+    category: 'ventas',
+    paymentMethod: 'transferencia',
   }), 'admin protected transaction seed');
 
   await assertAllowed(firestoreSet('subscriptions/company-subscription', {
@@ -437,9 +441,13 @@ describe('Firestore security rules', () => {
     await assertAllowed(firestoreSet('transactions/director-created-tx', {
       companyId,
       ownerUid: director.uid,
-      status: 'active',
+      status: 'confirmed',
       type: 'gasto',
       amount: 25,
+      description: 'Gasto director',
+      date: '2026-01-01',
+      category: 'renta',
+      paymentMethod: 'transferencia',
     }, director), 'director transaction create');
     await assertAllowed(firestoreGet('transactions/protected-tx', director), 'director transaction read');
   });
@@ -465,9 +473,13 @@ describe('Firestore security rules', () => {
     await assertDenied(firestorePatch('transactions/protected-tx', {
       companyId,
       ownerUid: owner.uid,
-      status: 'active',
+      status: 'confirmed',
       type: 'ingreso',
       amount: 300,
+      description: 'Ingreso protegido',
+      date: '2026-01-01',
+      category: 'ventas',
+      paymentMethod: 'transferencia',
     }, outsider), 'other company admin transaction update');
   });
 
@@ -531,9 +543,13 @@ describe('Firestore security rules', () => {
     await assertDenied(firestorePatch('transactions/protected-tx', {
       companyId,
       ownerUid: owner.uid,
-      status: 'active',
+      status: 'confirmed',
       type: 'ingreso',
       amount: 200,
+      description: 'Ingreso protegido',
+      date: '2026-01-01',
+      category: 'ventas',
+      paymentMethod: 'transferencia',
     }, inactive), 'inactive member transaction update');
   });
 
@@ -590,9 +606,13 @@ describe('Firestore security rules', () => {
     await assertAllowed(firestorePatch('transactions/protected-tx', {
       companyId,
       ownerUid: owner.uid,
-      status: 'active',
+      status: 'confirmed',
       type: 'ingreso',
       amount: 400,
+      description: 'Ingreso protegido',
+      date: '2026-01-01',
+      category: 'ventas',
+      paymentMethod: 'transferencia',
     }, editorWithoutCompanyClaim), 'member without companyId claim can update company transaction');
   });
 
