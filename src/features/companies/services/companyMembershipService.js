@@ -12,10 +12,17 @@ export async function loadCompanyMemberships(user) {
     return [];
   }
 
-  return firebase.entities.CompanyMember.filter({
-    userUid,
-    status: ACTIVE_STATUS,
-  });
+  const membershipPage = await firebase.entities.CompanyMember.listByFilters(
+    {
+      userUid,
+      status: ACTIVE_STATUS,
+    },
+    {
+      limit: 100,
+    },
+  );
+
+  return membershipPage.items;
 }
 
 export async function loadCompaniesForMemberships(memberships, options = {}) {

@@ -331,6 +331,28 @@ export const createRepository = (collectionName) => {
 
   const listByCompany = (companyId, options = {}) => list(buildCompanyOptions(companyId, options));
 
+  const listByFilters = (filters, options = {}) => {
+    const normalizedFilters = normalizeObjectFilters(filters, collectionName);
+
+    if (normalizedFilters.length === 0) {
+      throw new Error(`${collectionName}.listByFilters() requiere filtros explícitos.`);
+    }
+
+    return list({
+      where: normalizedFilters.map(([filterField, filterValue]) => ({
+        field: filterField,
+        operator: '==',
+        value: filterValue,
+      })),
+      limit: normalizeLimit(options.limit),
+      orderBy: options.orderBy || {
+        field: DOCUMENT_ID_ORDER_FIELD,
+        direction: 'asc',
+      },
+      cursor: options.cursor || null,
+    });
+  };
+
   const listPageByCompany = (companyId, cursor = null, limit = DEFAULT_PAGE_SIZE) => list(buildCompanyOptions(companyId, {
     cursor,
     limit,
@@ -348,23 +370,34 @@ export const createRepository = (collectionName) => {
   const filter = async (field, operator, value) => {
     if (field && typeof field === 'object' && !Array.isArray(field)) {
       const normalizedFilters = normalizeObjectFilters(field, collectionName);
+
+      if (normalizedFilters.length === 0) {
+        throw new Error(`${collectionName}.filter() requiere filtros explícitos.`);
+      }
+
       /** @type {import('firebase/firestore').QueryConstraint[]} */
       const constraints = normalizedFilters
         .map(([filterField, filterValue]) => where(filterField, '==', filterValue));
 
       if (operator) {
-        const direction = String(operator).startsWith('-') ? 'desc' : 'asc';
-        constraints.push(orderBy(String(operator).replace(/^-/, ''), direction));
+        const normalizedOrder = String(operator);
+        const direction = normalizedOrder.startsWith('-') ? 'desc' : 'asc';
+        constraints.push(orderBy(normalizedOrder.replace(/^-/, ''), direction));
       }
 
-      if (value) constraints.push(firestoreLimit(value));
+      constraints.push(firestoreLimit(normalizeLimit(value)));
 
-      const snapshot = await getDocs(constraints.length ? query(collectionRef, ...constraints) : collectionRef);
+      const snapshot = await getDocs(query(collectionRef, ...constraints));
       return serializeQuerySnapshot(snapshot);
     }
 
-    const q = query(collectionRef, where(field, operator, value));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(
+      query(
+        collectionRef,
+        where(field, operator, value),
+        firestoreLimit(DEFAULT_PAGE_SIZE),
+      ),
+    );
     return serializeQuerySnapshot(snapshot);
   };
 
@@ -443,6 +476,7 @@ export const createRepository = (collectionName) => {
     getMany,
     filterIn,
     list,
+    listByFilters,
     listByCompany,
     listPageByCompany,
     findByCompanyAndStatus,

@@ -398,10 +398,83 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function validTransactionCore(data) {
+      return data.type in ['ingreso', 'gasto']
+        && data.amount is number
+        && data.amount > 0
+        && data.description is string
+        && data.description.size() <= 2000
+        && data.date is string
+        && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.category is string
+        && data.category.size() > 0
+        && data.category.size() <= 100
+        && data.paymentMethod in [
+          'efectivo',
+          'transferencia',
+          'tarjeta_credito',
+          'tarjeta_debito',
+          'cheque'
+        ]
+        && data.status in ['confirmed', 'pending', 'archived'];
+    }
+
+    function validTransactionCreate() {
+      let t = request.resource.data;
+      return canCreateCompanyRecord()
+        && t.keys().hasAll([
+          'companyId', 'ownerUid', 'type', 'amount', 'description',
+          'date', 'category', 'paymentMethod', 'status'
+        ])
+        && t.keys().hasOnly([
+          'companyId', 'ownerUid', 'type', 'amount',
+          'description', 'date', 'category', 'paymentMethod',
+          'status', 'reference', 'notes', 'expense_type',
+          'isRecurring', 'dueDate', 'supplier_id',
+          'createdAt', 'updatedAt', 'createdBy', 'updatedBy', 'archivedAt'
+        ])
+        && validTransactionCore(t);
+    }
+
+    function validTransactionUpdate() {
+      let changedFields = request.resource.data.diff(resource.data).affectedKeys();
+
+      return canUpdateCompanyRecord()
+        && changedFields.hasOnly([
+          'type', 'amount', 'description', 'date',
+          'category', 'paymentMethod', 'status',
+          'reference', 'notes', 'expense_type',
+          'isRecurring', 'dueDate', 'supplier_id',
+          'updatedAt', 'updatedBy', 'archivedAt'
+        ])
+        && (!changedFields.hasAny(['type'])
+          || request.resource.data.type in ['ingreso', 'gasto'])
+        && (!changedFields.hasAny(['amount'])
+          || (request.resource.data.amount is number
+            && request.resource.data.amount > 0))
+        && (!changedFields.hasAny(['description'])
+          || (request.resource.data.description is string
+            && request.resource.data.description.size() <= 2000))
+        && (!changedFields.hasAny(['date'])
+          || (request.resource.data.date is string
+            && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+        && (!changedFields.hasAny(['category'])
+          || (request.resource.data.category is string
+            && request.resource.data.category.size() > 0
+            && request.resource.data.category.size() <= 100))
+        && (!changedFields.hasAny(['paymentMethod'])
+          || request.resource.data.paymentMethod in [
+            'efectivo', 'transferencia',
+            'tarjeta_credito', 'tarjeta_debito', 'cheque'
+          ])
+        && (!changedFields.hasAny(['status'])
+          || request.resource.data.status in ['confirmed', 'pending', 'archived']);
+    }
+
     match /transactions/{id} {
-      allow create: if canCreateCompanyRecord();
       allow read: if canReadCompanyRecord();
-      allow update: if canUpdateCompanyRecord();
+      allow create: if validTransactionCreate();
+      allow update: if validTransactionUpdate();
       allow delete: if false;
     }
 

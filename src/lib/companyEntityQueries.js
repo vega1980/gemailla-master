@@ -32,17 +32,25 @@ const getCompanyId = (companyOrId) => (
 
 export const COMPANY_ENTITY_QUERY_NAMES = Object.freeze(Object.keys(COMPANY_ENTITY_QUERIES));
 
-export const fetchCompanyEntity = (queryName, companyOrId, options = {}) => {
+export const fetchCompanyEntity = async (queryName, companyOrId, options = {}) => {
   const config = COMPANY_ENTITY_QUERIES[queryName];
   if (!config) throw new Error(`Query de entidad desconocida: ${queryName}`);
 
   const companyId = getCompanyId(companyOrId);
-  const orderBy = options.orderBy ?? config.orderBy;
+
+  if (!companyId) return [];
+
   const resultLimit = options.limit ?? config.limit ?? COMPANY_ENTITY_DEFAULT_LIMIT;
+  const orderField = String(options.orderBy ?? config.orderBy ?? '-createdAt');
+  const direction = orderField.startsWith('-') ? 'desc' : 'asc';
+  const field = orderField.replace(/^-/, '');
 
-  if (!companyId) return Promise.resolve([]);
+  const page = await firebase.entities[config.entity].listByCompany(companyId, {
+    limit: resultLimit,
+    orderBy: { field, direction },
+  });
 
-  return firebase.entities[config.entity].filter({ companyId }, orderBy, resultLimit);
+  return page.items;
 };
 
 export const companyEntityQueryKey = (queryName, companyOrId, options = {}) => {
