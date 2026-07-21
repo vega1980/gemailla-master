@@ -1,8 +1,16 @@
 const admin = require('firebase-admin');
 require('../contracts/aiContracts');
 const { enforceAllowedOrigin, fail, getAllowedOrigins, handleCorsPolicy } = require('../policies/httpPolicy');
-const { DEFAULT_COST_PER_1K_TOKENS_USD, getAiRuntimeConfig } = require('../config');
+const {
+  DEFAULT_AI_REQUEST_TIMEOUT_MS,
+  DEFAULT_COST_PER_1K_TOKENS_USD,
+  DEFAULT_OPENAI_MODEL,
+  DEFAULT_VERTEX_API_VERSION,
+  DEFAULT_VERTEX_GEMINI_PROVIDER,
+  getAiRuntimeConfig,
+} = require('../config');
 const { buildDocumentContext } = require('./documentContextBuilder');
+const { callGeminiVertexAdapter } = require('./geminiVertexAdapter');
 
 const openAiApiKey = { value: () => process.env.OPENAI_API_KEY };
 const MAX_PROMPT_LENGTH = 12000;
@@ -25,6 +33,7 @@ const MAX_JSON_SCHEMA_BYTES = 20000;
 const AI_COST_LOG_COLLECTION = 'aiCostLogs';
 const AI_AUDIT_LOG_COLLECTION = 'aiAuditLogs';
 const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'openai', 'gemini.R', 'groqR']);
+const SUPPORTED_LLM_PROVIDERS = new Set(['openai', DEFAULT_VERTEX_GEMINI_PROVIDER]);
 const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const TOKEN_PATTERN = /(bearer\s+|token['"\s:=]+|api[_-]?key['"\s:=]+|secret['"\s:=]+)[A-Za-z0-9._~+/=-]{12,}/gi;
 const SENSITIVE_KEY_PATTERN = /(authorization|api[_-]?key|secret|token|password|prompt|content|document(Content|Text)?|raw(Document)?|file(Name)?|storagePath|downloadUrl|url|query|response|rfc|email)$/i;
@@ -46,6 +55,10 @@ function toCounterNumber(value) {
   return Number.isFinite(Number(value)) ? Number(value) : 0;
 }
 
+function getObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
 function normalizeAiIntegration(value) {
   const candidate = typeof value === 'string' ? value.trim() : '';
   return TRACKED_AI_INTEGRATIONS.has(candidate) ? candidate : 'openai';
@@ -55,7 +68,17 @@ function getUsageTokens(usage = {}) {
   const inputTokens = toCounterNumber(usage.input_tokens || usage.prompt_tokens);
   const outputTokens = toCounterNumber(usage.output_tokens || usage.completion_tokens);
   const totalTokens = toCounterNumber(usage.total_tokens) || inputTokens + outputTokens;
-  return { inputTokens, outputTokens, totalTokens };
+  const cachedInputTokens = toCounterNumber(usage.cached_input_tokens);
+  const reasoningTokens = toCounterNumber(usage.reasoning_tokens);
+  const toolUsePromptTokens = toCounterNumber(usage.tool_use_prompt_tokens);
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens,
+    cachedInputTokens,
+    reasoningTokens,
+    toolUsePromptTokens,
+  };
 }
 
 function roundCostUsd(value) {
@@ -67,6 +90,107 @@ function calculateCostUsd(totalTokens, costPer1kTokensUsd) {
     ? Number(costPer1kTokensUsd)
     : Number(process.env.AI_COST_PER_1K_TOKENS_USD || DEFAULT_COST_PER_1K_TOKENS_USD);
   return roundCostUsd((toCounterNumber(totalTokens) / 1000) * rate);
+}
+
+function getVertexModelPricing(runtimeConfig, model) {
+  const providerConfig = getObject(runtimeConfig.providers?.[DEFAULT_VERTEX_GEMINI_PROVIDER]);
+  const pricingConfig = getObject(providerConfig.pricing);
+  const pricingModels = getObject(pricingConfig.models);
+  if (pricingModels[model] && typeof pricingModels[model] === 'object') {
+    return pricingModels[model];
+  }
+  return pricingConfig;
+}
+
+function getPositivePrice(value) {
+  return Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : null;
+}
+
+function validateVertexPricingConfig(runtimeConfig, model) {
+  const pricing = getVertexModelPricing(runtimeConfig, model);
+  const inputPer1kTokensUsd = getPositivePrice(pricing.inputPer1kTokensUsd);
+  const cachedInputPer1kTokensUsd = getPositivePrice(pricing.cachedInputPer1kTokensUsd);
+  const outputPer1kTokensUsd = getPositivePrice(pricing.outputPer1kTokensUsd);
+  const reasoningTokenTreatment = typeof pricing.reasoningTokenTreatment === 'string'
+    ? pricing.reasoningTokenTreatment.trim().toLowerCase()
+    : '';
+  const reasoningPer1kTokensUsd = getPositivePrice(pricing.reasoningPer1kTokensUsd);
+
+  if (inputPer1kTokensUsd === null || cachedInputPer1kTokensUsd === null || outputPer1kTokensUsd === null) {
+    const error = new Error(`Falta configuracion aprobada de precios para ${DEFAULT_VERTEX_GEMINI_PROVIDER}/${model}.`);
+    error.status = 503;
+    throw error;
+  }
+
+  if (!['billable', 'included_in_output', 'ignore'].includes(reasoningTokenTreatment)) {
+    const error = new Error(`Falta definir reasoningTokenTreatment para ${DEFAULT_VERTEX_GEMINI_PROVIDER}/${model}.`);
+    error.status = 503;
+    throw error;
+  }
+
+  if (reasoningTokenTreatment === 'billable' && reasoningPer1kTokensUsd === null) {
+    const error = new Error(`Falta reasoningPer1kTokensUsd para ${DEFAULT_VERTEX_GEMINI_PROVIDER}/${model}.`);
+    error.status = 503;
+    throw error;
+  }
+
+  return {
+    inputPer1kTokensUsd,
+    cachedInputPer1kTokensUsd,
+    outputPer1kTokensUsd,
+    reasoningTokenTreatment,
+    reasoningPer1kTokensUsd,
+  };
+}
+
+function calculateVertexGeminiCostUsd(usage, runtimeConfig, model) {
+  const pricing = validateVertexPricingConfig(runtimeConfig, model);
+  const usageTokens = getUsageTokens(usage);
+  const cachedInputTokens = Math.max(0, Math.min(usageTokens.inputTokens, usageTokens.cachedInputTokens));
+  const billableInputTokens = Math.max(0, usageTokens.inputTokens - cachedInputTokens + usageTokens.toolUsePromptTokens);
+
+  let totalCostUsd = 0;
+  totalCostUsd += (billableInputTokens / 1000) * pricing.inputPer1kTokensUsd;
+  totalCostUsd += (cachedInputTokens / 1000) * pricing.cachedInputPer1kTokensUsd;
+  totalCostUsd += (usageTokens.outputTokens / 1000) * pricing.outputPer1kTokensUsd;
+
+  if (pricing.reasoningTokenTreatment === 'billable') {
+    totalCostUsd += (usageTokens.reasoningTokens / 1000) * pricing.reasoningPer1kTokensUsd;
+  }
+
+  return roundCostUsd(totalCostUsd);
+}
+
+function calculateProviderCostUsd({ provider, model, usage, runtimeConfig }) {
+  if (provider === DEFAULT_VERTEX_GEMINI_PROVIDER) {
+    return calculateVertexGeminiCostUsd(usage, runtimeConfig, model);
+  }
+  const providerConfig = getProviderRuntimeConfig(runtimeConfig, provider);
+  const providerRate = getPositivePrice(providerConfig.pricing?.costPer1kTokensUsd);
+  return calculateCostUsd(
+    getUsageTokens(usage).totalTokens,
+    providerRate ?? runtimeConfig.costPer1kTokensUsd,
+  );
+}
+
+function calculateEstimatedReservationCostUsd({
+  provider,
+  model,
+  promptTokens,
+  reservedOutputTokens,
+  runtimeConfig,
+}) {
+  if (provider === DEFAULT_VERTEX_GEMINI_PROVIDER) {
+    const pricing = validateVertexPricingConfig(runtimeConfig, model);
+    const inputCostUsd = (toCounterNumber(promptTokens) / 1000) * pricing.inputPer1kTokensUsd;
+    const outputCostUsd = (toCounterNumber(reservedOutputTokens) / 1000) * pricing.outputPer1kTokensUsd;
+    return roundCostUsd(inputCostUsd + outputCostUsd);
+  }
+
+  const providerConfig = getProviderRuntimeConfig(runtimeConfig, provider);
+  const providerRate = getPositivePrice(providerConfig.pricing?.costPer1kTokensUsd);
+  const estimatedTokens = toCounterNumber(promptTokens) + toCounterNumber(reservedOutputTokens);
+  return calculateCostUsd(estimatedTokens, providerRate ?? runtimeConfig.costPer1kTokensUsd);
 }
 
 async function writeAiAuditLog({ eventName, status, user, authorization, correlationId, provider, model, requestMetadata = {}, errorMessage }) {
@@ -89,6 +213,9 @@ async function writeAiAuditLog({ eventName, status, user, authorization, correla
     promptLength: Number(requestMetadata.promptLength || 0),
     estimatedTokens: requestMetadata.estimatedTokens,
     estimatedCostUsd: requestMetadata.estimatedCostUsd,
+    actualUsageAvailable: requestMetadata.actualUsageAvailable,
+    reservationOutcome: requestMetadata.reservationOutcome || null,
+    finishReason: requestMetadata.finishReason || null,
     errorMessage: errorMessage || null,
   });
 
@@ -103,12 +230,27 @@ async function writeAiAuditLog({ eventName, status, user, authorization, correla
   return payload;
 }
 
-async function writeAiCostLog({ user, authorization, correlationId, integration = 'openai', provider = 'openai', model, usage, estimatedTokens, estimatedCostUsd }) {
+async function writeAiCostLog({
+  user,
+  authorization,
+  correlationId,
+  integration = 'openai',
+  provider = 'openai',
+  model,
+  usage,
+  estimatedTokens,
+  estimatedCostUsd,
+  actualCostUsd = null,
+}) {
   const timestamp = new Date().toISOString();
   const usageTokens = getUsageTokens(usage);
   const tokens = usageTokens.totalTokens || toCounterNumber(estimatedTokens);
   const runtimeConfig = await getAiRuntimeConfig();
-  const costUsd = usageTokens.totalTokens ? calculateCostUsd(usageTokens.totalTokens, runtimeConfig.costPer1kTokensUsd) : roundCostUsd(estimatedCostUsd);
+  const costUsd = Number.isFinite(Number(actualCostUsd))
+    ? roundCostUsd(actualCostUsd)
+    : usageTokens.totalTokens
+      ? calculateProviderCostUsd({ provider, model, usage, runtimeConfig })
+      : roundCostUsd(estimatedCostUsd);
   const logId = `${timestamp.replace(/[^0-9A-Za-z]/g, '')}_${String(correlationId || createCorrelationId('cost')).replace(/[^A-Za-z0-9_-]/g, '_')}`.slice(0, 220);
 
   await admin.firestore().collection(AI_COST_LOG_COLLECTION).doc(logId).set({
@@ -148,11 +290,17 @@ function getLimitDocIds({ companyId, uid, now = new Date() }) {
   };
 }
 
-async function enforceAiLimits({ user, authorization, prompt, correlationId, now = new Date() }) {
+async function enforceAiLimits({ user, authorization, prompt, correlationId, provider, model, now = new Date() }) {
   const config = await getAiLimitConfig();
   const promptTokens = estimateTokenCount(prompt);
   const estimatedTokens = promptTokens + config.reservedOutputTokens;
-  const estimatedCostUsd = roundCostUsd((estimatedTokens / 1000) * config.costPer1kTokensUsd);
+  const estimatedCostUsd = calculateEstimatedReservationCostUsd({
+    provider,
+    model,
+    promptTokens,
+    reservedOutputTokens: config.reservedOutputTokens,
+    runtimeConfig: config,
+  });
   const { usageDocId, rateDocId } = getLimitDocIds({ companyId: authorization.companyId, uid: user.uid, now });
   const db = admin.firestore();
   const rateRef = db.collection('aiRateLimits').doc(rateDocId);
@@ -239,7 +387,7 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, now
   return reservation;
 }
 
-async function calculateActualAiUsage({ status, usage, estimatedTokens, costPer1kTokensUsd }) {
+async function calculateActualAiUsage({ status, usage, estimatedTokens, provider, model, runtimeConfig }) {
   if (status === 'failed' && !usage) {
     return { actualTokens: 0, actualCostUsd: 0 };
   }
@@ -255,12 +403,26 @@ async function calculateActualAiUsage({ status, usage, estimatedTokens, costPer1
     actualTokens = toCounterNumber(estimatedTokens);
   }
 
-  const runtimeConfig = costPer1kTokensUsd ? null : await getAiRuntimeConfig();
   actualTokens = Math.max(0, actualTokens);
-  return { actualTokens, actualCostUsd: calculateCostUsd(actualTokens, costPer1kTokensUsd || runtimeConfig.costPer1kTokensUsd) };
+  return {
+    actualTokens,
+    actualCostUsd: usage
+      ? calculateProviderCostUsd({ provider, model, usage, runtimeConfig })
+      : calculateCostUsd(actualTokens, runtimeConfig.costPer1kTokensUsd),
+  };
 }
 
-async function reconcileAiReservation({ user, authorization, reservation, status, usage, provider, model, correlationId }) {
+async function reconcileAiReservation({
+  user,
+  authorization,
+  reservation,
+  status,
+  usage,
+  provider,
+  model,
+  correlationId,
+  preserveReservation = false,
+}) {
   if (!reservation?.usageDocId) {
     const error = new Error('No se puede reconciliar una reserva IA sin usageDocId.');
     error.status = 500;
@@ -278,7 +440,9 @@ async function reconcileAiReservation({ user, authorization, reservation, status
   const estimatedTokens = toCounterNumber(reservation.estimatedTokens);
   const estimatedCostUsd = toCounterNumber(reservation.estimatedCostUsd);
   const runtimeConfig = await getAiRuntimeConfig();
-  const { actualTokens, actualCostUsd } = await calculateActualAiUsage({ status, usage, estimatedTokens, costPer1kTokensUsd: runtimeConfig.costPer1kTokensUsd });
+  const { actualTokens, actualCostUsd } = preserveReservation
+    ? { actualTokens: null, actualCostUsd: null }
+    : await calculateActualAiUsage({ status, usage, estimatedTokens, provider, model, runtimeConfig });
   const nowMs = Date.now();
 
   await db.runTransaction(async (transaction) => {
@@ -287,13 +451,29 @@ async function reconcileAiReservation({ user, authorization, reservation, status
     const baseUpdate = {
       companyId: authorization.companyId,
       userUid: user.uid || 'unknown',
-      reservedTokens: Math.max(0, toCounterNumber(usageData.reservedTokens) - estimatedTokens),
-      reservedBudgetUsd: roundCostUsd(Math.max(0, toCounterNumber(usageData.reservedBudgetUsd) - estimatedCostUsd)),
+      reservedTokens: preserveReservation
+        ? Math.max(0, toCounterNumber(usageData.reservedTokens))
+        : Math.max(0, toCounterNumber(usageData.reservedTokens) - estimatedTokens),
+      reservedBudgetUsd: preserveReservation
+        ? roundCostUsd(Math.max(0, toCounterNumber(usageData.reservedBudgetUsd)))
+        : roundCostUsd(Math.max(0, toCounterNumber(usageData.reservedBudgetUsd) - estimatedCostUsd)),
       provider,
       model,
       lastCorrelationId: correlationId,
       updatedAtMs: nowMs,
     };
+
+    if (preserveReservation) {
+      transaction.set(usageRef, {
+        ...baseUpdate,
+        tokensUsed: Math.max(0, toCounterNumber(usageData.tokensUsed)),
+        budgetUsedUsd: roundCostUsd(Math.max(0, toCounterNumber(usageData.budgetUsedUsd))),
+        completedRequestCount: toCounterNumber(usageData.completedRequestCount) + 1,
+        pendingUsageMetadataCount: toCounterNumber(usageData.pendingUsageMetadataCount) + 1,
+        lastUsageAvailability: 'missing',
+      }, { merge: true });
+      return;
+    }
 
     if (status === 'completed') {
       transaction.set(usageRef, {
@@ -322,6 +502,7 @@ async function reconcileAiReservation({ user, authorization, reservation, status
     estimatedTokens,
     actualTokens,
     actualCostUsd,
+    reservationOutcome: preserveReservation ? 'pending_usage_metadata' : 'reconciled',
   });
 
   return { tokens: actualTokens, costUsd: actualCostUsd, costo: actualCostUsd };
@@ -482,7 +663,7 @@ function parseStructuredOutput(outputText, correlationId) {
     return parsed;
   } catch (error) {
     if (error.status) throw error;
-    structuredLog('ERROR', 'openai_structured_json_parse_failed', { correlationId, message: error.message });
+    structuredLog('ERROR', 'ai_structured_json_parse_failed', { correlationId, message: error.message });
     const parseError = new Error('El proveedor LLM no devolvió JSON válido para response_json_schema.');
     parseError.status = 502;
     throw parseError;
@@ -670,14 +851,48 @@ function extractOutputText(payload = {}) {
   return chunks.join('\n').trim();
 }
 
+function normalizeProviderName(value) {
+  return String(value || 'openai').trim().toLowerCase();
+}
+
 async function getLlmProvider() {
   const config = await getAiRuntimeConfig();
-  return String(config.provider || 'openai').trim().toLowerCase();
+  return normalizeProviderName(config.provider || 'openai');
+}
+
+function getProviderRuntimeConfig(runtimeConfig, provider) {
+  return getObject(runtimeConfig.providers?.[provider]);
+}
+
+function resolveConfiguredModel(runtimeConfig, provider) {
+  const providerConfig = getProviderRuntimeConfig(runtimeConfig, provider);
+  const configuredModel = String(runtimeConfig.model || '').trim();
+  const providerModel = String(providerConfig.model || '').trim();
+  if (configuredModel) return configuredModel;
+  if (providerModel) return providerModel;
+  return provider === 'openai' ? DEFAULT_OPENAI_MODEL : '';
 }
 
 async function getLlmModel(provider) {
   const config = await getAiRuntimeConfig();
-  return config.model || (provider === 'openai' ? 'gpt-4o-mini' : 'default');
+  return resolveConfiguredModel(config, normalizeProviderName(provider));
+}
+
+function validateVertexProviderSelection(runtimeConfig, model) {
+  const providerConfig = getProviderRuntimeConfig(runtimeConfig, DEFAULT_VERTEX_GEMINI_PROVIDER);
+  if (!model) {
+    const error = new Error('Vertex AI Gemini permanece desactivado: falta un modelo exacto aprobado.');
+    error.status = 503;
+    throw error;
+  }
+
+  validateVertexPricingConfig(runtimeConfig, model);
+  return {
+    project: String(providerConfig.project || '').trim(),
+    location: String(providerConfig.location || '').trim(),
+    apiVersion: String(providerConfig.apiVersion || DEFAULT_VERTEX_API_VERSION).trim() || DEFAULT_VERTEX_API_VERSION,
+    timeoutMs: Number(providerConfig.timeoutMs) > 0 ? Number(providerConfig.timeoutMs) : DEFAULT_AI_REQUEST_TIMEOUT_MS,
+  };
 }
 
 async function callOpenAIProvider({ apiKey, prompt, documentContext = '', user, authorization, correlationId, model, responseJsonSchema = null }) {
@@ -776,29 +991,54 @@ ${documentContext}`,
     model,
   });
 
-  const structuredResponse = responseJsonSchema ? parseStructuredOutput(outputText, correlationId) : null;
-
-  return { outputText, structuredResponse, latencyMs, provider: 'openai', model, usage: payload.usage || {} };
+  return {
+    outputText,
+    latencyMs,
+    provider: 'openai',
+    model,
+    usage: payload.usage || {},
+    usageAvailable: true,
+    finishReason: null,
+  };
 }
 
 async function askLLM({ prompt, documentContext = '', user, authorization, correlationId, responseJsonSchema = null }) {
-  const provider = await getLlmProvider();
-  const model = await getLlmModel(provider);
+  const runtimeConfig = await getAiRuntimeConfig();
+  const provider = normalizeProviderName(runtimeConfig.provider || 'openai');
+  const model = resolveConfiguredModel(runtimeConfig, provider);
 
-  if (provider !== 'openai') {
-    const error = new Error(`Proveedor LLM no soportado: ${provider}. Configura LLM_PROVIDER=openai o agrega un adaptador en askLLM.`);
+  if (!SUPPORTED_LLM_PROVIDERS.has(provider)) {
+    const error = new Error(`Proveedor LLM no soportado: ${provider}.`);
     error.status = 501;
     throw error;
   }
 
-  const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    const error = new Error('Backend IA no configurado: falta OPENAI_API_KEY en Firebase Functions.');
-    error.status = 503;
-    throw error;
+  if (provider === 'openai') {
+    const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      const error = new Error('Backend IA no configurado: falta OPENAI_API_KEY en Firebase Functions.');
+      error.status = 503;
+      throw error;
+    }
+
+    return callOpenAIProvider({ apiKey, prompt, documentContext, user, authorization, correlationId, model, responseJsonSchema });
   }
 
-  return callOpenAIProvider({ apiKey, prompt, documentContext, user, authorization, correlationId, model, responseJsonSchema });
+  if (provider === DEFAULT_VERTEX_GEMINI_PROVIDER) {
+    const providerConfiguration = validateVertexProviderSelection(runtimeConfig, model);
+    return callGeminiVertexAdapter({
+      prompt,
+      documentContext,
+      model,
+      responseJsonSchema,
+      correlationId,
+      providerConfiguration,
+    });
+  }
+
+  const error = new Error(`Proveedor LLM no soportado: ${provider}.`);
+  error.status = 501;
+  throw error;
 }
 
 
@@ -844,9 +1084,25 @@ async function aiHandler(req, res) {
     const documentContext = await buildDocumentContext(authorization.documents);
     const promptWithContext = documentContext ? `${prompt}
 ${documentContext}` : prompt;
-    reservation = await enforceAiLimits({ user, authorization, prompt: promptWithContext, correlationId });
-    providerName = await getLlmProvider();
-    modelName = await getLlmModel(providerName);
+    const runtimeConfig = await getAiRuntimeConfig();
+    providerName = normalizeProviderName(runtimeConfig.provider || 'openai');
+    if (!SUPPORTED_LLM_PROVIDERS.has(providerName)) {
+      const error = new Error(`Proveedor LLM no soportado: ${providerName}.`);
+      error.status = 501;
+      throw error;
+    }
+    modelName = resolveConfiguredModel(runtimeConfig, providerName);
+    if (providerName === DEFAULT_VERTEX_GEMINI_PROVIDER) {
+      validateVertexProviderSelection(runtimeConfig, modelName);
+    }
+    reservation = await enforceAiLimits({
+      user,
+      authorization,
+      prompt: promptWithContext,
+      correlationId,
+      provider: providerName,
+      model: modelName,
+    });
     await writeAiAuditLog({
       eventName: 'ai_request_started',
       status: 102,
@@ -876,7 +1132,16 @@ ${documentContext}` : prompt;
       estimatedCostUsd: roundCostUsd(reservation.estimatedCostUsd),
     });
 
-    const { outputText, structuredResponse, provider, model, usage } = await askLLM({ prompt, documentContext, user, authorization, correlationId, responseJsonSchema });
+    const {
+      outputText,
+      provider,
+      model,
+      usage,
+      usageAvailable = true,
+      finishReason = null,
+    } = await askLLM({ prompt, documentContext, user, authorization, correlationId, responseJsonSchema });
+    const structuredResponse = responseJsonSchema ? parseStructuredOutput(outputText, correlationId) : null;
+    const preserveReservation = provider === DEFAULT_VERTEX_GEMINI_PROVIDER && usageAvailable === false;
 
     const reconciliation = await reconcileAiReservation({
       user,
@@ -887,19 +1152,31 @@ ${documentContext}` : prompt;
       provider,
       model,
       correlationId,
+      preserveReservation,
     });
 
-    const costLog = await writeAiCostLog({
-      user,
-      authorization,
-      correlationId,
-      integration: req.body?.integration || provider,
-      provider,
-      model,
-      usage,
-      estimatedTokens: reservation.estimatedTokens,
-      estimatedCostUsd: reservation.estimatedCostUsd,
-    });
+    if (!preserveReservation) {
+      await writeAiCostLog({
+        user,
+        authorization,
+        correlationId,
+        integration: req.body?.integration || provider,
+        provider,
+        model,
+        usage,
+        estimatedTokens: reservation.estimatedTokens,
+        estimatedCostUsd: reservation.estimatedCostUsd,
+        actualCostUsd: reconciliation.costUsd,
+      });
+    } else {
+      structuredLog('WARNING', 'ai_usage_metadata_missing', {
+        correlationId,
+        companyId: authorization.companyId,
+        provider,
+        model,
+        finishReason,
+      });
+    }
 
     await writeAiAuditLog({
       eventName: 'ai_request_completed',
@@ -914,6 +1191,9 @@ ${documentContext}` : prompt;
         promptLength: prompt.length,
         estimatedTokens: reservation.estimatedTokens,
         estimatedCostUsd: roundCostUsd(reservation.estimatedCostUsd),
+        actualUsageAvailable: usageAvailable,
+        reservationOutcome: preserveReservation ? 'pending_usage_metadata' : 'reconciled',
+        finishReason,
       },
     });
 
