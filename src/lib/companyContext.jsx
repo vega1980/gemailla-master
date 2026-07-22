@@ -115,9 +115,11 @@ export function CompanyProvider({ children }) {
       setMemberships(members);
       setCompanies(validCompanies);
 
-      const savedId = getSavedActiveCompanyId();
-      const saved = validCompanies.find((company) => company.id === savedId);
-      setActiveCompany(saved || validCompanies[0] || null);
+      const preferredId = options.preferredCompanyId || getSavedActiveCompanyId();
+      const preferred = validCompanies.find((company) => company.id === preferredId);
+      setActiveCompany(preferred || validCompanies[0] || null);
+      if (preferred) saveActiveCompanyId(preferred.id);
+      return { memberships: members, companies: validCompanies, activeCompany: preferred || validCompanies[0] || null };
     } catch (error) {
       console.error('Error loading companies:', error);
       if (!mountedRef.current || signal?.aborted) return;

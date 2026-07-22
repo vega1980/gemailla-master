@@ -65,8 +65,8 @@ export default function Companies() {
       return company;
     },
     onSuccess: async (company) => {
-      await reloadCompanies();
-      switchCompany(company);
+      const refreshed = await reloadCompanies({ preferredCompanyId: company.id });
+      switchCompany(refreshed?.activeCompany || company);
       setShowCreate(false);
       setFormData({ name: '', rfc: '', industry: 'tecnología', address: '', phone: '', email: '', fiscalRegime: '' });
       toast({ title: 'Empresa creada' });
