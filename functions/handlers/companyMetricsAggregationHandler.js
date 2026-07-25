@@ -47,7 +47,10 @@ function addDelta(target, patch) {
 }
 
 function getTransactionContribution(transaction) {
-  if (!transaction?.companyId) return null;
+  if (
+    !transaction?.companyId
+    || String(transaction.status || '').toLowerCase() !== 'confirmed'
+  ) return null;
   const amount = toNumber(transaction.amount);
   const type = String(transaction.type || '').toLowerCase();
   const contribution = {

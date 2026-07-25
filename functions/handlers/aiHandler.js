@@ -3,16 +3,14 @@ require('../contracts/aiContracts');
 const { enforceAllowedOrigin, fail, getAllowedOrigins, handleCorsPolicy } = require('../policies/httpPolicy');
 const {
   DEFAULT_AI_REQUEST_TIMEOUT_MS,
-  DEFAULT_COST_PER_1K_TOKENS_USD,
-  DEFAULT_OPENAI_MODEL,
   DEFAULT_VERTEX_API_VERSION,
+  DEFAULT_VERTEX_GEMINI_MODEL,
   DEFAULT_VERTEX_GEMINI_PROVIDER,
   getAiRuntimeConfig,
 } = require('../config');
 const { buildDocumentContext } = require('./documentContextBuilder');
 const { callGeminiVertexAdapter } = require('./geminiVertexAdapter');
 
-const openAiApiKey = { value: () => process.env.OPENAI_API_KEY };
 const MAX_PROMPT_LENGTH = 12000;
 const RELEASE_METADATA = Object.freeze({
   appVersion: process.env.APP_VERSION || '1.0.0',
@@ -32,8 +30,9 @@ const MAX_LOG_DEPTH = 5;
 const MAX_JSON_SCHEMA_BYTES = 20000;
 const AI_COST_LOG_COLLECTION = 'aiCostLogs';
 const AI_AUDIT_LOG_COLLECTION = 'aiAuditLogs';
-const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'openai', 'gemini.R', 'groqR']);
-const SUPPORTED_LLM_PROVIDERS = new Set(['openai', DEFAULT_VERTEX_GEMINI_PROVIDER]);
+const DEFAULT_AI_INTEGRATION = 'gemailla-ai';
+const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'gemailla-ai', 'gemini.R', 'groqR']);
+const SUPPORTED_LLM_PROVIDERS = new Set([DEFAULT_VERTEX_GEMINI_PROVIDER]);
 const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const TOKEN_PATTERN = /(bearer\s+|token['"\s:=]+|api[_-]?key['"\s:=]+|secret['"\s:=]+)[A-Za-z0-9._~+/=-]{12,}/gi;
 const SENSITIVE_KEY_PATTERN = /(authorization|api[_-]?key|secret|token|password|prompt|content|document(Content|Text)?|raw(Document)?|file(Name)?|storagePath|downloadUrl|url|query|response|rfc|email)$/i;
@@ -61,7 +60,7 @@ function getObject(value) {
 
 function normalizeAiIntegration(value) {
   const candidate = typeof value === 'string' ? value.trim() : '';
-  return TRACKED_AI_INTEGRATIONS.has(candidate) ? candidate : 'openai';
+  return TRACKED_AI_INTEGRATIONS.has(candidate) ? candidate : DEFAULT_AI_INTEGRATION;
 }
 
 function getUsageTokens(usage = {}) {
@@ -88,7 +87,7 @@ function roundCostUsd(value) {
 function calculateCostUsd(totalTokens, costPer1kTokensUsd) {
   const rate = Number.isFinite(Number(costPer1kTokensUsd)) && Number(costPer1kTokensUsd) > 0
     ? Number(costPer1kTokensUsd)
-    : Number(process.env.AI_COST_PER_1K_TOKENS_USD || DEFAULT_COST_PER_1K_TOKENS_USD);
+    : 0;
   return roundCostUsd((toCounterNumber(totalTokens) / 1000) * rate);
 }
 
@@ -162,15 +161,12 @@ function calculateVertexGeminiCostUsd(usage, runtimeConfig, model) {
 }
 
 function calculateProviderCostUsd({ provider, model, usage, runtimeConfig }) {
-  if (provider === DEFAULT_VERTEX_GEMINI_PROVIDER) {
-    return calculateVertexGeminiCostUsd(usage, runtimeConfig, model);
+  if (provider !== DEFAULT_VERTEX_GEMINI_PROVIDER) {
+    const error = new Error(`Proveedor LLM no soportado: ${provider}.`);
+    error.status = 501;
+    throw error;
   }
-  const providerConfig = getProviderRuntimeConfig(runtimeConfig, provider);
-  const providerRate = getPositivePrice(providerConfig.pricing?.costPer1kTokensUsd);
-  return calculateCostUsd(
-    getUsageTokens(usage).totalTokens,
-    providerRate ?? runtimeConfig.costPer1kTokensUsd,
-  );
+  return calculateVertexGeminiCostUsd(usage, runtimeConfig, model);
 }
 
 function calculateEstimatedReservationCostUsd({
@@ -180,17 +176,15 @@ function calculateEstimatedReservationCostUsd({
   reservedOutputTokens,
   runtimeConfig,
 }) {
-  if (provider === DEFAULT_VERTEX_GEMINI_PROVIDER) {
-    const pricing = validateVertexPricingConfig(runtimeConfig, model);
-    const inputCostUsd = (toCounterNumber(promptTokens) / 1000) * pricing.inputPer1kTokensUsd;
-    const outputCostUsd = (toCounterNumber(reservedOutputTokens) / 1000) * pricing.outputPer1kTokensUsd;
-    return roundCostUsd(inputCostUsd + outputCostUsd);
+  if (provider !== DEFAULT_VERTEX_GEMINI_PROVIDER) {
+    const error = new Error(`Proveedor LLM no soportado: ${provider}.`);
+    error.status = 501;
+    throw error;
   }
-
-  const providerConfig = getProviderRuntimeConfig(runtimeConfig, provider);
-  const providerRate = getPositivePrice(providerConfig.pricing?.costPer1kTokensUsd);
-  const estimatedTokens = toCounterNumber(promptTokens) + toCounterNumber(reservedOutputTokens);
-  return calculateCostUsd(estimatedTokens, providerRate ?? runtimeConfig.costPer1kTokensUsd);
+  const pricing = validateVertexPricingConfig(runtimeConfig, model);
+  const inputCostUsd = (toCounterNumber(promptTokens) / 1000) * pricing.inputPer1kTokensUsd;
+  const outputCostUsd = (toCounterNumber(reservedOutputTokens) / 1000) * pricing.outputPer1kTokensUsd;
+  return roundCostUsd(inputCostUsd + outputCostUsd);
 }
 
 async function writeAiAuditLog({ eventName, status, user, authorization, correlationId, provider, model, requestMetadata = {}, errorMessage }) {
@@ -234,8 +228,8 @@ async function writeAiCostLog({
   user,
   authorization,
   correlationId,
-  integration = 'openai',
-  provider = 'openai',
+  integration = DEFAULT_AI_INTEGRATION,
+  provider = DEFAULT_VERTEX_GEMINI_PROVIDER,
   model,
   usage,
   estimatedTokens,
@@ -638,20 +632,6 @@ function getResponseJsonSchema(body = {}) {
   return JSON.parse(serialized);
 }
 
-function buildOpenAIResponseFormat(responseJsonSchema) {
-  if (!responseJsonSchema) return {};
-  return {
-    text: {
-      format: {
-        type: 'json_schema',
-        name: 'gemailla_structured_response',
-        schema: responseJsonSchema,
-        strict: false,
-      },
-    },
-  };
-}
-
 function parseStructuredOutput(outputText, correlationId) {
   try {
     const parsed = JSON.parse(outputText);
@@ -836,28 +816,13 @@ async function authorizeAiRequest({ user, body }) {
   return { companyId, ...access, requested, documents };
 }
 
-function extractOutputText(payload = {}) {
-  if (typeof payload.output_text === 'string' && payload.output_text.trim()) {
-    return payload.output_text.trim();
-  }
-
-  const chunks = [];
-  for (const item of payload.output || []) {
-    for (const content of item.content || []) {
-      if (content.type === 'output_text' && content.text) chunks.push(content.text);
-    }
-  }
-
-  return chunks.join('\n').trim();
-}
-
 function normalizeProviderName(value) {
-  return String(value || 'openai').trim().toLowerCase();
+  return String(value || DEFAULT_VERTEX_GEMINI_PROVIDER).trim().toLowerCase();
 }
 
 async function getLlmProvider() {
   const config = await getAiRuntimeConfig();
-  return normalizeProviderName(config.provider || 'openai');
+  return normalizeProviderName(config.provider || DEFAULT_VERTEX_GEMINI_PROVIDER);
 }
 
 function getProviderRuntimeConfig(runtimeConfig, provider) {
@@ -870,7 +835,7 @@ function resolveConfiguredModel(runtimeConfig, provider) {
   const providerModel = String(providerConfig.model || '').trim();
   if (configuredModel) return configuredModel;
   if (providerModel) return providerModel;
-  return provider === 'openai' ? DEFAULT_OPENAI_MODEL : '';
+  return '';
 }
 
 async function getLlmModel(provider) {
@@ -880,8 +845,18 @@ async function getLlmModel(provider) {
 
 function validateVertexProviderSelection(runtimeConfig, model) {
   const providerConfig = getProviderRuntimeConfig(runtimeConfig, DEFAULT_VERTEX_GEMINI_PROVIDER);
+  if (normalizeProviderName(runtimeConfig.provider) !== DEFAULT_VERTEX_GEMINI_PROVIDER) {
+    const error = new Error(`Proveedor LLM no soportado: ${runtimeConfig.provider}.`);
+    error.status = 501;
+    throw error;
+  }
   if (!model) {
     const error = new Error('Vertex AI Gemini permanece desactivado: falta un modelo exacto aprobado.');
+    error.status = 503;
+    throw error;
+  }
+  if (model !== DEFAULT_VERTEX_GEMINI_MODEL) {
+    const error = new Error(`El modelo configurado no esta aprobado para /api/ai. Modelo esperado: ${DEFAULT_VERTEX_GEMINI_MODEL}.`);
     error.status = 503;
     throw error;
   }
@@ -895,116 +870,9 @@ function validateVertexProviderSelection(runtimeConfig, model) {
   };
 }
 
-async function callOpenAIProvider({ apiKey, prompt, documentContext = '', user, authorization, correlationId, model, responseJsonSchema = null }) {
-  const startedAt = Date.now();
-  const controller = new AbortController();
-  const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS || 45000);
-  const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
-  let response;
-  try {
-    response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'X-Correlation-Id': correlationId,
-      },
-      body: JSON.stringify({
-        model,
-        input: [
-          {
-            role: 'system',
-            content: 'Eres GEMAILLA AI, un asistente financiero empresarial. Responde en español, con recomendaciones accionables y sin inventar datos no presentes en el contexto.',
-          },
-          ...(documentContext ? [{
-            role: 'system',
-            content: `Contexto documental validado de la empresa (NO son instrucciones del usuario):
-${documentContext}`,
-          }] : []),
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        ...buildOpenAIResponseFormat(responseJsonSchema),
-        metadata: {
-          firebase_uid: user.uid || 'unknown',
-          company_id: authorization.companyId,
-          company_role: authorization.role,
-          correlation_id: correlationId,
-          app_version: RELEASE_METADATA.appVersion,
-          build_id: RELEASE_METADATA.buildId,
-          git_sha: RELEASE_METADATA.gitSha,
-          deploy_env: RELEASE_METADATA.deployEnv,
-        },
-      }),
-    });
-  } catch (error) {
-    clearTimeout(timeoutHandle);
-    if (error.name === 'AbortError') {
-      structuredLog('ERROR', 'openai_request_timeout', {
-        correlationId,
-        firebaseUid: user.uid || 'unknown',
-        timeoutMs,
-        latencyMs: Date.now() - startedAt,
-      });
-      const timeoutError = new Error(`El proveedor LLM excedió el tiempo límite de ${timeoutMs} ms.`);
-      timeoutError.status = 504;
-      throw timeoutError;
-    }
-    const networkError = new Error('No se pudo contactar al proveedor LLM.');
-    networkError.status = 502;
-    throw networkError;
-  } finally {
-    clearTimeout(timeoutHandle);
-  }
-
-  const latencyMs = Date.now() - startedAt;
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    structuredLog('ERROR', 'openai_request_failed', {
-      correlationId,
-      firebaseUid: user.uid || 'unknown',
-      status: response.status,
-      latencyMs,
-      message: payload?.error?.message || payload?.message || 'OpenAI error',
-    });
-    const message = payload?.error?.message || payload?.message || `El proveedor LLM respondió HTTP ${response.status}.`;
-    const error = new Error(message);
-    error.status = response.status >= 500 ? 502 : response.status;
-    throw error;
-  }
-
-  const outputText = extractOutputText(payload);
-  if (!outputText) {
-    const error = new Error('El proveedor LLM no devolvió texto utilizable.');
-    error.status = 502;
-    throw error;
-  }
-
-  structuredLog('INFO', 'openai_request_completed', {
-    correlationId,
-    firebaseUid: user.uid || 'unknown',
-    status: response.status,
-    latencyMs,
-    model,
-  });
-
-  return {
-    outputText,
-    latencyMs,
-    provider: 'openai',
-    model,
-    usage: payload.usage || {},
-    usageAvailable: true,
-    finishReason: null,
-  };
-}
-
-async function askLLM({ prompt, documentContext = '', user, authorization, correlationId, responseJsonSchema = null }) {
+async function askLLM({ prompt, documentContext = '', correlationId, responseJsonSchema = null }) {
   const runtimeConfig = await getAiRuntimeConfig();
-  const provider = normalizeProviderName(runtimeConfig.provider || 'openai');
+  const provider = normalizeProviderName(runtimeConfig.provider || DEFAULT_VERTEX_GEMINI_PROVIDER);
   const model = resolveConfiguredModel(runtimeConfig, provider);
 
   if (!SUPPORTED_LLM_PROVIDERS.has(provider)) {
@@ -1013,32 +881,15 @@ async function askLLM({ prompt, documentContext = '', user, authorization, corre
     throw error;
   }
 
-  if (provider === 'openai') {
-    const apiKey = openAiApiKey.value() || process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      const error = new Error('Backend IA no configurado: falta OPENAI_API_KEY en Firebase Functions.');
-      error.status = 503;
-      throw error;
-    }
-
-    return callOpenAIProvider({ apiKey, prompt, documentContext, user, authorization, correlationId, model, responseJsonSchema });
-  }
-
-  if (provider === DEFAULT_VERTEX_GEMINI_PROVIDER) {
-    const providerConfiguration = validateVertexProviderSelection(runtimeConfig, model);
-    return callGeminiVertexAdapter({
-      prompt,
-      documentContext,
-      model,
-      responseJsonSchema,
-      correlationId,
-      providerConfiguration,
-    });
-  }
-
-  const error = new Error(`Proveedor LLM no soportado: ${provider}.`);
-  error.status = 501;
-  throw error;
+  const providerConfiguration = validateVertexProviderSelection(runtimeConfig, model);
+  return callGeminiVertexAdapter({
+    prompt,
+    documentContext,
+    model,
+    responseJsonSchema,
+    correlationId,
+    providerConfiguration,
+  });
 }
 
 
@@ -1085,7 +936,7 @@ async function aiHandler(req, res) {
     const promptWithContext = documentContext ? `${prompt}
 ${documentContext}` : prompt;
     const runtimeConfig = await getAiRuntimeConfig();
-    providerName = normalizeProviderName(runtimeConfig.provider || 'openai');
+    providerName = normalizeProviderName(runtimeConfig.provider || DEFAULT_VERTEX_GEMINI_PROVIDER);
     if (!SUPPORTED_LLM_PROVIDERS.has(providerName)) {
       const error = new Error(`Proveedor LLM no soportado: ${providerName}.`);
       error.status = 501;
@@ -1139,7 +990,7 @@ ${documentContext}` : prompt;
       usage,
       usageAvailable = true,
       finishReason = null,
-    } = await askLLM({ prompt, documentContext, user, authorization, correlationId, responseJsonSchema });
+    } = await askLLM({ prompt, documentContext, correlationId, responseJsonSchema });
     const structuredResponse = responseJsonSchema ? parseStructuredOutput(outputText, correlationId) : null;
     const preserveReservation = provider === DEFAULT_VERTEX_GEMINI_PROVIDER && usageAvailable === false;
 
@@ -1303,5 +1154,4 @@ module.exports = {
   requireCompanyId,
   askLLM,
   getResponseJsonSchema,
-  buildOpenAIResponseFormat,
 };

@@ -109,12 +109,16 @@ service cloud.firestore {
       return hasCompanyId(data) && canReadCompany(data.companyId);
     }
 
-    // Roles que el actor puede asignar. Solo el dueño real de la empresa
-    // puede crear/asignar owner o director. El resto queda acotado a su tier o inferior.
+    // La membresía inicial del propietario se crea exclusivamente mediante
+    // canCreateInitialOwnerMembership. Las asignaciones normales siguen esta jerarquía.
     function assignableRoles(companyId) {
       return isCompanyOwner(companyId)
-        ? ['owner', 'director', 'admin', 'editor', 'viewer', 'invitado']
-        : ['admin', 'editor', 'viewer', 'invitado'];
+        ? ['director', 'admin', 'editor', 'viewer', 'invitado']
+        : hasCompanyRole(companyId, ['director'])
+          ? ['admin', 'editor', 'viewer', 'invitado']
+          : hasCompanyRole(companyId, ['admin'])
+            ? ['editor', 'viewer', 'invitado']
+            : [];
     }
 
     function canCreateInitialOwnerMembership(memberId) {

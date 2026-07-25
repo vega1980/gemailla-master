@@ -61,7 +61,7 @@ test('geminiVertexAdapter inicializa Vertex AI sin apiKey y usa project, locatio
   const result = await callGeminiVertexAdapter({
     prompt: 'Analiza',
     documentContext: 'Documento validado',
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.6-flash',
     responseJsonSchema: { type: 'object' },
     correlationId: 'corr-1',
     providerConfiguration: {
@@ -79,13 +79,13 @@ test('geminiVertexAdapter inicializa Vertex AI sin apiKey y usa project, locatio
     apiVersion: 'v1',
   });
   assert.equal(Object.prototype.hasOwnProperty.call(receivedOptions, 'apiKey'), false);
-  assert.equal(receivedParams.model, 'gemini-2.5-pro');
+  assert.equal(receivedParams.model, 'gemini-3.6-flash');
   assert.equal(receivedParams.config.httpOptions.timeout, 1234);
   assert.equal(receivedParams.config.responseMimeType, 'application/json');
   assert.deepEqual(receivedParams.config.responseJsonSchema, { type: 'object' });
   assert.equal(result.outputText, '{"ok":true}');
   assert.equal(result.provider, 'vertex-gemini');
-  assert.equal(result.model, 'gemini-2.5-pro');
+  assert.equal(result.model, 'gemini-3.6-flash');
   assert.equal(result.finishReason, 'STOP');
   assert.equal(result.usageAvailable, true);
   assert.deepEqual(result.usage, {
@@ -110,7 +110,7 @@ test('geminiVertexAdapter devuelve usageAvailable=false cuando falta usageMetada
 
   const result = await callGeminiVertexAdapter({
     prompt: 'Hola',
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.6-flash',
     correlationId: 'corr-2',
     providerConfiguration: {
       project: 'test-project',
@@ -136,7 +136,7 @@ test('geminiVertexAdapter devuelve error seguro especifico cuando Vertex bloquea
   await assert.rejects(
     () => callGeminiVertexAdapter({
       prompt: 'Hola',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.6-flash',
       correlationId: 'corr-3',
       providerConfiguration: { project: 'test-project', location: 'global', apiVersion: 'v1' },
     }),
@@ -160,7 +160,7 @@ test('geminiVertexAdapter devuelve error seguro especifico cuando Vertex no devu
   await assert.rejects(
     () => callGeminiVertexAdapter({
       prompt: 'Hola',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.6-flash',
       correlationId: 'corr-4',
       providerConfiguration: { project: 'test-project', location: 'global', apiVersion: 'v1' },
     }),
@@ -185,7 +185,7 @@ test('geminiVertexAdapter devuelve error seguro especifico cuando Vertex excede 
   await assert.rejects(
     () => callGeminiVertexAdapter({
       prompt: 'Hola',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.6-flash',
       correlationId: 'corr-5',
       providerConfiguration: { project: 'test-project', location: 'global', apiVersion: 'v1' },
     }),
@@ -207,7 +207,7 @@ test('geminiVertexAdapter maneja ADC ausente, project/location ausentes, modelo 
   await assert.rejects(
     () => configAdapter.callGeminiVertexAdapter({
       prompt: 'Hola',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.6-flash',
       correlationId: 'corr-6',
       providerConfiguration: { project: '', location: '', apiVersion: 'v1' },
     }),
@@ -228,7 +228,7 @@ test('geminiVertexAdapter maneja ADC ausente, project/location ausentes, modelo 
   await assert.rejects(
     () => adcAdapter.callGeminiVertexAdapter({
       prompt: 'Hola',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.6-flash',
       correlationId: 'corr-7',
       providerConfiguration: { project: 'test-project', location: 'global', apiVersion: 'v1' },
     }),
@@ -251,7 +251,7 @@ test('geminiVertexAdapter maneja ADC ausente, project/location ausentes, modelo 
   await assert.rejects(
     () => modelAdapter.callGeminiVertexAdapter({
       prompt: 'Hola',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.6-flash',
       correlationId: 'corr-8',
       providerConfiguration: { project: 'test-project', location: 'global', apiVersion: 'v1' },
     }),
@@ -272,7 +272,7 @@ test('geminiVertexAdapter maneja ADC ausente, project/location ausentes, modelo 
   await assert.rejects(
     () => genericAdapter.callGeminiVertexAdapter({
       prompt: 'Hola',
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.6-flash',
       correlationId: 'corr-9',
       providerConfiguration: { project: 'test-project', location: 'global', apiVersion: 'v1' },
     }),

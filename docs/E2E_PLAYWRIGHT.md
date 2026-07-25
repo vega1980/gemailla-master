@@ -26,6 +26,6 @@ firebase emulators:exec --only auth,firestore,storage --project demo-gemailla-e2
 
 ## Alcance de la prueba IA
 
-La prueba E2E de IA intercepta `/api/ai` y valida el contrato que la UI envía al backend (`companyId`, `documentIds` y `correlationId`). Esto evita depender de una clave real de OpenAI durante CI.
+La prueba E2E de IA intercepta `/api/ai` y valida el contrato que la UI envía al backend (`companyId`, `documentIds` y `correlationId`). Esto evita depender de Vertex AI real durante CI.
 
-Para una validación full-stack de Cloud Functions en staging, ejecuta una prueba adicional contra un entorno desplegado o emulador de Functions con `OPENAI_API_KEY`/secreto configurado y `PLAYWRIGHT_BASE_URL` apuntando al hosting correspondiente.
+Para una validación full-stack de Cloud Functions en staging, ejecuta una prueba adicional contra un entorno desplegado o emulador de Functions con ADC disponible para Firebase Functions y `PLAYWRIGHT_BASE_URL` apuntando al hosting correspondiente. Si la configuración activa de Vertex viene del entorno, incluye también el modelo, región y pricing aprobados; si viene de `runtimeConfig/ai`, publícala allí antes de correr la prueba.
