@@ -18,6 +18,7 @@ const director = { uid: 'director-uid', claims: { email: 'director@gemailla.test
 const admin = { uid: 'admin-uid', claims: { email: 'admin@gemailla.test', email_verified: true, companyId, companyRole: 'admin' } };
 const editor = { uid: 'editor-uid', claims: { email: 'editor@gemailla.test', email_verified: true, companyId, companyRole: 'editor' } };
 const viewer = { uid: 'viewer-uid', claims: { email: 'viewer@gemailla.test', email_verified: true, companyId, companyRole: 'viewer' } };
+const invitado = { uid: 'invitado-uid', claims: { email: 'invitado@gemailla.test', email_verified: true, companyId, companyRole: 'invitado' } };
 const inactive = { uid: 'inactive-uid', claims: { email: 'inactive@gemailla.test', email_verified: true, companyId, companyRole: 'editor' } };
 const outsider = { uid: 'outsider-uid', claims: { email: 'outsider@gemailla.test', email_verified: true, companyId: otherCompanyId, companyRole: 'admin' } };
 const noMembership = { uid: 'no-membership-uid', claims: { email: 'no-membership@gemailla.test', email_verified: true, companyId, companyRole: 'admin' } };
@@ -32,6 +33,7 @@ async function seedFirestoreAcl() {
       { userUid: admin.uid, userEmail: admin.claims.email, role: 'admin', status: 'active' },
       { userUid: editor.uid, userEmail: editor.claims.email, role: 'editor', status: 'active' },
       { userUid: viewer.uid, userEmail: viewer.claims.email, role: 'viewer', status: 'active' },
+      { userUid: invitado.uid, userEmail: invitado.claims.email, role: 'invitado', status: 'active' },
       { userUid: inactive.uid, userEmail: inactive.claims.email, role: 'editor', status: 'archived' },
       {
         id: `${companyId}_legacy_email_only`,
@@ -363,6 +365,46 @@ describe('Firestore security rules', () => {
       status: 'active',
       updatedBy: admin.uid,
     }, admin), 'admin membership role update');
+  });
+
+  it('enforces the complete company membership role-assignment matrix', async () => {
+    const scenarios = [
+      { actor: owner, role: 'owner', allowed: false },
+      { actor: owner, role: 'director', allowed: true },
+      { actor: owner, role: 'admin', allowed: true },
+      { actor: owner, role: 'editor', allowed: true },
+      { actor: owner, role: 'viewer', allowed: true },
+      { actor: owner, role: 'invitado', allowed: true },
+      { actor: director, role: 'owner', allowed: false },
+      { actor: director, role: 'director', allowed: false },
+      { actor: director, role: 'admin', allowed: true },
+      { actor: director, role: 'editor', allowed: true },
+      { actor: director, role: 'viewer', allowed: true },
+      { actor: director, role: 'invitado', allowed: true },
+      { actor: admin, role: 'owner', allowed: false },
+      { actor: admin, role: 'director', allowed: false },
+      { actor: admin, role: 'admin', allowed: false },
+      { actor: admin, role: 'editor', allowed: true },
+      { actor: admin, role: 'viewer', allowed: true },
+      { actor: admin, role: 'invitado', allowed: true },
+      { actor: editor, role: 'viewer', allowed: false },
+      { actor: viewer, role: 'viewer', allowed: false },
+      { actor: invitado, role: 'viewer', allowed: false },
+    ];
+
+    for (const [index, scenario] of scenarios.entries()) {
+      const operation = firestoreSet(`companyMembers/${companyId}_matrix_${index}`, {
+        companyId,
+        userUid: `matrix-user-${index}`,
+        userEmail: `matrix-user-${index}@gemailla.test`,
+        role: scenario.role,
+        status: 'pending',
+        createdBy: scenario.actor.uid,
+      }, scenario.actor);
+      const message = `${scenario.actor.claims.companyRole} assign ${scenario.role}`;
+      if (scenario.allowed) await assertAllowed(operation, message);
+      else await assertDenied(operation, message);
+    }
   });
 
   it('restricts owner and director membership assignment to the real company owner', async () => {

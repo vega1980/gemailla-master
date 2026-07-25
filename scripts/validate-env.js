@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const FRONTEND_REQUIRED = [
   'VITE_FIREBASE_API_KEY',
@@ -11,7 +12,7 @@ const FRONTEND_REQUIRED = [
   'VITE_FIREBASE_APP_ID',
 ];
 
-const FUNCTIONS_REQUIRED = ['OPENAI_API_KEY'];
+const BLOCKED_LOCAL_FUNCTIONS_VARIABLES = ['OPENAI_API_KEY', 'OPENAI_MODEL', 'VITE_OPENAI_API_KEY'];
 const PLACEHOLDER_PATTERN = /^(TU_|YOUR_|CHANGEME|REPLACE_ME|xxx$|unknown$|local$)/i;
 
 function parseArgs(argv) {
@@ -56,32 +57,138 @@ function validateRequired(env, names) {
   return names.filter((name) => !isPresent(env[name]));
 }
 
-function getRequiredNames(target) {
+function hasExplicitVertexEnvConfig(env) {
+  return [
+    env.VERTEX_GEMINI_MODEL,
+    env.LLM_MODEL,
+    env.VERTEX_GEMINI_PROJECT,
+    env.GOOGLE_CLOUD_PROJECT,
+    env.GCLOUD_PROJECT,
+    env.GCP_PROJECT,
+    env.VERTEX_GEMINI_LOCATION,
+    env.GOOGLE_CLOUD_LOCATION,
+    env.VERTEX_GEMINI_INPUT_PER_1K_TOKENS_USD,
+    env.VERTEX_GEMINI_CACHED_INPUT_PER_1K_TOKENS_USD,
+    env.VERTEX_GEMINI_OUTPUT_PER_1K_TOKENS_USD,
+    env.VERTEX_GEMINI_REASONING_TOKEN_TREATMENT,
+    env.VERTEX_GEMINI_REASONING_PER_1K_TOKENS_USD,
+  ].some((value) => isPresent(value));
+}
+
+function getFunctionsConfigSource(env) {
+  return hasExplicitVertexEnvConfig(env) ? 'env' : 'runtimeConfig/ai';
+}
+
+function getFunctionsRequiredNames(env) {
+  if (getFunctionsConfigSource(env) !== 'env') return [];
+
+  const required = [
+    'VERTEX_GEMINI_MODEL',
+    'VERTEX_GEMINI_LOCATION',
+    'VERTEX_GEMINI_INPUT_PER_1K_TOKENS_USD',
+    'VERTEX_GEMINI_CACHED_INPUT_PER_1K_TOKENS_USD',
+    'VERTEX_GEMINI_OUTPUT_PER_1K_TOKENS_USD',
+    'VERTEX_GEMINI_REASONING_TOKEN_TREATMENT',
+  ];
+
+  if (!isPresent(env.VERTEX_GEMINI_PROJECT)
+    && !isPresent(env.GOOGLE_CLOUD_PROJECT)
+    && !isPresent(env.GCLOUD_PROJECT)
+    && !isPresent(env.GCP_PROJECT)) {
+    required.push('VERTEX_GEMINI_PROJECT');
+  }
+
+  if (String(env.VERTEX_GEMINI_REASONING_TOKEN_TREATMENT || '').trim().toLowerCase() === 'billable') {
+    required.push('VERTEX_GEMINI_REASONING_PER_1K_TOKENS_USD');
+  }
+
+  return required;
+}
+
+function validateBlockedLocalFunctionsVariables(env) {
+  return BLOCKED_LOCAL_FUNCTIONS_VARIABLES.filter((name) => isPresent(env[name]));
+}
+
+function getRequiredNames(target, env) {
   if (target === 'frontend') return FRONTEND_REQUIRED;
-  if (target === 'functions') return FUNCTIONS_REQUIRED;
-  if (target === 'all') return [...FRONTEND_REQUIRED, ...FUNCTIONS_REQUIRED];
+  if (target === 'functions') return getFunctionsRequiredNames(env);
+  if (target === 'all') return [...FRONTEND_REQUIRED, ...getFunctionsRequiredNames(env)];
   throw new Error(`Target no soportado: ${target}. Usa frontend, functions o all.`);
+}
+
+function validateEnvironment({ target, env }) {
+  const blockedLocalVariables = validateBlockedLocalFunctionsVariables(env);
+  if (blockedLocalVariables.length > 0) {
+    return {
+      ok: false,
+      reason: 'blocked',
+      blockedLocalVariables,
+      source: getFunctionsConfigSource(env),
+      messages: [
+        '❌ Validación de entorno fallida. Existen configuraciones locales activas no permitidas:',
+        ...blockedLocalVariables.map((name) => `  - ${name}`),
+        '',
+        'El backend debe usar Vertex AI con ADC desde Firebase Functions; no se admiten claves o modelos locales de OpenAI.',
+      ],
+    };
+  }
+
+  const requiredNames = getRequiredNames(target, env);
+  const missing = validateRequired(env, requiredNames);
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      reason: 'missing',
+      missing,
+      source: getFunctionsConfigSource(env),
+      messages: [
+        '❌ Validación de entorno fallida. Faltan variables obligatorias o contienen placeholders:',
+        ...missing.map((name) => `  - ${name}`),
+        '',
+        'Configura las variables en el entorno de CI, .env o .env.local antes de ejecutar builds/pruebas.',
+      ],
+    };
+  }
+
+  return {
+    ok: true,
+    source: getFunctionsConfigSource(env),
+    messages: [`✅ Entorno validado sin prompts interactivos (target: ${target}, functions source: ${getFunctionsConfigSource(env)}).`],
+  };
+}
+
+function printValidationResult(result) {
+  for (const message of result.messages) {
+    if (message.startsWith('✅')) console.log(message);
+    else console.error(message);
+  }
 }
 
 function main() {
   const { target } = parseArgs(process.argv.slice(2));
   const env = collectEnvironment();
-  const requiredNames = getRequiredNames(target);
-  const missing = validateRequired(env, requiredNames);
-
-  if (missing.length > 0) {
-    console.error('❌ Validación de entorno fallida. Faltan variables obligatorias o contienen placeholders:');
-    for (const name of missing) console.error(`  - ${name}`);
-    console.error('\nConfigura las variables en el entorno de CI, .env o .env.local antes de ejecutar builds/pruebas.');
-    process.exit(1);
-  }
-
-  if (isPresent(env.VITE_OPENAI_API_KEY)) {
-    console.error('❌ VITE_OPENAI_API_KEY no debe existir: expone secretos en el frontend. Usa OPENAI_API_KEY en Functions.');
-    process.exit(1);
-  }
-
-  console.log(`✅ Entorno validado sin prompts interactivos (target: ${target}).`);
+  const result = validateEnvironment({ target, env });
+  printValidationResult(result);
+  if (!result.ok) process.exit(1);
 }
 
-main();
+const isMainModule = process.argv[1]
+  && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+
+if (isMainModule) {
+  main();
+}
+
+export {
+  BLOCKED_LOCAL_FUNCTIONS_VARIABLES,
+  FRONTEND_REQUIRED,
+  collectEnvironment,
+  getFunctionsConfigSource,
+  getFunctionsRequiredNames,
+  getRequiredNames,
+  hasExplicitVertexEnvConfig,
+  isPresent,
+  parseArgs,
+  validateEnvironment,
+  validateRequired,
+};

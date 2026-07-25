@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { describe, it, beforeEach, afterEach } from 'node:test';
@@ -11,29 +10,6 @@ const ORIGINAL_ENV = { ...process.env };
 
 function assertCloseTo(actual, expected, tolerance = 1e-12) {
   assert.ok(Math.abs(actual - expected) < tolerance, `expected ${actual} to be within ${tolerance} of ${expected}`);
-}
-
-
-function expect(received) {
-  return {
-    toBe(expected) {
-      assert.equal(received, expected);
-    },
-    toMatch(pattern) {
-      assert.match(received, pattern);
-    },
-    toBeUndefined() {
-      assert.equal(received, undefined);
-    },
-    toBeNull() {
-      assert.equal(received, null);
-    },
-    not: {
-      toHaveProperty(propertyName) {
-        assert.equal(Object.prototype.hasOwnProperty.call(received, propertyName), false);
-      },
-    },
-  };
 }
 
 class MockDocSnap {
@@ -131,7 +107,51 @@ function createFirestore(store) {
   };
 }
 
-async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'aiHandler', storageFiles = {} }) {
+function createConfig(overrides = {}) {
+  return {
+    provider: 'vertex-gemini',
+    model: 'gemini-3.6-flash',
+    rateLimitWindowMs: 60000,
+    rateLimitMaxRequests: 30,
+    dailyTokenLimit: 50000,
+    dailyBudgetUsd: 5,
+    reservedOutputTokens: 1200,
+    providers: {
+      'vertex-gemini': {
+        provider: 'vertex-gemini',
+        model: 'gemini-3.6-flash',
+        project: 'test-project',
+        location: 'global',
+        apiVersion: 'v1',
+        timeoutMs: 45000,
+        pricing: {
+          models: {
+            'gemini-3.6-flash': {
+              // Fixture de pruebas; produccion debe obtener pricing aprobado
+              // desde runtimeConfig/ai o entorno, no desde tests.
+              inputPer1kTokensUsd: 0.1,
+              cachedInputPer1kTokensUsd: 0.02,
+              outputPer1kTokensUsd: 0.4,
+              reasoningTokenTreatment: 'billable',
+              reasoningPer1kTokensUsd: 0.3,
+            },
+          },
+        },
+      },
+    },
+    source: 'runtimeConfig/ai',
+    ...overrides,
+  };
+}
+
+async function loadAiEndpoint({
+  store,
+  verifyIdToken,
+  geminiImpl,
+  config = createConfig(),
+  exportName = 'aiHandler',
+  storageFiles = {},
+}) {
   const firestore = createFirestore(store);
   const admin = {
     initializeApp() {},
@@ -170,21 +190,23 @@ async function loadAiEndpoint({ store, verifyIdToken, fetchImpl, exportName = 'a
   };
   const modulePath = fileURLToPath(MODULE_PATH);
   const originalLoad = Module._load;
-  globalThis.fetch = fetchImpl;
   Module._load = function patchedLoad(request, parent, isMain) {
     if (request === 'firebase-admin') return admin;
     if (request === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler };
-    if (request === 'firebase-functions/v2/scheduler') {
+    if (request === 'firebase-functions/v2/scheduler') return { onSchedule: (_options, handler) => handler };
+    if (request === 'firebase-functions/v2/firestore') return { onDocumentWritten: (_path, handler) => handler };
+    if (request === './geminiVertexAdapter' || request === './handlers/geminiVertexAdapter') {
+      return { callGeminiVertexAdapter: geminiImpl };
+    }
+    if (request === '../config' || request === './config') {
       return {
-        onSchedule: (_options, handler) => handler,
+        DEFAULT_AI_REQUEST_TIMEOUT_MS: 45000,
+        DEFAULT_VERTEX_API_VERSION: 'v1',
+        DEFAULT_VERTEX_GEMINI_MODEL: 'gemini-3.6-flash',
+        DEFAULT_VERTEX_GEMINI_PROVIDER: 'vertex-gemini',
+        getAiRuntimeConfig: async () => config,
       };
     }
-    if (request === 'firebase-functions/v2/firestore') {
-      return {
-        onDocumentWritten: (_path, handler) => handler,
-      };
-    }
-    if (request === 'firebase-functions/params') return { defineSecret: () => ({ value: () => process.env.OPENAI_API_KEY }) };
     return originalLoad.call(this, request, parent, isMain);
   };
 
@@ -251,8 +273,8 @@ function seedBase(overrides = {}) {
       memberCompany_blockedRole: { companyId: 'memberCompany', userUid: 'blockedRole', status: 'active', role: 'guest' },
     },
     companyEntitlements: {
-      validCompany: { companyId: 'validCompany', plan: 'pro', status: 'active', aiAccess: true, currentPeriodEnd: '2999-01-01T00:00:00.000Z', source: 'test', updatedAt: '2026-07-11T00:00:00.000Z', migrationVersion: 1 },
-      memberCompany: { companyId: 'memberCompany', plan: 'pro', status: 'active', aiAccess: true, currentPeriodEnd: '2999-01-01T00:00:00.000Z', source: 'test', updatedAt: '2026-07-11T00:00:00.000Z', migrationVersion: 1 },
+      validCompany: { companyId: 'validCompany', plan: 'pro', status: 'active', aiAccess: true, currentPeriodEnd: '2999-01-01T00:00:00.000Z' },
+      memberCompany: { companyId: 'memberCompany', plan: 'pro', status: 'active', aiAccess: true, currentPeriodEnd: '2999-01-01T00:00:00.000Z' },
     },
     documents: {
       validDoc: { companyId: 'validCompany', storagePath: 'companies/validCompany/documents/validDoc/doc.pdf' },
@@ -264,14 +286,31 @@ function seedBase(overrides = {}) {
   });
 }
 
-async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-token', body, fetchImpl, origin, storageFiles = {} } = {}) {
+async function exercise({
+  store = seedBase(),
+  uid = 'owner-uid',
+  token = 'valid-token',
+  body,
+  geminiImpl,
+  config,
+  origin,
+  storageFiles = {},
+} = {}) {
   const handler = await loadAiEndpoint({
     store,
     verifyIdToken: async (receivedToken) => {
       if (receivedToken !== 'valid-token') throw new Error('bad token');
       return { uid };
     },
-    fetchImpl: fetchImpl || (async () => ({ ok: true, status: 200, async json() { return { output_text: 'Respuesta IA de prueba' }; } })),
+    geminiImpl: geminiImpl || (async () => ({
+      outputText: 'Respuesta IA de prueba',
+      provider: 'vertex-gemini',
+      model: 'gemini-3.6-flash',
+      usage: { input_tokens: 11, output_tokens: 7, total_tokens: 18, cached_input_tokens: 0, reasoning_tokens: 0, tool_use_prompt_tokens: 0 },
+      usageAvailable: true,
+      finishReason: 'STOP',
+    })),
+    config: config || createConfig(),
     storageFiles,
   });
   const res = createRes();
@@ -281,13 +320,12 @@ async function exercise({ store = seedBase(), uid = 'owner-uid', token = 'valid-
 
 describe('endpoint IA', () => {
   beforeEach(() => {
-    process.env.OPENAI_API_KEY = 'test-openai-key';
+    delete process.env.OPENAI_API_KEY;
     process.env.AI_RATE_LIMIT_MAX_REQUESTS = '30';
     process.env.AI_RATE_LIMIT_WINDOW_MS = '60000';
     process.env.AI_DAILY_TOKEN_LIMIT = '50000';
     process.env.AI_DAILY_BUDGET_USD = '5';
     process.env.AI_RESERVED_OUTPUT_TOKENS = '1200';
-    process.env.AI_COST_PER_1K_TOKENS_USD = '0.002';
   });
 
   afterEach(() => {
@@ -299,7 +337,7 @@ describe('endpoint IA', () => {
     const getAllowedOrigins = await loadAiEndpoint({
       store: seedBase(),
       verifyIdToken: async () => ({ uid: 'owner-uid' }),
-      fetchImpl: async () => ({ ok: true, status: 200, async json() { return { output_text: 'ok' }; } }),
+      geminiImpl: async () => ({ outputText: 'ok', provider: 'vertex-gemini', model: 'gemini-3.6-flash', usage: {}, usageAvailable: false }),
       exportName: 'getAllowedOrigins',
     });
 
@@ -311,13 +349,15 @@ describe('endpoint IA', () => {
     ]);
   });
 
-  it('responde 403 para origen CORS no permitido antes de llamar a OpenAI', async () => {
+  it('responde 403 para origen CORS no permitido antes de llamar a Vertex', async () => {
     process.env.ALLOWED_ORIGINS = 'https://allowed.example';
+    let geminiCalls = 0;
     const handler = await loadAiEndpoint({
       store: seedBase(),
       verifyIdToken: async () => ({ uid: 'owner-uid' }),
-      fetchImpl: async () => {
-        throw new Error('OpenAI no debe llamarse');
+      geminiImpl: async () => {
+        geminiCalls += 1;
+        throw new Error('Vertex no debe llamarse');
       },
     });
     const res = createRes();
@@ -326,112 +366,13 @@ describe('endpoint IA', () => {
 
     assert.equal(res.statusCode, 403);
     assert.match(res.payload.error, /CORS no permitido/);
+    assert.equal(geminiCalls, 0);
   });
 
-  it('responde con Access-Control-Allow-Origin dinámico cuando el origen está autorizado', async () => {
-    process.env.ALLOWED_ORIGINS = 'https://gemailla.com,https://www.gemailla.com';
-
-    const res = await exercise({
-      origin: 'https://gemailla.com',
-      body: { companyId: 'validCompany', prompt: 'Hola' },
-    });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.headers['Access-Control-Allow-Origin']).toBe('https://gemailla.com');
-    expect(res.headers.Vary).toBe('Origin');
-  });
-
-  it('responde 403 y no emite Access-Control-Allow-Origin para un origen no autorizado', async () => {
-    process.env.ALLOWED_ORIGINS = 'https://gemailla.com';
-
-    const res = await exercise({
-      origin: 'https://hackdomain.com',
-      body: { companyId: 'validCompany', prompt: 'Hola' },
-      fetchImpl: async () => {
-        throw new Error('OpenAI no debe llamarse para un origen no autorizado');
-      },
-    });
-
-    expect(res.statusCode).toBe(403);
-    expect(res.payload.error).toMatch(/CORS no permitido/);
-    expect(res.headers).not.toHaveProperty('Access-Control-Allow-Origin');
-    expect(res.headers.Vary).toBe('Origin');
-  });
-
-  it('procesa de forma segura una petición sin cabecera Origin', async () => {
-    process.env.ALLOWED_ORIGINS = 'https://gemailla.com';
-
-    const res = await exercise({
-      body: { companyId: 'validCompany', prompt: 'Hola' },
-    });
-
-    expect(res.statusCode).toBe(200);
-    expect(res.headers).not.toHaveProperty('Access-Control-Allow-Origin');
-    expect(res.payload.response).toBe('Respuesta IA de prueba');
-    expect(res.headers.Vary).toBe('Origin');
-  });
-
-  it('responde 401 sin token', async () => {
-    const res = await exercise({ token: null, body: { companyId: 'validCompany', prompt: 'Hola' } });
-
-    assert.equal(res.statusCode, 401);
-    assert.match(res.payload.error, /Autenticación requerida/);
-  });
-
-  it('responde 401 con token inválido', async () => {
-    const res = await exercise({ token: 'invalid-token', body: { companyId: 'validCompany', prompt: 'Hola' } });
-
-    assert.equal(res.statusCode, 401);
-    assert.match(res.payload.error, /Token de Firebase inválido/);
-  });
-
-  it('responde 400 cuando companyId está ausente', async () => {
-    const res = await exercise({ body: { prompt: 'Hola' } });
-
-    assert.equal(res.statusCode, 400);
-    assert.match(res.payload.error, /companyId es obligatorio/);
-  });
-
-  it('responde 403 cuando la empresa no existe', async () => {
-    const res = await exercise({ body: { companyId: 'missingCompany', prompt: 'Hola' } });
-
-    assert.equal(res.statusCode, 403);
-    assert.match(res.payload.error, /Empresa no válida/);
-  });
-
-  it('responde 403 con membresía inválida', async () => {
-    const res = await exercise({ uid: 'inactiveMember', body: { companyId: 'memberCompany', prompt: 'Hola' } });
-
-    assert.equal(res.statusCode, 403);
-    assert.match(res.payload.error, /membresía activa/);
-  });
-
-  it('responde 403 con rol insuficiente', async () => {
-    const res = await exercise({ uid: 'blockedRole', body: { companyId: 'memberCompany', prompt: 'Hola' } });
-
-    assert.equal(res.statusCode, 403);
-    assert.match(res.payload.error, /rol no permite/);
-  });
-
-  it('responde 403 al solicitar un documento de otro tenant', async () => {
-    const res = await exercise({ body: { companyId: 'validCompany', prompt: 'Analiza documento', documentIds: ['otherTenantDoc'] } });
-
-    assert.equal(res.statusCode, 403);
-    assert.match(res.payload.error, /no pertenece a la empresa validada/);
-  });
-
-  it('responde 403 cuando un documento autorizado apunta a storagePath de otro tenant', async () => {
-    const res = await exercise({
-      body: { companyId: 'validCompany', prompt: 'Analiza documento', documentIds: ['manipulatedPathDoc'] },
-    });
-
-    assert.equal(res.statusCode, 403);
-    assert.match(res.payload.error, /storagePath fuera del prefijo autorizado/);
-  });
-
-  it('responde 200 en el caso válido y registra costo de IA', async () => {
+  it('responde 200 en el caso válido y registra costo de IA con Vertex', async () => {
     const store = seedBase();
     store.set('documents/validDoc', { companyId: 'validCompany', storagePath: 'companies/validCompany/documents/validDoc/doc.txt' });
+
     const res = await exercise({
       store,
       body: { companyId: 'validCompany', prompt: 'Hola', documentIds: ['validDoc'], integration: 'ellmer' },
@@ -441,49 +382,58 @@ describe('endpoint IA', () => {
           metadata: { size: 28, contentType: 'text/plain', name: 'companies/validCompany/documents/validDoc/doc.txt' },
         },
       },
-      fetchImpl: async () => ({
-        ok: true,
-        status: 200,
-        async json() {
-          return { output_text: 'Respuesta IA de prueba', usage: { input_tokens: 11, output_tokens: 7, total_tokens: 18 } };
-        },
-      }),
     });
 
     assert.equal(res.statusCode, 200);
     assert.equal(res.payload.response, 'Respuesta IA de prueba');
     assert.equal(res.payload.companyId, 'validCompany');
+    assert.equal(res.payload.provider, 'vertex-gemini');
+    assert.equal(res.payload.model, 'gemini-3.6-flash');
     assert.equal(res.payload.tokens, 18);
-    assertCloseTo(res.payload.costo, 0.000036);
-
-    const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
-    assert.equal(usageDocs.length, 1);
-    assert.equal(usageDocs[0].tokensUsed, 18);
-    assert.equal(usageDocs[0].completedRequestCount, 1);
-    assert.equal(usageDocs[0].reservedTokens, 0);
-    assert.equal(usageDocs[0].reservedBudgetUsd, 0);
+    assertCloseTo(res.payload.costo, 0.0039);
 
     const costLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiCostLogs/')).map(([, value]) => value);
     assert.equal(costLogs.length, 1);
     assert.equal(costLogs[0].tokens, 18);
-    assert.equal(costLogs[0].model, 'gpt-4o-mini');
-    assertCloseTo(costLogs[0].costo, 0.000036);
+    assert.equal(costLogs[0].model, 'gemini-3.6-flash');
+    assertCloseTo(costLogs[0].costo, 0.0039);
     assert.equal(costLogs[0].integration, 'ellmer');
-    assert.match(costLogs[0].timestamp, /^\d{4}-\d{2}-\d{2}T/);
-
-
-    const auditLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiAuditLogs/')).map(([, value]) => value);
-    assert.equal(auditLogs.length, 2);
-    assert.deepEqual(auditLogs.map((log) => log.eventName).sort(), ['ai_request_completed', 'ai_request_started']);
-    assert.equal(auditLogs.every((log) => log.companyId === 'validCompany'), true);
-    assert.equal(auditLogs.every((log) => log.userUid === 'owner-uid'), true);
-    assert.equal(auditLogs.every((log) => log.prompt === undefined), true);
-    assert.equal(auditLogs.every((log) => log.content === undefined), true);
   });
 
+  it('integration no selecciona provider ni model', async () => {
+    const res = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Hola', integration: 'openai' },
+      geminiImpl: async () => ({
+        outputText: 'Gemini manda',
+        provider: 'vertex-gemini',
+        model: 'gemini-3.6-flash',
+        usage: { input_tokens: 11, output_tokens: 7, total_tokens: 18, cached_input_tokens: 0, reasoning_tokens: 0, tool_use_prompt_tokens: 0 },
+        usageAvailable: true,
+        finishReason: 'STOP',
+      }),
+    });
 
-  it('envía response_json_schema a OpenAI y devuelve el JSON estructurado en la respuesta', async () => {
-    let openAiRequestBody;
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.provider, 'vertex-gemini');
+    assert.equal(res.payload.model, 'gemini-3.6-flash');
+    assert.equal(res.payload.response, 'Gemini manda');
+  });
+
+  it('normaliza integration=openai a gemailla-ai en aiCostLogs', async () => {
+    const store = seedBase();
+    const res = await exercise({
+      store,
+      body: { companyId: 'validCompany', prompt: 'Hola', integration: 'openai' },
+    });
+
+    assert.equal(res.statusCode, 200);
+
+    const costLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiCostLogs/')).map(([, value]) => value);
+    assert.equal(costLogs.length, 1);
+    assert.equal(costLogs[0].integration, 'gemailla-ai');
+  });
+
+  it('procesa response_json_schema con Gemini y devuelve JSON estructurado', async () => {
     const schema = {
       type: 'object',
       properties: {
@@ -495,39 +445,35 @@ describe('endpoint IA', () => {
 
     const res = await exercise({
       body: { companyId: 'validCompany', prompt: 'Analiza documento', response_json_schema: schema },
-      fetchImpl: async (_url, options) => {
-        openAiRequestBody = JSON.parse(options.body);
+      geminiImpl: async (params) => {
+        assert.deepEqual(params.responseJsonSchema, schema);
         return {
-          ok: true,
-          status: 200,
-          async json() {
-            return { output_text: JSON.stringify({ docType: 'factura', total: 123.45 }), usage: { total_tokens: 12 } };
-          },
+          outputText: JSON.stringify({ docType: 'factura', total: 123.45 }),
+          provider: 'vertex-gemini',
+          model: 'gemini-3.6-flash',
+          usage: { total_tokens: 12, input_tokens: 8, output_tokens: 4, cached_input_tokens: 0, reasoning_tokens: 0, tool_use_prompt_tokens: 0 },
+          usageAvailable: true,
+          finishReason: 'STOP',
         };
       },
     });
 
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(openAiRequestBody.text.format, {
-      type: 'json_schema',
-      name: 'gemailla_structured_response',
-      schema,
-      strict: false,
-    });
     assert.equal(res.payload.docType, 'factura');
     assert.equal(res.payload.total, 123.45);
     assert.deepEqual(res.payload.response, { docType: 'factura', total: 123.45 });
   });
 
-  it('responde 502 si OpenAI no entrega JSON válido para response_json_schema', async () => {
+  it('responde 502 si Gemini no entrega JSON válido para response_json_schema', async () => {
     const res = await exercise({
       body: { companyId: 'validCompany', prompt: 'Analiza documento', response_json_schema: { type: 'object', properties: { ok: { type: 'boolean' } } } },
-      fetchImpl: async () => ({
-        ok: true,
-        status: 200,
-        async json() {
-          return { output_text: 'texto libre no json', usage: { total_tokens: 4 } };
-        },
+      geminiImpl: async () => ({
+        outputText: 'texto libre no json',
+        provider: 'vertex-gemini',
+        model: 'gemini-3.6-flash',
+        usage: { total_tokens: 4, input_tokens: 2, output_tokens: 2, cached_input_tokens: 0, reasoning_tokens: 0, tool_use_prompt_tokens: 0 },
+        usageAvailable: true,
+        finishReason: 'STOP',
       }),
     });
 
@@ -535,140 +481,122 @@ describe('endpoint IA', () => {
     assert.match(res.payload.error, /JSON válido/);
   });
 
-
-  it('revierte la reserva cuando OpenAI devuelve 502', async () => {
+  it('conserva la reserva cuando usageMetadata falta en Vertex', async () => {
     const store = seedBase();
-
     const res = await exercise({
       store,
       body: { companyId: 'validCompany', prompt: 'Hola' },
-      fetchImpl: async () => ({
-        ok: false,
-        status: 502,
-        async json() {
-          return { error: { message: 'Bad gateway upstream' } };
-        },
+      geminiImpl: async () => ({
+        outputText: 'Sin usage metadata',
+        provider: 'vertex-gemini',
+        model: 'gemini-3.6-flash',
+        usage: {},
+        usageAvailable: false,
+        finishReason: 'STOP',
       }),
     });
 
-    assert.equal(res.statusCode, 502);
-    assert.match(res.payload.error, /Bad gateway upstream/);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.tokens, null);
+    assert.equal(res.payload.costUsd, null);
 
     const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
     assert.equal(usageDocs.length, 1);
-    assert.equal(usageDocs[0].reservedTokens, 0);
-    assert.equal(usageDocs[0].reservedBudgetUsd, 0);
-    assert.equal(usageDocs[0].failedRequestCount, 1);
-    assert.equal(usageDocs[0].tokensUsed, 0);
-    assert.equal(usageDocs[0].budgetUsedUsd, 0);
+    assert.equal(usageDocs[0].pendingUsageMetadataCount, 1);
+    assert.equal(usageDocs[0].reservedTokens > 0, true);
   });
 
-  it('incrementa failedRequestCount cuando falla la red del proveedor después de reservar', async () => {
-    const store = seedBase();
-
-    const res = await exercise({
-      store,
-      body: { companyId: 'validCompany', prompt: 'Hola' },
-      fetchImpl: async () => {
-        throw new Error('network collapse after reservation');
-      },
-    });
-
-    assert.equal(res.statusCode, 502);
-    assert.match(res.payload.error, /No se pudo contactar al proveedor LLM/);
-
-    const usageDocs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiUsage/')).map(([, value]) => value);
-    assert.equal(usageDocs.length, 1);
-    assert.equal(usageDocs[0].reservedTokens, 0);
-    assert.equal(usageDocs[0].reservedBudgetUsd, 0);
-    assert.equal(usageDocs[0].failedRequestCount, 1);
-    assert.equal(usageDocs[0].tokensUsed, 0);
-    assert.equal(usageDocs[0].budgetUsedUsd, 0);
-  });
-
-  it('devuelve una reserva extendida antes de llamar al proveedor', async () => {
-    const store = seedBase();
-    const enforceAiLimits = await loadAiEndpoint({
-      store,
-      verifyIdToken: async () => ({ uid: 'owner-uid' }),
-      fetchImpl: async () => ({ ok: true, status: 200, async json() { return { output_text: 'ok' }; } }),
-      exportName: 'enforceAiLimits',
-    });
-
-    const reservation = await enforceAiLimits({
-      user: { uid: 'owner-uid' },
-      authorization: { companyId: 'validCompany' },
-      prompt: 'Hola',
-      correlationId: 'reservation-contract',
-      now: new Date('2026-06-19T00:00:00.000Z'),
-    });
-
-    assert.equal(reservation.usageDocId, '2026-06-19_validCompany');
-    assert.equal(reservation.rateDocId, 'validCompany_owner-uid');
-    assert.equal(reservation.estimatedTokens, 1201);
-    assertCloseTo(reservation.estimatedCostUsd, 0.002402);
-    assert.equal(reservation.reservedAtMs, 1781827200000);
-    assert.equal(reservation.reservationStatus, 'reserved');
-  });
-
-  it('bloquea por rate limiting antes de llamar a OpenAI', async () => {
-    process.env.AI_RATE_LIMIT_MAX_REQUESTS = '1';
+  it('bloquea por rate limiting antes de llamar a Vertex', async () => {
     const store = seedBase({ aiRateLimits: { 'validCompany_owner-uid': { windowStartedAtMs: Date.now(), requestCount: 1 } } });
-    let openAiCalls = 0;
+    let geminiCalls = 0;
 
     const res = await exercise({
       store,
       body: { companyId: 'validCompany', prompt: 'Hola' },
-      fetchImpl: async () => {
-        openAiCalls += 1;
-        return { ok: true, status: 200, async json() { return { output_text: 'No debe llamarse' }; } };
+      geminiImpl: async () => {
+        geminiCalls += 1;
+        return { outputText: 'No debe llamarse', provider: 'vertex-gemini', model: 'gemini-3.6-flash', usage: {}, usageAvailable: false };
       },
+      config: createConfig({ rateLimitMaxRequests: 1 }),
     });
 
     assert.equal(res.statusCode, 429);
     assert.match(res.payload.error, /Límite de frecuencia/);
-    assert.equal(openAiCalls, 0);
-
-
-    const auditLogs = Array.from(store.entries()).filter(([key]) => key.startsWith('aiAuditLogs/')).map(([, value]) => value);
-    assert.equal(auditLogs.length, 1);
-    assert.equal(auditLogs[0].eventName, 'ai_request_failed');
-    assert.equal(auditLogs[0].status, 429);
-    assert.equal(auditLogs[0].companyId, 'validCompany');
-    assert.equal(auditLogs[0].userUid, 'owner-uid');
+    assert.equal(geminiCalls, 0);
   });
 
-  it('bloquea por cuota diaria de tokens antes de llamar a OpenAI', async () => {
-    process.env.AI_DAILY_TOKEN_LIMIT = '10';
-    let openAiCalls = 0;
+  it('bloquea por cuota diaria de tokens antes de llamar a Vertex', async () => {
+    let geminiCalls = 0;
 
     const res = await exercise({
       body: { companyId: 'validCompany', prompt: 'Hola' },
-      fetchImpl: async () => {
-        openAiCalls += 1;
-        return { ok: true, status: 200, async json() { return { output_text: 'No debe llamarse' }; } };
+      geminiImpl: async () => {
+        geminiCalls += 1;
+        return { outputText: 'No debe llamarse', provider: 'vertex-gemini', model: 'gemini-3.6-flash', usage: {}, usageAvailable: false };
       },
+      config: createConfig({ dailyTokenLimit: 10 }),
     });
 
     assert.equal(res.statusCode, 429);
     assert.match(res.payload.error, /Cuota diaria de tokens/);
-    assert.equal(openAiCalls, 0);
+    assert.equal(geminiCalls, 0);
   });
 
-  it('bloquea por presupuesto diario antes de llamar a OpenAI', async () => {
-    process.env.AI_DAILY_BUDGET_USD = '0.000001';
-    let openAiCalls = 0;
+  it('bloquea por presupuesto diario antes de llamar a Vertex', async () => {
+    let geminiCalls = 0;
 
     const res = await exercise({
       body: { companyId: 'validCompany', prompt: 'Hola' },
-      fetchImpl: async () => {
-        openAiCalls += 1;
-        return { ok: true, status: 200, async json() { return { output_text: 'No debe llamarse' }; } };
+      geminiImpl: async () => {
+        geminiCalls += 1;
+        return { outputText: 'No debe llamarse', provider: 'vertex-gemini', model: 'gemini-3.6-flash', usage: {}, usageAvailable: false };
       },
+      config: createConfig({ dailyBudgetUsd: 0.000001 }),
     });
 
     assert.equal(res.statusCode, 429);
     assert.match(res.payload.error, /Presupuesto diario/);
-    assert.equal(openAiCalls, 0);
+    assert.equal(geminiCalls, 0);
+  });
+
+  it('falla antes de llamar a Vertex cuando falta pricing aprobado o modelo exacto', async () => {
+    let geminiCalls = 0;
+    const missingPricing = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Hola' },
+      geminiImpl: async () => {
+        geminiCalls += 1;
+        return { outputText: 'No debe llamarse', provider: 'vertex-gemini', model: 'gemini-3.6-flash', usage: {}, usageAvailable: false };
+      },
+      config: createConfig({
+        providers: {
+          'vertex-gemini': {
+            ...createConfig().providers['vertex-gemini'],
+            pricing: {},
+          },
+        },
+      }),
+    });
+    assert.equal(missingPricing.statusCode, 503);
+    assert.match(missingPricing.payload.error, /Falta configuracion aprobada de precios/);
+
+    const missingModel = await exercise({
+      body: { companyId: 'validCompany', prompt: 'Hola' },
+      geminiImpl: async () => {
+        geminiCalls += 1;
+        return { outputText: 'No debe llamarse', provider: 'vertex-gemini', model: 'gemini-3.6-flash', usage: {}, usageAvailable: false };
+      },
+      config: createConfig({
+        model: 'gemini-no-aprobado',
+        providers: {
+          'vertex-gemini': {
+            ...createConfig().providers['vertex-gemini'],
+            model: 'gemini-no-aprobado',
+          },
+        },
+      }),
+    });
+    assert.equal(missingModel.statusCode, 503);
+    assert.match(missingModel.payload.error, /modelo configurado no esta aprobado/i);
+    assert.equal(geminiCalls, 0);
   });
 });

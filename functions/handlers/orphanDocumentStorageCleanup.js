@@ -1,16 +1,8 @@
 const admin = require('firebase-admin');
 
-const DEFAULT_SUCCESSFUL_DOCUMENT_STATUSES = ['pending', 'uploaded', 'processing', 'analyzed', 'active'];
-const DOCUMENT_STORAGE_PATH_PATTERN = /^companies\/([^/]+)\/documents\/([^/]+)\//;
+const DOCUMENT_STORAGE_PATH_PATTERN = /^companies\/([^/]+)\/documents\/([^/]+)\/[^/]+$/;
+
 const DEFAULT_MIN_FILE_AGE_MINUTES = 120;
-
-function getSuccessfulDocumentStatuses() {
-  const raw = String(process.env.DOCUMENT_SUCCESSFUL_STATUSES || '').trim();
-  if (!raw) return DEFAULT_SUCCESSFUL_DOCUMENT_STATUSES;
-  const parsed = raw.split(',').map((status) => status.trim()).filter(Boolean);
-  return parsed.length > 0 ? parsed : DEFAULT_SUCCESSFUL_DOCUMENT_STATUSES;
-}
-
 function getOrphanCleanupConfig() {
   const dryRunRaw = String(process.env.ORPHAN_DOCUMENT_CLEANUP_DRY_RUN || 'true').toLowerCase();
   return {
@@ -18,7 +10,6 @@ function getOrphanCleanupConfig() {
     maxFiles: Math.max(1, Number(process.env.ORPHAN_DOCUMENT_CLEANUP_MAX_FILES || 500)),
     minFileAgeMinutes: Math.max(5, Number(process.env.ORPHAN_DOCUMENT_CLEANUP_MIN_FILE_AGE_MINUTES || DEFAULT_MIN_FILE_AGE_MINUTES)),
     quarantinePrefix: String(process.env.ORPHAN_DOCUMENT_QUARANTINE_PREFIX || 'quarantine/orphan-documents').replace(/^\/+|\/+$/g, ''),
-    successfulStatuses: new Set(getSuccessfulDocumentStatuses()),
   };
 }
 
@@ -28,15 +19,15 @@ function parseDocumentStoragePath(path = '') {
   return { companyId: match[1], documentId: match[2] };
 }
 
-async function documentHasSuccessfulMetadata({ db, companyId, documentId, successfulStatuses }) {
+async function documentHasValidMetadata({ db, companyId, documentId }) {
   const snap = await db.collection('documents').doc(documentId).get();
   if (!snap.exists) return false;
   const data = snap.data() || {};
-  return data.companyId === companyId && successfulStatuses.has(String(data.status || ''));
+  return data.companyId === companyId;
 }
 
 async function cleanupOrphanDocumentStorageHandler(_event = {}) {
-  const { dryRun, maxFiles, minFileAgeMinutes, quarantinePrefix, successfulStatuses } = getOrphanCleanupConfig();
+  const { dryRun, maxFiles, minFileAgeMinutes, quarantinePrefix } = getOrphanCleanupConfig();
   const db = admin.firestore();
   const bucket = admin.storage().bucket();
   const result = { scanned: 0, quarantined: 0, skipped: 0, dryRun };
@@ -62,7 +53,17 @@ async function cleanupOrphanDocumentStorageHandler(_event = {}) {
         continue;
       }
 
-      const hasMetadata = await documentHasSuccessfulMetadata({ db, ...parsed, successfulStatuses });
+      let hasMetadata;
+      try {
+        hasMetadata = await documentHasValidMetadata({ db, ...parsed });
+      } catch (error) {
+        console.error(JSON.stringify({
+          eventName: 'orphan_document_storage_metadata_lookup_failed',
+          errorName: String(error?.name || 'Error'),
+          errorCode: String(error?.code || 'unknown'),
+        }));
+        throw error;
+      }
       if (hasMetadata) {
         result.skipped += 1;
         continue;
@@ -86,5 +87,5 @@ module.exports = {
   cleanupOrphanDocumentStorageHandler,
   parseDocumentStoragePath,
   getOrphanCleanupConfig,
-  documentHasSuccessfulMetadata,
+  documentHasValidMetadata,
 };

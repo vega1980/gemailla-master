@@ -3,8 +3,12 @@ const crypto = require('node:crypto');
 const { fail } = require('../policies/httpPolicy');
 
 const ACTIVE_STATUSES = new Set(['active', 'activo']);
-const MANAGER_ROLES = new Set(['owner', 'director', 'admin']);
 const ALLOWED_INVITE_ROLES = new Set(['director', 'admin', 'editor', 'viewer', 'invitado']);
+const ASSIGNABLE_ROLES_BY_ACTOR = Object.freeze({
+  owner: new Set(['director', 'admin', 'editor', 'viewer', 'invitado']),
+  director: new Set(['admin', 'editor', 'viewer', 'invitado']),
+  admin: new Set(['editor', 'viewer', 'invitado']),
+});
 const DEFAULT_INVITATION_TTL_HOURS = 72;
 
 function getBearerToken(req) {
@@ -95,11 +99,24 @@ async function assertCanManageCompany({ db, companyId, user }) {
   if (!membershipSnap.exists) fail(403, 'No tienes permisos para invitar miembros.');
   const membership = membershipSnap.data() || {};
   const role = String(membership.role || '').toLowerCase();
-  if (membership.companyId !== companyId || membership.userUid !== user.uid || !ACTIVE_STATUSES.has(String(membership.status || '').toLowerCase()) || !MANAGER_ROLES.has(role)) {
+  const effectiveOwnerUid = company.ownerUid || company.createdBy;
+  if (
+    membership.companyId !== companyId
+    || membership.userUid !== user.uid
+    || !ACTIVE_STATUSES.has(String(membership.status || '').toLowerCase())
+    || !ASSIGNABLE_ROLES_BY_ACTOR[role]
+  ) {
+    fail(403, 'No tienes permisos para invitar miembros.');
+  }
+  if (role === 'owner' && effectiveOwnerUid !== user.uid) {
     fail(403, 'No tienes permisos para invitar miembros.');
   }
 
   return { role, company };
+}
+
+function assertCanAssignInviteRole(actorRole, inviteRole) {
+  if (!ASSIGNABLE_ROLES_BY_ACTOR[actorRole]?.has(inviteRole)) fail(403, 'No tienes permisos para asignar este rol.');
 }
 
 async function inviteCompanyMemberHandler(req, res) {
@@ -114,7 +131,8 @@ async function inviteCompanyMemberHandler(req, res) {
     if (!companyId) fail(400, 'companyId es obligatorio.');
     if (!email || !email.includes('@')) fail(400, 'Email de invitado inválido.');
 
-    await assertCanManageCompany({ db, companyId, user });
+    const actor = await assertCanManageCompany({ db, companyId, user });
+    assertCanAssignInviteRole(actor.role, role);
 
     const nowDate = new Date();
     const now = nowDate.toISOString();
@@ -185,32 +203,59 @@ async function acceptCompanyInvitationHandler(req, res) {
         fail(403, 'La invitación pertenece a otro correo.');
       }
 
+      const invitationRole = String(invitation.role || '').trim().toLowerCase();
+      if (!ALLOWED_INVITE_ROLES.has(invitationRole)) fail(409, 'La invitación contiene un rol inválido.');
+
       const membershipId = `${invitation.companyId}_${user.uid}`;
       const membershipRef = db.collection('companyMembers').doc(membershipId);
       const membershipSnap = await transaction.get(membershipRef);
+      const now = new Date().toISOString();
+      let effectiveRole = invitationRole;
+      let membershipCreate = null;
+      let membershipUpdate = null;
+
       if (!membershipSnap.exists) {
-        const now = new Date().toISOString();
-        transaction.set(membershipRef, {
+        membershipCreate = {
           companyId: invitation.companyId,
           userUid: user.uid,
           userEmail,
           userName: user.name || userEmail,
-          role: invitation.role,
+          role: invitationRole,
           status: 'active',
           invitedByUid: invitation.invitedByUid,
           invitationId,
           acceptedAt: now,
           createdAt: now,
           updatedAt: now,
-        });
+        };
+      } else {
+        const membership = membershipSnap.data() || {};
+        const membershipStatus = String(membership.status || '').trim().toLowerCase();
+        effectiveRole = String(membership.role || '').trim().toLowerCase();
+        if (membership.companyId !== invitation.companyId || membership.userUid !== user.uid) {
+          fail(409, 'La membresía existente no corresponde a esta invitación.');
+        }
+        if (effectiveRole !== invitationRole) fail(409, 'La membresía existente tiene un rol diferente.');
+        if (!ACTIVE_STATUSES.has(membershipStatus) && membershipStatus !== 'pending') {
+          fail(409, 'La membresía existente no puede reactivarse automáticamente.');
+        }
+        membershipUpdate = {
+          status: 'active',
+          invitedByUid: invitation.invitedByUid,
+          invitationId,
+          acceptedAt: now,
+          updatedAt: now,
+        };
       }
+      if (membershipCreate) transaction.set(membershipRef, membershipCreate);
+      if (membershipUpdate) transaction.update(membershipRef, membershipUpdate);
       transaction.update(invitationRef, {
         status: 'accepted',
         acceptedByUid: user.uid,
-        acceptedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        acceptedAt: now,
+        updatedAt: now,
       });
-      return { membershipId, companyId: invitation.companyId, role: invitation.role };
+      return { membershipId, companyId: invitation.companyId, role: effectiveRole };
     });
 
     return res.status(200).json({ success: true, status: 'accepted', ...result });

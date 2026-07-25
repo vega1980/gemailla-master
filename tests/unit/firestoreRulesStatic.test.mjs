@@ -30,16 +30,19 @@ describe('firestore.rules static security invariants', () => {
     assert.match(updateOwnedOrCompany, /companyScopeValid\(request\.resource\.data\)/);
   });
 
-  it('A1: non-owner company managers cannot assign owner or director roles', async () => {
+  it('A1: company membership assignments follow the complete role hierarchy', async () => {
     const src = await readFile(RULES, 'utf8');
     const assignableRoles = extractFunction(src, 'assignableRoles');
     const companyMembers = extractMatchBlock(src, 'companyMembers/\\{memberId\\}');
 
     assert.match(assignableRoles, /isCompanyOwner\(companyId\)/);
-    assert.match(assignableRoles, /\?\s*\['owner',\s*'director',\s*'admin',\s*'editor',\s*'viewer',\s*'invitado'\]/);
-    assert.match(assignableRoles, /:\s*\['admin',\s*'editor',\s*'viewer',\s*'invitado'\]/);
-    assert.doesNotMatch(assignableRoles, /:\s*\[[^\]]*'owner'/);
-    assert.doesNotMatch(assignableRoles, /:\s*\[[^\]]*'director'/);
+    assert.match(assignableRoles, /\?\s*\['director',\s*'admin',\s*'editor',\s*'viewer',\s*'invitado'\]/);
+    assert.match(assignableRoles, /hasCompanyRole\(companyId,\s*\['director'\]\)/);
+    assert.match(assignableRoles, /\?\s*\['admin',\s*'editor',\s*'viewer',\s*'invitado'\]/);
+    assert.match(assignableRoles, /hasCompanyRole\(companyId,\s*\['admin'\]\)/);
+    assert.match(assignableRoles, /\?\s*\['editor',\s*'viewer',\s*'invitado'\]/);
+    assert.match(assignableRoles, /:\s*\[\]/);
+    assert.doesNotMatch(assignableRoles, /\[[^\]]*'owner'/);
 
     assert.match(companyMembers, /request\.resource\.data\.get\('role',\s*null\)\s+in\s+assignableRoles\(request\.resource\.data\.companyId\)/);
     assert.match(companyMembers, /request\.resource\.data\.get\('role',\s*null\)\s+in\s+assignableRoles\(resource\.data\.companyId\)/);

@@ -38,16 +38,16 @@ cp public/app-config.example.js public/app-config.js
 
 ### Validación automática de variables
 
-Para CI, entornos empresariales locales o pipelines sin intervención humana, valida la configuración antes de compilar o ejecutar pruebas con el script Node incluido. El script falla con código `1` si falta alguna variable obligatoria, si conserva placeholders como `TU_*` o si se intenta exponer `VITE_OPENAI_API_KEY` en el frontend; no muestra prompts interactivos. Además, `npm run validate:secrets` revisa archivos versionados para bloquear claves API hardcodeadas.
+Para CI, entornos empresariales locales o pipelines sin intervención humana, valida la configuración antes de compilar o ejecutar pruebas con el script Node incluido. El script falla con código `1` si falta alguna variable obligatoria, si conserva placeholders como `TU_*` o si se intenta exponer variables locales de OpenAI en el frontend o backend; no muestra prompts interactivos. Además, `npm run validate:secrets` revisa archivos versionados para bloquear claves API hardcodeadas.
 
 ```bash
 npm run validate:env          # frontend: VITE_FIREBASE_*
-npm run validate:env:functions # backend IA: OPENAI_API_KEY
+npm run validate:env:functions # backend IA: Vertex por env o runtimeConfig/ai
 npm run validate:env:all      # frontend + backend
 npm run validate:secrets      # bloquea claves API hardcodeadas en Git
 ```
 
-El script lee variables del entorno, `.env` y `.env.local`, por lo que puede usarse como paso previo en CI, por ejemplo `npm run validate:env && npm run build`. En workflows de pull request usa un valor dummy sin formato de clave real, por ejemplo `OPENAI_API_KEY=test-openai-key`; reserva el secreto real `OPENAI_API_KEY` para deploys protegidos de backend/Functions.
+El script lee variables del entorno, `.env` y `.env.local`, por lo que puede usarse como paso previo en CI, por ejemplo `npm run validate:env && npm run build`. Si la configuración activa de Functions viene de variables de entorno, define ahí el modelo, `project`, `location` y pricing aprobados de Vertex; si la fuente real es `runtimeConfig/ai`, el validador no exige variables extra.
 
 ## Comandos principales
 
@@ -102,29 +102,30 @@ Este posicionamiento permite comunicar el módulo documental como un ERP "Zero-K
 
 ## IA
 
-No configures claves privadas de OpenAI/LLM en el frontend ni las hardcodees en código, pruebas o documentación. `OPENAI_API_KEY` solo debe existir en backend/Firebase Functions y debe cargarse con variables de entorno/secrets; no declares variantes con prefijo `VITE_` porque Vite puede exponerlas al navegador. El validador falla si detecta `VITE_OPENAI_API_KEY`.
+No configures claves privadas de OpenAI/LLM en el frontend ni las hardcodees en código, pruebas o documentación. El backend usa Vertex AI Gemini con ADC de Firebase Functions; no declares `OPENAI_API_KEY`, `OPENAI_MODEL` ni variantes con prefijo `VITE_` porque el validador las bloquea.
 
-El repositorio incluye un backend real en `functions/` con Firebase Cloud Functions. La app usa exclusivamente rutas relativas same-origin gestionadas por Firebase Hosting: `/api/ai` para IA y `/api/functions` para funciones internas. Firebase Hosting reescribe esas rutas hacia el backend correspondiente, sin exponer endpoints configurables en el navegador. La función `ai` valida un token Firebase Auth, limita el tamaño del prompt y llama a OpenAI desde servidor.
+El repositorio incluye un backend real en `functions/` con Firebase Cloud Functions. La app usa exclusivamente rutas relativas same-origin gestionadas por Firebase Hosting: `/api/ai` para IA y `/api/functions` para funciones internas. Firebase Hosting reescribe esas rutas hacia el backend correspondiente, sin exponer endpoints configurables en el navegador. La función `ai` valida un token Firebase Auth, limita el tamaño del prompt y llama a Vertex AI Gemini desde servidor.
 
 Configuración mínima del backend:
 
 ```bash
 cd functions
 npm install
-firebase functions:secrets:set OPENAI_API_KEY
 firebase deploy --only functions,hosting
 ```
 
-Variables opcionales para Functions:
+Configuración de Vertex para Functions:
 
-- `OPENAI_MODEL`: modelo a usar; por defecto `gpt-4o-mini`.
+- La fuente activa puede ser variables de entorno o `runtimeConfig/ai` en Firestore.
+- Si usas variables de entorno, define como mínimo `VERTEX_GEMINI_MODEL`, `VERTEX_GEMINI_PROJECT` o `GOOGLE_CLOUD_PROJECT`, `VERTEX_GEMINI_LOCATION` y el pricing aprobado `VERTEX_GEMINI_INPUT_PER_1K_TOKENS_USD`, `VERTEX_GEMINI_CACHED_INPUT_PER_1K_TOKENS_USD`, `VERTEX_GEMINI_OUTPUT_PER_1K_TOKENS_USD`, `VERTEX_GEMINI_REASONING_TOKEN_TREATMENT` y, cuando aplique, `VERTEX_GEMINI_REASONING_PER_1K_TOKENS_USD`.
+- `VERTEX_GEMINI_API_VERSION`: opcional; por defecto `v1`.
+- `VERTEX_GEMINI_TIMEOUT_MS`: opcional; si no existe usa `AI_REQUEST_TIMEOUT_MS`.
 - `ALLOWED_ORIGINS`: lista separada por comas para CORS. Si no se configura, solo se permiten `https://gemailla.com`, `https://www.gemailla.com`, `https://gemailla-enterprise.firebaseapp.com` y `https://gemailla-enterprise.web.app`; cualquier otro `Origin` presente recibe `403`.
 - `AI_RATE_LIMIT_WINDOW_MS`: ventana móvil por usuario/empresa para limitar frecuencia; por defecto `60000`.
 - `AI_RATE_LIMIT_MAX_REQUESTS`: máximo de solicitudes por usuario/empresa en la ventana; por defecto `30`.
 - `AI_DAILY_TOKEN_LIMIT`: tokens reservados diarios por empresa en Firestore (`aiUsage/{YYYY-MM-DD_companyId}`); por defecto `50000`.
 - `AI_DAILY_BUDGET_USD`: presupuesto diario estimado por empresa; por defecto `5`.
 - `AI_RESERVED_OUTPUT_TOKENS`: reserva de tokens de salida por solicitud; por defecto `1200`.
-- `AI_COST_PER_1K_TOKENS_USD`: coste estimado usado para presupuesto diario; por defecto `0.002`.
 - `ALLOW_UNAUTHENTICATED_AI=true`: solo para emuladores/desarrollo local sin sesión Firebase.
 
 Las funciones HTTP validan CORS antes de procesar la solicitud, pero CORS no es un control de autenticación: clientes no-navegador como `curl`, scripts o server-to-server pueden omitir el header `Origin` y no reciben `Access-Control-Allow-Origin`. La barrera primaria sigue siendo exigir token Firebase Auth `Bearer`, validar acceso a `companyId`/rol/documentos y registrar límites en Firestore por usuario/empresa (`aiRateLimits`) y por empresa/día (`aiUsage`).

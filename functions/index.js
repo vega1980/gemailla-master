@@ -2,11 +2,9 @@ const admin = require('firebase-admin');
 const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onDocumentWritten } = require('firebase-functions/v2/firestore');
-const { defineSecret } = require('firebase-functions/params');
 
 admin.initializeApp();
 
-const openAiApiKey = defineSecret('OPENAI_API_KEY');
 const aiExports = require('./handlers/aiHandler');
 const { syncCompanyClaimsHandler } = require('./handlers/syncCompanyClaimsHandler');
 const { functionsRouterHandler } = require('./handlers/functionsRouter');
@@ -16,7 +14,7 @@ const { acceptCompanyInvitationHandler, inviteCompanyMemberHandler } = require('
 const { aggregateCompanyMetricsOnWrite } = require('./handlers/companyMetricsAggregationHandler');
 const { handleCorsPolicy } = require('./policies/httpPolicy');
 
-exports.ai = onRequest({ cors: false, secrets: [openAiApiKey], timeoutSeconds: 120, memory: '512MiB' }, aiExports.aiHandler);
+exports.ai = onRequest({ cors: false, timeoutSeconds: 120, memory: '512MiB' }, aiExports.aiHandler);
 exports.syncCompanyClaims = onRequest({ cors: false }, (req, res) => {
   if (handleCorsPolicy(req, res)) return;
   return syncCompanyClaimsHandler(req, res);

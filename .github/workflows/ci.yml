@@ -19,9 +19,14 @@ jobs:
       VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET || 'demo-gemailla-ci.appspot.com' }}
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890' }}
       VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID || '1:1234567890:web:ci' }}
-      # CI validates shape/presence only. Protected deploy workflows should use
-      # `${{ secrets.OPENAI_API_KEY }}` in backend/Firebase Functions steps.
-      OPENAI_API_KEY: sk-test
+      VERTEX_GEMINI_MODEL: gemini-3.6-flash
+      GOOGLE_CLOUD_PROJECT: demo-gemailla-ci
+      VERTEX_GEMINI_LOCATION: global
+      VERTEX_GEMINI_INPUT_PER_1K_TOKENS_USD: '0.1'
+      VERTEX_GEMINI_CACHED_INPUT_PER_1K_TOKENS_USD: '0.02'
+      VERTEX_GEMINI_OUTPUT_PER_1K_TOKENS_USD: '0.4'
+      VERTEX_GEMINI_REASONING_TOKEN_TREATMENT: billable
+      VERTEX_GEMINI_REASONING_PER_1K_TOKENS_USD: '0.3'
     steps:
       - name: Checkout
         uses: actions/checkout@v4

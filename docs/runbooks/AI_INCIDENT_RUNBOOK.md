@@ -22,8 +22,8 @@
 
 ## Diagnóstico
 
-1. Validar que `OPENAI_API_KEY` esté configurada y vigente.
-2. Revisar `status` de `openai_request_failed` y `ai_request_failed`.
+1. Validar que la configuración activa de Vertex Gemini esté completa en entorno o `runtimeConfig/ai` y que Functions tenga ADC/permisos vigentes.
+2. Revisar `status` de `ai_request_failed` y los errores del adaptador/SDK de Vertex.
 3. Comparar contra la release anterior usando `gitSha` y `buildId`.
 4. Si el error es 401/403, validar tokens Firebase y reglas CORS.
 5. Si el error es 429/5xx, activar degradación y comunicar latencia/proveedor.
@@ -31,7 +31,7 @@
 ## Mitigación
 
 - Para SEV1/SEV2, pausar despliegues y ejecutar checklist de rollback.
-- Si la clave falta, restaurar secreto `OPENAI_API_KEY` y redeploy de Functions.
+- Si falta configuración o permisos ADC, restaurar la configuración aprobada de Vertex Gemini y redeploy de Functions.
 - Si el proveedor está degradado, bajar uso, limitar prompts y activar mensaje de IA no disponible.
 
 ## Cierre
