@@ -18,23 +18,25 @@ Repositorio maestro unificado de GEMAILLA AI: aplicación web estática React/Vi
 - Firebase CLI
 - Java disponible si vas a ejecutar los emuladores de Firestore/Storage
 
+## Estado del repositorio
+
+A fecha del 26 de julio de 2026, el repositorio tiene **0 issues abiertos** y **29 pull requests abiertos**. Los pull requests no se contabilizan como issues del proyecto.
+
 ## Configuración local
 
 1. Instala dependencias:
 
 ```bash
-npm install
+npm ci
 ```
 
-2. Opcionalmente crea la configuración runtime local a partir del ejemplo:
+2. Crea la configuración local a partir del ejemplo:
 
 ```bash
-cp public/app-config.example.js public/app-config.js
+cp .env.example .env.local
 ```
 
-3. Edita `public/app-config.js` con los valores del proyecto Firebase de desarrollo si no usarás variables `VITE_FIREBASE_*`. Este archivo no debe versionarse; cada entorno puede generar su propia configuración. Si falta, la app arranca con defaults seguros y usa las variables de entorno disponibles.
-
-> Las variables `VITE_FIREBASE_*` tienen prioridad sobre `window.GEMAILLA_FIREBASE_CONFIG`.
+3. Edita `.env.local` con los valores `VITE_FIREBASE_*` del proyecto Firebase de desarrollo. El archivo `public/app-config.js` no forma parte del repositorio ni es necesario para la configuración local.
 
 ### Validación automática de variables
 
@@ -63,6 +65,17 @@ npm run deploy:hosting
 npm run rules:deploy
 ```
 
+### Puertos de los emuladores
+
+`npm run serve` inicia los servicios locales en los puertos definidos en `firebase.json`:
+
+| Servicio | Puerto |
+| --- | ---: |
+| Hosting | `5000` |
+| Firestore | `8080` |
+| Auth | `9099` |
+| Storage | `9199` |
+
 > Nota de entorno: si `npm run test:rules:emulators` falla antes de ejecutar las pruebas con `download failed, status 403: Forbidden` al descargar el JAR del emulador (`cloud-firestore-emulator`), trátalo como un bloqueo de red/autenticación del entorno de Firebase CLI, no como un fallo de reglas. Reintenta en un entorno con acceso a la descarga del emulador o con el artefacto cacheado.
 
 
@@ -81,7 +94,7 @@ src/infrastructure/firebase/      # repositorios, colecciones, normalización y 
 src/api/firebaseClient.js         # fachada pública de compatibilidad
 ```
 
-Esta convención describe la dirección de la migración modular, pero la arquitectura aún es incremental: parte de la lógica heredada sigue en `src/pages`, `src/lib` y `src/features`. Desde el 2026-07-03, los imports hacia módulos deben usar el alias canónico `@modules/<dominio>/...`; no se aceptan nuevos shims que reexporten implementaciones desde `src/pages`, `src/lib` o la raíz de un módulo. La fecha límite para eliminar los shims heredados restantes en `src/pages` y `src/lib` es el 2026-08-31; cualquier excepción debe registrarse en el plan de migración con owner, reemplazo canónico y criterio de eliminación.
+Las pantallas enrutables viven en `src/modules/<dominio>/pages`; `src/pages` ya no existe. Los imports hacia módulos deben usar el alias canónico `@modules/<dominio>/...` y no se aceptan shims que reexporten implementaciones desde ubicaciones heredadas, `src/lib` o la raíz de un módulo.
 
 ## Arquitectura de documentos
 
@@ -110,7 +123,7 @@ Configuración mínima del backend:
 
 ```bash
 cd functions
-npm install
+npm ci
 firebase deploy --only functions,hosting
 ```
 
