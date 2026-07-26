@@ -34,7 +34,7 @@ const CATEGORY_LABELS = {
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_LABELS);
 
-export default function BudgetPlanner({ transactions, monthlyData }) {
+export default function BudgetPlanner({ transactions, monthlyData, company }) {
   // Build budget from average of last 3 months
   const suggestedBudget = useMemo(() => {
     const last3 = monthlyData.slice(-3);

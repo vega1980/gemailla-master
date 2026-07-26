@@ -9,7 +9,7 @@ const riskConfig = {
   bajo: { color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', bar: 'bg-green-500', label: 'RIESGO BAJO' },
 };
 
-export default function ChurnPredictor({ subscriptions, transactions }) {
+export default function ChurnPredictor({ subscriptions, transactions, company }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 

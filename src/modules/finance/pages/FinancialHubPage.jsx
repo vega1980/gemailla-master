@@ -99,7 +99,7 @@ export default function FinancialHub() {
         </TabsContent>
 
         <TabsContent value="budget">
-          <BudgetPlanner transactions={transactions} monthlyData={monthlyData} />
+          <BudgetPlanner transactions={transactions} monthlyData={monthlyData} company={activeCompany} />
         </TabsContent>
       </Tabs>
     </div>

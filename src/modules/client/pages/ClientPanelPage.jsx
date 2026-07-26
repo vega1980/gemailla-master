@@ -70,11 +70,11 @@ export default function ClientPanel() {
         </TabsContent>
 
         <TabsContent value="alerts">
-          <StockAlerts transactions={transactions} monthlyData={monthlyData} />
+          <StockAlerts transactions={transactions} monthlyData={monthlyData} company={activeCompany} />
         </TabsContent>
 
         <TabsContent value="churn">
-          <ChurnPanel subscriptions={subscriptions} transactions={transactions} />
+          <ChurnPanel subscriptions={subscriptions} transactions={transactions} company={activeCompany} />
         </TabsContent>
 
         <TabsContent value="plan">

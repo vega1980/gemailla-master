@@ -21,7 +21,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-export default function DemandForecast({ transactions, monthlyData }) {
+export default function DemandForecast({ transactions, monthlyData, company }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 

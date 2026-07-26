@@ -12,7 +12,7 @@ const riskConfig = {
   bajo: { color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30', bar: 'bg-emerald-500', badge: 'bg-emerald-500 text-white' },
 };
 
-export default function ChurnPanel({ subscriptions, transactions }) {
+export default function ChurnPanel({ subscriptions, transactions, company }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 

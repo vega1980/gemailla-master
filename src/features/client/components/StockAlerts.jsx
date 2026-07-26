@@ -7,7 +7,7 @@ import { format, subMonths } from 'date-fns';
 import { askLLM } from '@modules/ai/services/aiService';
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
-export default function StockAlerts({ transactions, monthlyData }) {
+export default function StockAlerts({ transactions, monthlyData, company }) {
   const [alerts, setAlerts] = useState(null);
   const [loading, setLoading] = useState(false);
 

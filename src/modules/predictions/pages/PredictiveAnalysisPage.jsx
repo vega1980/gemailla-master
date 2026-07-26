@@ -69,19 +69,19 @@ export default function PredictiveAnalysis() {
           </TabsList>
 
           <TabsContent value="forecast">
-            <DemandForecast transactions={transactions} monthlyData={monthlyData} />
+            <DemandForecast transactions={transactions} monthlyData={monthlyData} company={activeCompany} />
           </TabsContent>
 
           <TabsContent value="anomalies">
-            <AnomalyDetector transactions={transactions} monthlyData={monthlyData} />
+            <AnomalyDetector transactions={transactions} monthlyData={monthlyData} company={activeCompany} />
           </TabsContent>
 
           <TabsContent value="churn">
-            <ChurnPredictor subscriptions={subscriptions} transactions={transactions} />
+            <ChurnPredictor subscriptions={subscriptions} transactions={transactions} company={activeCompany} />
           </TabsContent>
 
           <TabsContent value="whatif">
-            <WhatIfAdvanced transactions={transactions} monthlyData={monthlyData} />
+            <WhatIfAdvanced transactions={transactions} monthlyData={monthlyData} company={activeCompany} />
           </TabsContent>
         </Tabs>
       </PredictionGate>
