@@ -7,6 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [isAuthStateResolved, setIsAuthStateResolved] = useState(false);
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
@@ -15,11 +16,13 @@ export const AuthProvider = ({ children }) => {
       setUser(domainUser);
       setIsAuthenticated(Boolean(domainUser));
       setIsLoadingAuth(false);
+      setIsAuthStateResolved(true);
     }, (error) => {
       setUser(null);
       setIsAuthenticated(false);
       setAuthError({ type: 'auth_error', message: error?.message || 'No se pudo validar la sesión.' });
       setIsLoadingAuth(false);
+      setIsAuthStateResolved(true);
     });
 
     return () => unsubscribe();
@@ -41,10 +44,11 @@ export const AuthProvider = ({ children }) => {
     user,
     isAuthenticated,
     isLoadingAuth,
+    isAuthStateResolved,
     authError,
     login,
     logout,
-  }), [authError, isAuthenticated, isLoadingAuth, login, logout, user]);
+  }), [authError, isAuthenticated, isAuthStateResolved, isLoadingAuth, login, logout, user]);
 
   return (
     <AuthContext.Provider value={value}>

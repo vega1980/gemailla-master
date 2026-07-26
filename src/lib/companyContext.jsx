@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { getSavedActiveCompanyId, saveActiveCompanyId } from '@/features/companies/services/activeCompanyStorage';
 import { loadCompanyContextData } from '@/features/companies/services/companyMembershipService';
@@ -32,7 +32,8 @@ export function CompanyProvider({ children }) {
   const operationCountRef = useRef(0);
   const latestSessionMetricsRef = useRef({ companiesLoaded: 0 });
   const userContextRef = useRef({});
-  const previousUserIdRef = useRef(user?.uid || user?.id || '');
+  const sessionIdRef = useRef(user?.uid || user?.id || '');
+  const activeRequestRef = useRef(null);
 
   const flushProviderSessionMetrics = useCallback(() => {
     const durationMs = Math.round(getNowMs() - providerStartTimeRef.current);
@@ -43,6 +44,26 @@ export function CompanyProvider({ children }) {
       companiesLoaded: latestSessionMetricsRef.current.companiesLoaded,
     });
   }, []);
+
+  // Layout cleanup guarantees that tenant data is gone before another session can paint.
+  useLayoutEffect(() => {
+    const sessionId = user?.uid || user?.id || '';
+    if (sessionIdRef.current !== sessionId) {
+      activeRequestRef.current?.abort();
+      flushProviderSessionMetrics();
+      sessionIdRef.current = sessionId;
+      pageCorrelationIdRef.current = getScopedCorrelationId(CorrelationScope.PAGE);
+      registerTrace(pageCorrelationIdRef.current, null, 'CompanyProvider');
+      providerStartTimeRef.current = getNowMs();
+      operationCountRef.current = 0;
+      latestSessionMetricsRef.current = { companiesLoaded: 0 };
+      userContextRef.current = {};
+      setCompanies([]);
+      setActiveCompany(null);
+      setMemberships([]);
+      setLoading(Boolean(sessionId));
+    }
+  }, [flushProviderSessionMetrics, user]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -67,22 +88,6 @@ export function CompanyProvider({ children }) {
     latestSessionMetricsRef.current = { companiesLoaded: companies.length };
   }, [companies.length, userContext]);
 
-  useEffect(() => {
-    const currentUserId = user?.uid || user?.id || '';
-    const previousUserId = previousUserIdRef.current;
-
-    if (!currentUserId && previousUserId) {
-      flushProviderSessionMetrics();
-      pageCorrelationIdRef.current = getScopedCorrelationId(CorrelationScope.PAGE);
-      registerTrace(pageCorrelationIdRef.current, null, 'CompanyProvider');
-      providerStartTimeRef.current = getNowMs();
-      operationCountRef.current = 0;
-      latestSessionMetricsRef.current = { companiesLoaded: 0 };
-    }
-
-    previousUserIdRef.current = currentUserId;
-  }, [flushProviderSessionMetrics, user]);
-
   const loadCompanies = useCallback(async (options = {}) => {
     if (!user) {
       setCompanies([]);
@@ -93,6 +98,7 @@ export function CompanyProvider({ children }) {
     }
 
     const { signal } = options;
+    const requestSessionId = user?.uid || user?.id || '';
     const correlationId = ensureCorrelationId(options.correlationId || pageCorrelationIdRef.current, CorrelationScope.PAGE);
     const parentCorrelationId = options.parentCorrelationId;
     operationCountRef.current += 1;
@@ -111,7 +117,7 @@ export function CompanyProvider({ children }) {
         parentCorrelationId,
       });
 
-      if (!mountedRef.current || signal?.aborted) return;
+      if (!mountedRef.current || signal?.aborted || sessionIdRef.current !== requestSessionId) return;
       setMemberships(members);
       setCompanies(validCompanies);
 
@@ -120,23 +126,25 @@ export function CompanyProvider({ children }) {
       setActiveCompany(saved || validCompanies[0] || null);
     } catch (error) {
       console.error('Error loading companies:', error);
-      if (!mountedRef.current || signal?.aborted) return;
+      if (!mountedRef.current || signal?.aborted || sessionIdRef.current !== requestSessionId) return;
       setCompanies([]);
       setActiveCompany(null);
       setMemberships([]);
     } finally {
-      if (mountedRef.current && !signal?.aborted) setLoading(false);
+      if (mountedRef.current && !signal?.aborted && sessionIdRef.current === requestSessionId) setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
     const abortController = new AbortController();
+    activeRequestRef.current = abortController;
     loadCompanies({
       signal: abortController.signal,
       correlationId: pageCorrelationIdRef.current,
     });
     return () => {
       abortController.abort();
+      if (activeRequestRef.current === abortController) activeRequestRef.current = null;
     };
   }, [loadCompanies]);
 

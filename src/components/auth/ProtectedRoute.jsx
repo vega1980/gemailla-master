@@ -7,10 +7,13 @@ import AuthErrorPage from '@/components/auth/AuthErrorPage';
 import LoadingState from '@/components/shared/LoadingState';
 
 export default function ProtectedRoute() {
-  const { isAuthenticated, isLoadingAuth, authError } = useAuth();
+  const { isAuthenticated, isAuthStateResolved, authError } = useAuth();
   const location = useLocation();
 
-  if (isLoadingAuth) return <LoadingState label="Cargando GEMAILLA AI..." size="md" variant="fullscreen" />;
+  // No private provider may mount until Firebase has emitted its first auth state.
+  if (isAuthStateResolved !== true) {
+    return <LoadingState label="Cargando GEMAILLA AI..." size="md" variant="fullscreen" />;
+  }
 
   if (authError?.type === 'user_not_registered') return <UserNotRegisteredError />;
 
