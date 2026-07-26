@@ -13,7 +13,7 @@ Repositorio maestro unificado de GEMAILLA AI: aplicación web estática React/Vi
 
 ## Requisitos
 
-- Node.js >= 18.19.0
+- Node.js >= 22 <23
 - npm
 - Firebase CLI
 - Java disponible si vas a ejecutar los emuladores de Firestore/Storage
@@ -28,6 +28,13 @@ A fecha del 26 de julio de 2026, el repositorio tiene **0 issues abiertos** y **
 
 ```bash
 npm ci
+```
+
+Instala de forma explícita las dependencias aisladas de Cloud Functions
+(incluido `@google/genai`):
+
+```bash
+npm --prefix functions ci
 ```
 
 2. Crea la configuración local a partir del ejemplo:
