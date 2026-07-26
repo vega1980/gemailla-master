@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/app/providers/AuthProvider';
 
@@ -40,6 +40,18 @@ export function SubscriptionProvider({ children }) {
   const [predictionCount, setPredictionCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
+  const sessionIdRef = useRef(user?.uid || user?.id || user?.email || '');
+
+  // Purge plan entitlements before paint whenever the authenticated identity changes.
+  useLayoutEffect(() => {
+    const sessionId = user?.uid || user?.id || user?.email || '';
+    if (sessionIdRef.current !== sessionId) {
+      sessionIdRef.current = sessionId;
+      setSubscription(null);
+      setPredictionCount(0);
+      setLoading(Boolean(sessionId));
+    }
+  }, [user]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -50,6 +62,7 @@ export function SubscriptionProvider({ children }) {
   }, []);
 
   const loadSubscription = useCallback(async () => {
+    const requestSessionId = user?.uid || user?.id || user?.email || '';
     setLoading(true);
     try {
       const userUid = user?.uid || user?.id;
@@ -69,7 +82,7 @@ export function SubscriptionProvider({ children }) {
         if (sub?.id) subsById.set(sub.id, sub);
       });
       const subs = Array.from(subsById.values());
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || sessionIdRef.current !== requestSessionId) return;
       setSubscription(subs[0] || null);
       const thisMonth = new Date().toISOString().slice(0, 7);
       const monthLogs = logs.filter(l => l.fecha_generacion?.startsWith(thisMonth));
@@ -77,7 +90,7 @@ export function SubscriptionProvider({ children }) {
     } catch (error) {
       console.error('Error loading subscription:', error);
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (mountedRef.current && sessionIdRef.current === requestSessionId) setLoading(false);
     }
   }, [user]);
 
@@ -103,22 +116,26 @@ export function SubscriptionProvider({ children }) {
 
   const logPrediction = useCallback(async (companyId, tipo = 'general', resultado = '') => {
     if (!canUsePredictions) return false;
+    const requestSessionId = user?.uid || user?.id || user?.email || '';
+    const requestUserEmail = user?.email || '';
+    if (!requestSessionId || sessionIdRef.current !== requestSessionId) return false;
     try {
       await firebase.entities.PredictionLog.create({
         companyId: companyId,
-        userEmail: user?.email || '',
+        userEmail: requestUserEmail,
         fecha_generacion: new Date().toISOString(),
         tipo_prediccion: tipo,
         resultado_ia: resultado.slice(0, 500),
         plan_al_momento: plan,
       });
-      if (mountedRef.current) setPredictionCount(c => c + 1);
+      if (!mountedRef.current || sessionIdRef.current !== requestSessionId) return false;
+      setPredictionCount(c => c + 1);
       return true;
     } catch (error) {
       console.error('Error logging prediction:', error);
       return false;
     }
-  }, [canUsePredictions, plan, user?.email]);
+  }, [canUsePredictions, plan, user]);
 
   const value = useMemo(() => ({
     subscription,
