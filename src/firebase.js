@@ -56,7 +56,7 @@ const missingConfigKeys = requiredConfigKeys.filter((key) => !firebaseConfig[key
 if (missingConfigKeys.length > 0) {
   throw new Error(
     `Configuración de Firebase incompleta. Faltan: ${missingConfigKeys.join(', ')}. `
-    + 'Define variables VITE_FIREBASE_* o genera public/app-config.js con valores reales.',
+    + 'Define las variables VITE_FIREBASE_* con valores reales.',
   );
 }
 
