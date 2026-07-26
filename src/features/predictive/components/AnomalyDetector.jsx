@@ -9,7 +9,7 @@ const severityConfig = {
   baja: { color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30', icon: Info, dot: '#3b82f6' },
 };
 
-export default function AnomalyDetector({ transactions, monthlyData }) {
+export default function AnomalyDetector({ transactions, monthlyData, company }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 

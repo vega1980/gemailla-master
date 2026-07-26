@@ -57,6 +57,13 @@ export default [
         { ignore: ["cmdk-input-wrapper", "toast-close"] },
       ],
       "react-hooks/rules-of-hooks": "error",
+      "no-restricted-globals": [
+        "error",
+        {
+          name: "company",
+          message: "Recibe la empresa activa explícitamente mediante props o contexto; window.company no contiene la empresa de la aplicación.",
+        },
+      ],
       "no-restricted-syntax": [
         "warn",
         {

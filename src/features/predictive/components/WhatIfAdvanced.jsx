@@ -30,7 +30,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-export default function WhatIfAdvanced({ transactions, monthlyData }) {
+export default function WhatIfAdvanced({ transactions, monthlyData, company }) {
   const [vars, setVars] = useState(() => Object.fromEntries(variables.map(v => [v.key, v.defaultVal])));
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
