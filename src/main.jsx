@@ -29,6 +29,10 @@ async function bootstrap() {
   installGlobalErrorTracking();
   await loadOptionalRuntimeConfig();
 
+  if (String(import.meta.env.VITE_FIREBASE_PROJECT_ID || '').startsWith('demo-')) {
+    window.__gemaillaE2E = await import('@/e2e/firebaseTestHarness.js');
+  }
+
   const { default: App } = await import('@/app/App.jsx');
 
   ReactDOM.createRoot(document.getElementById('root')).render(

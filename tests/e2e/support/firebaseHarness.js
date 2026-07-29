@@ -45,11 +45,8 @@ export function uniqueId(prefix) {
 }
 
 export async function loadHarness(page) {
-  return page.evaluate(async () => {
-    const harness = await import('/src/e2e/firebaseTestHarness.js');
-    window.__gemaillaE2E = harness;
-    return true;
-  });
+  await page.waitForFunction(() => Boolean(window.__gemaillaE2E));
+  return true;
 }
 
 export async function createAndLoginUser(page, { email, password = TEST_PASSWORD, displayName }) {
