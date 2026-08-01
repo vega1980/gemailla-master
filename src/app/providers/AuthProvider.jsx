@@ -1,28 +1,20 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authService } from '@/shared/infrastructure/auth/firebaseAuth';
+import { AUTH_STATES, INITIAL_AUTH_SESSION, resolvedAuthSession } from '@/app/providers/authState';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isAuthStateResolved, setIsAuthStateResolved] = useState(false);
-  const [authError, setAuthError] = useState(null);
+  const [authSession, setAuthSession] = useState(INITIAL_AUTH_SESSION);
 
   useEffect(() => {
     const unsubscribe = authService.subscribeToAuthChanges((domainUser) => {
-      setAuthError(null);
-      setUser(domainUser);
-      setIsAuthenticated(Boolean(domainUser));
-      setIsLoadingAuth(false);
-      setIsAuthStateResolved(true);
+      setAuthSession(resolvedAuthSession(domainUser));
     }, (error) => {
-      setUser(null);
-      setIsAuthenticated(false);
-      setAuthError({ type: 'auth_error', message: error?.message || 'No se pudo validar la sesión.' });
-      setIsLoadingAuth(false);
-      setIsAuthStateResolved(true);
+      setAuthSession(resolvedAuthSession(null, {
+        type: 'auth_error',
+        message: error?.message || 'No se pudo validar la sesión.',
+      }));
     });
 
     return () => unsubscribe();
@@ -31,24 +23,25 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback((email, password) => authService.login(email, password), []);
 
   const logout = useCallback(async (shouldRedirect = true) => {
-    setUser(null);
-    setIsAuthenticated(false);
+    // Close the private tree before waiting for Firebase/network teardown.
+    setAuthSession(resolvedAuthSession(null));
     await authService.logout();
 
     if (shouldRedirect && typeof window !== 'undefined') {
-      window.location.assign('/');
+      window.location.assign('/login');
     }
   }, []);
 
   const value = useMemo(() => ({
-    user,
-    isAuthenticated,
-    isLoadingAuth,
-    isAuthStateResolved,
-    authError,
+    user: authSession.user,
+    authStatus: authSession.status,
+    isAuthenticated: authSession.status === AUTH_STATES.AUTHENTICATED,
+    isLoadingAuth: authSession.status === AUTH_STATES.LOADING,
+    isAuthStateResolved: authSession.status !== AUTH_STATES.LOADING,
+    authError: authSession.error,
     login,
     logout,
-  }), [authError, isAuthenticated, isAuthStateResolved, isLoadingAuth, login, logout, user]);
+  }), [authSession, login, logout]);
 
   return (
     <AuthContext.Provider value={value}>

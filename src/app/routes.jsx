@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { CompanyProvider } from '@/lib/companyContext';
+import AuthRequiredPage from '@/components/auth/AuthRequiredPage';
 
 // Fuente única de rutas de la aplicación: no crear un router paralelo.
 // Las rutas cargan exclusivamente páginas reales publicadas por módulos.
@@ -35,6 +36,10 @@ const HumanResources = lazy(() => import('@modules/hr/pages/HumanResourcesPage')
 
 // Definición de Rutas Públicas
 export const publicRoutes = [
+  {
+    path: '/login',
+    element: <AuthRequiredPage />,
+  },
   {
     path: '/',
     element: (

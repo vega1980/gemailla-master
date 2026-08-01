@@ -15,11 +15,11 @@ test.describe('seguridad de rutas', () => {
     await clearFirebaseEmulators();
   });
 
-  test('usuario anónimo en /dashboard redirige a /', async ({ page }) => {
+  test('usuario anónimo en /dashboard redirige a /login', async ({ page }) => {
     await page.goto('/dashboard');
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Acceso restringido' })).toBeVisible();
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
   });
 
   test('usuario autenticado en / redirige a /dashboard', async ({ page }) => {
@@ -58,8 +58,8 @@ test.describe('seguridad de rutas', () => {
 
     await logoutUser(page);
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Acceso restringido' })).toBeVisible();
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
     await expect(page.getByText(companyName)).toHaveCount(0);
   });
 
