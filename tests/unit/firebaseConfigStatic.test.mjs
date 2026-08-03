@@ -44,4 +44,30 @@ describe('Firebase project and deploy configuration invariants', () => {
     assert.ok(Array.isArray(indexes.indexes));
     assert.ok(Array.isArray(indexes.fieldOverrides));
   });
+
+  it('declares every Firebase service used by local workflows on loopback addresses', async () => {
+    const config = await readJson(FIREBASE_JSON);
+
+    assert.deepEqual(config.emulators.auth, { port: 9099, host: '127.0.0.1' });
+    assert.deepEqual(config.emulators.firestore, { port: 8080, host: '127.0.0.1' });
+    assert.deepEqual(config.emulators.storage, { port: 9199, host: '127.0.0.1' });
+    assert.deepEqual(config.emulators.functions, { port: 5001, host: '127.0.0.1' });
+    assert.deepEqual(config.emulators.hosting, { port: 5000, host: '127.0.0.1' });
+  });
+
+  it('keeps manual and E2E emulator workflows demo-only and complete', async () => {
+    const packageJson = await readJson(new URL('../../package.json', import.meta.url));
+    const expectedOnly = /--only auth,firestore,storage,functions,hosting/;
+
+    assert.match(packageJson.scripts['emulators:start'], expectedOnly);
+    assert.match(packageJson.scripts['emulators:start'], /--project demo-gemailla-local/);
+    assert.match(packageJson.scripts['test:e2e:emulators'], expectedOnly);
+    assert.match(packageJson.scripts['test:e2e:emulators'], /--project demo-gemailla-e2e/);
+    assert.match(packageJson.scripts['test:e2e:emulators'], /PLAYWRIGHT_BASE_URL=http:\/\/127\.0\.0\.1:5000/);
+    assert.match(packageJson.scripts['build:emulators'], /VITE_FIREBASE_PROJECT_ID=demo-gemailla-e2e/);
+    assert.match(packageJson.scripts['emulators:start'], /CLOUDSDK_CONFIG=\/tmp\/gemailla-emulator-cloudsdk/);
+    assert.match(packageJson.scripts['test:e2e:emulators'], /CLOUDSDK_CONFIG=\/tmp\/gemailla-emulator-cloudsdk/);
+    assert.match(packageJson.scripts['emulators:start'], /VERTEX_GEMINI_PROJECT=demo-gemailla-local/);
+    assert.match(packageJson.scripts['test:e2e:emulators'], /VERTEX_GEMINI_PROJECT=demo-gemailla-e2e/);
+  });
 });

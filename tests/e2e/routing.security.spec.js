@@ -19,7 +19,7 @@ test.describe('seguridad de rutas', () => {
     await page.goto('/dashboard');
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Acceso restringido' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
   });
 
   test('usuario autenticado en / redirige a /dashboard', async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe('seguridad de rutas', () => {
     await logoutUser(page);
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Acceso restringido' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
     await expect(page.getByText(companyName)).toHaveCount(0);
   });
 

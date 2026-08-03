@@ -10,9 +10,19 @@ function didClaimRelevantMembershipChange(before = {}, after = {}) {
   return CLAIM_RELEVANT_FIELDS.some((field) => before[field] !== after[field]);
 }
 
-async function revokeMembershipUserRefreshTokens(event = {}) {
+function isMembershipCreation(event = {}, before = {}, after = {}) {
+  const beforeExists = event.data?.before?.exists ?? Object.keys(before).length > 0;
+  const afterExists = event.data?.after?.exists ?? Object.keys(after).length > 0;
+  return !beforeExists && afterExists;
+}
+
+async function revokeMembershipUserRefreshTokens(event = {}, dependencies = {}) {
   const before = event.data?.before?.data?.() || {};
   const after = event.data?.after?.data?.() || {};
+
+  if (isMembershipCreation(event, before, after)) {
+    return { revoked: false, reason: 'membership_created' };
+  }
 
   if (!didClaimRelevantMembershipChange(before, after)) {
     return { revoked: false, reason: 'no_claim_relevant_change' };
@@ -28,7 +38,19 @@ async function revokeMembershipUserRefreshTokens(event = {}) {
     return { revoked: false, reason: 'missing_user_uid' };
   }
 
-  await admin.auth().revokeRefreshTokens(uid);
+  const auth = dependencies.auth || admin.auth();
+  try {
+    await auth.revokeRefreshTokens(uid);
+  } catch (error) {
+    if (error?.code !== 'auth/user-not-found') throw error;
+    console.warn(JSON.stringify({
+      eventName: 'membership_claim_revocation_skipped',
+      reason: 'user_not_found',
+      uid,
+      membershipId: event.params?.memberId || null,
+    }));
+    return { revoked: false, reason: 'user_not_found', uid };
+  }
   console.log(JSON.stringify({
     eventName: 'membership_refresh_tokens_revoked',
     uid,
@@ -46,5 +68,6 @@ async function revokeMembershipUserRefreshTokens(event = {}) {
 module.exports = {
   didClaimRelevantMembershipChange,
   getMembershipUserUid,
+  isMembershipCreation,
   revokeMembershipUserRefreshTokens,
 };

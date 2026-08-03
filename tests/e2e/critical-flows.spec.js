@@ -62,7 +62,7 @@ test.describe('flujos críticos multi-capa', () => {
     const { runId } = await signInOwnerWithCompanies(page);
 
     await page.goto('/documents');
-    await expect(page.getByRole('heading', { name: 'Documentos' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: 'Documentos', exact: true })).toBeVisible({ timeout: 15_000 });
 
     await page.locator('#file-upload').setInputFiles(path.join(fixturesDir, 'sample.pdf'));
     await expect(page.getByText('sample.pdf')).toBeVisible({ timeout: 20_000 });
@@ -172,6 +172,6 @@ test.describe('flujos críticos multi-capa', () => {
     await page.goto('/dashboard');
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'Acceso restringido' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Iniciar sesión' })).toBeVisible();
   });
 });
