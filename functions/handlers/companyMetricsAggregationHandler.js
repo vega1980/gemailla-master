@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { FieldValue: FirestoreFieldValue } = require('firebase-admin/firestore');
 
 const EVENT_COLLECTION = 'companyMetricAggregationEvents';
 const ZERO_METRIC_FIELDS = Object.freeze({
@@ -149,9 +150,9 @@ function withIncrements(values, FieldValue) {
   return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, FieldValue.increment(toNumber(value))]));
 }
 
-async function aggregateCompanyMetricsOnWrite(event = {}) {
+async function aggregateCompanyMetricsOnWrite(event = {}, dependencies = {}) {
   const db = admin.firestore();
-  const FieldValue = admin.firestore.FieldValue;
+  const FieldValue = dependencies.FieldValue || FirestoreFieldValue;
   const eventId = String(event.id || event.eventId || '').trim();
   if (!eventId) return { skipped: true, reason: 'missing_eventId' };
 

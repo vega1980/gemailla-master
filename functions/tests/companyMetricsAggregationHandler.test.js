@@ -50,7 +50,7 @@ function mockAdmin(t, initial = {}) {
   Object.defineProperty(admin, 'firestore', { configurable: true, value: () => firestore });
   admin.firestore.FieldValue = firestore.FieldValue;
   t.after(() => { delete admin.firestore; });
-  return store;
+  return { store, FieldValue: firestore.FieldValue };
 }
 
 function transaction(overrides = {}) {
@@ -166,7 +166,7 @@ test('confirmed company and month changes update both sides', () => {
 });
 
 test('aggregateCompanyMetricsOnWrite applies atomic deltas and ignores duplicate event ids', async (t) => {
-  const store = mockAdmin(t);
+  const { store, FieldValue } = mockAdmin(t);
   const event = {
     id: 'event-1',
     document: 'projects/demo/databases/(default)/documents/transactions/t1',
@@ -176,8 +176,8 @@ test('aggregateCompanyMetricsOnWrite applies atomic deltas and ignores duplicate
     },
   };
 
-  const first = await aggregateCompanyMetricsOnWrite(event);
-  const second = await aggregateCompanyMetricsOnWrite(event);
+  const first = await aggregateCompanyMetricsOnWrite(event, { FieldValue });
+  const second = await aggregateCompanyMetricsOnWrite(event, { FieldValue });
 
   assert.equal(first.skipped, false);
   assert.deepEqual(second, { skipped: true, reason: 'duplicate_event' });
