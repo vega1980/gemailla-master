@@ -89,7 +89,7 @@
     "react-hook-form": "^7.80.0",
     "react-markdown": "^9.0.1",
     "react-resizable-panels": "^2.1.7",
-    "react-router-dom": "^6.26.0",
+    "react-router-dom": "7.18.2",
     "recharts": "^3.8.1",
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.2",
@@ -127,7 +127,7 @@
     "@firebase/util@1.15.1": true,
     "core-js@3.49.0": true,
     "esbuild@0.25.12": true,
-    "protobufjs@7.6.4": true,
-    "re2@1.25.0": true
+    "protobufjs@7.6.5": true,
+    "re2@1.26.1": true
   }
 }
