@@ -29,21 +29,21 @@ import { useCompany } from '@/lib/companyContext';
 const DashboardSparkline = lazy(() => import('@modules/dashboard/components/DashboardCharts').then((module) => ({ default: module.DashboardSparkline })));
 const DashboardRealtimePie = lazy(() => import('@modules/dashboard/components/DashboardCharts').then((module) => ({ default: module.DashboardRealtimePie })));
 
-const GOLD = '#f0d080';
-const DARK_BACKGROUND = '#050505';
-const MUTED_GOLD = '#c5a059';
-const SOFT_GOLD = '#e8c97a';
+const GOLD = '#53f3ff';
+const DARK_BACKGROUND = '#030712';
+const MUTED_GOLD = '#7c3aed';
+const SOFT_GOLD = '#22d3ee';
 
 const PANEL_STYLE = {
-  background: 'linear-gradient(135deg, rgba(197,160,89,0.08) 0%, rgba(197,160,89,0.03) 100%)',
-  border: '1px solid rgba(197,160,89,0.25)',
-  boxShadow: '0 4px 24px rgba(197,160,89,0.1)',
+  background: 'linear-gradient(145deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.72) 55%, rgba(8,47,73,0.45) 100%)',
+  border: '1px solid rgba(83,243,255,0.22)',
+  boxShadow: '0 18px 55px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.04)',
 };
 
 const CARD_STYLE = {
-  background: 'linear-gradient(135deg, rgba(197,160,89,0.08) 0%, rgba(197,160,89,0.02) 100%)',
-  border: '1px solid rgba(197,160,89,0.2)',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+  background: 'linear-gradient(145deg, rgba(15,23,42,0.9) 0%, rgba(15,23,42,0.62) 100%)',
+  border: '1px solid rgba(83,243,255,0.18)',
+  boxShadow: '0 16px 45px rgba(0,0,0,0.42), 0 0 24px rgba(83,243,255,0.04)',
 };
 
 const QUICK_MODULES = [
@@ -154,17 +154,17 @@ function getStreamingAccountingMetrics({ documents, companyMetric }) {
 
 function DashboardHeader({ isAuthenticated, onLoginRequest }) {
   return (
-    <div className="border-b" style={{ borderColor: 'rgba(197,160,89,0.2)' }}>
+    <div className="border-b" style={{ borderColor: 'rgba(83,243,255,0.16)' }}>
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4 flex-1">
           <button className="text-muted-foreground hover:text-foreground" type="button" aria-label="Abrir menú">☰</button>
           <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'rgba(197,160,89,0.5)' }} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'rgba(83,243,255,0.55)' }} />
             <input
               type="text"
               placeholder="Buscar empresas, documentos..."
               className="w-full bg-secondary border pl-10 pr-4 py-2 rounded-lg text-sm"
-              style={{ borderColor: 'rgba(197,160,89,0.2)', color: 'rgba(200,190,170,0.7)' }}
+              style={{ borderColor: 'rgba(83,243,255,0.16)', color: 'rgba(186,230,253,0.7)' }}
             />
           </div>
         </div>
@@ -174,10 +174,10 @@ function DashboardHeader({ isAuthenticated, onLoginRequest }) {
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
           </button>
           <button type="button" aria-label="Abrir ayuda"><HelpCircle className="w-5 h-5 text-muted-foreground" /></button>
-          <div className="flex items-center gap-2 pl-4 border-l" style={{ borderColor: 'rgba(197,160,89,0.2)' }}>
-            <span className="text-sm" style={{ color: 'rgba(232,213,163,0.8)' }}>GEMAILLA IA</span>
+          <div className="flex items-center gap-2 pl-4 border-l" style={{ borderColor: 'rgba(83,243,255,0.16)' }}>
+            <span className="text-sm" style={{ color: 'rgba(224,242,254,0.82)' }}>GEMAILLA IA</span>
             {isAuthenticated ? (
-              <span className="text-xs" style={{ color: '#4caf50' }}>● Conectado</span>
+              <span className="text-xs" style={{ color: '#34d399' }}>● Conectado</span>
             ) : (
               <button
                 type="button"
@@ -219,13 +219,13 @@ function QuickAccessModules({ isAuthenticated, onLoginRequest }) {
             <div
               className="rounded-xl p-3 text-center transition-all duration-300 hover:scale-105"
               style={{
-                background: 'linear-gradient(135deg, rgba(197,160,89,0.1) 0%, rgba(197,160,89,0.05) 100%)',
-                border: '1px solid rgba(197,160,89,0.2)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                background: 'linear-gradient(145deg, rgba(15,23,42,0.86) 0%, rgba(8,47,73,0.55) 100%)',
+                border: '1px solid rgba(83,243,255,0.18)',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.35), 0 0 18px rgba(83,243,255,0.05)',
               }}
             >
               <module.icon className="w-6 h-6 mx-auto mb-2" style={{ color: module.color }} />
-              <p className="text-xs font-semibold" style={{ color: 'rgba(232,213,163,0.9)' }}>{module.label}</p>
+              <p className="text-xs font-semibold" style={{ color: 'rgba(224,242,254,0.92)' }}>{module.label}</p>
             </div>
           </Link>
         ))}
@@ -248,8 +248,8 @@ function StatsCards({ cards, monthlyData }) {
             <DashboardSparkline data={monthlyData} color={card.color} />
           </Suspense>
           <div className="mt-3 flex justify-between items-center text-xs">
-            <span style={{ color: 'rgba(200,190,170,0.5)' }}>Este mes</span>
-            <span style={{ color: '#4caf50' }}>{card.change}</span>
+            <span style={{ color: 'rgba(148,163,184,0.62)' }}>Este mes</span>
+            <span style={{ color: '#34d399' }}>{card.change}</span>
           </div>
         </div>
       ))}
@@ -263,11 +263,11 @@ function StreamingAccountingPanel({ metrics }) {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-2xl">
           <div className="mb-3 flex items-center gap-3">
-            <span className="rounded-full p-2" style={{ background: 'rgba(76,175,80,0.16)', border: '1px solid rgba(76,175,80,0.3)' }}>
-              <DatabaseZap className="h-5 w-5" style={{ color: '#4caf50' }} />
+            <span className="rounded-full p-2" style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)' }}>
+              <DatabaseZap className="h-5 w-5" style={{ color: '#34d399' }} />
             </span>
             <div>
-              <p className="text-xs font-bold uppercase" style={{ color: '#4caf50', letterSpacing: '0.08em' }}>Contabilidad líquida · cero cierres de mes</p>
+              <p className="text-xs font-bold uppercase" style={{ color: '#34d399', letterSpacing: '0.08em' }}>Contabilidad líquida · cero cierres de mes</p>
               <h3 id="streaming-accounting-title" className="text-2xl font-bold" style={{ color: GOLD }}>Balance vivo con datos de hace {metrics.syncLagSeconds}s</h3>
             </div>
           </div>
@@ -283,7 +283,7 @@ function StreamingAccountingPanel({ metrics }) {
             ['Docs seguros', metrics.secureDocuments],
             ['Hoy', metrics.processedToday],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.22)', border: '1px solid rgba(197,160,89,0.18)' }}>
+            <div key={label} className="rounded-xl p-3" style={{ background: 'rgba(2,6,23,0.48)', border: '1px solid rgba(83,243,255,0.14)' }}>
               <p className="text-[11px] uppercase" style={{ color: 'rgba(197,160,89,0.68)' }}>{label}</p>
               <p className="mt-1 text-xl font-bold" style={{ color: SOFT_GOLD }}>{value}</p>
             </div>
@@ -292,10 +292,10 @@ function StreamingAccountingPanel({ metrics }) {
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-4">
         {STREAMING_STAGES.map((stage, index) => (
-          <div key={stage.label} className="rounded-xl p-4" style={{ background: 'rgba(197,160,89,0.08)', border: '1px solid rgba(197,160,89,0.16)' }}>
+          <div key={stage.label} className="rounded-xl p-4" style={{ background: 'rgba(14,116,144,0.10)', border: '1px solid rgba(83,243,255,0.14)' }}>
             <div className="mb-2 flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold" style={{ background: `linear-gradient(135deg, ${GOLD}, ${MUTED_GOLD})`, color: DARK_BACKGROUND }}>{index + 1}</span>
-              <p className="text-sm font-semibold" style={{ color: '#e8d5a3' }}>{stage.label}</p>
+              <p className="text-sm font-semibold" style={{ color: '#e0f2fe' }}>{stage.label}</p>
             </div>
             <p className="text-xs" style={{ color: 'rgba(200,190,170,0.62)' }}>{stage.detail}</p>
           </div>
@@ -318,7 +318,7 @@ function CompaniesPanel({ companies }) {
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
-            <tr style={{ borderBottom: '2px solid rgba(197,160,89,0.3)' }}>
+            <tr style={{ borderBottom: '2px solid rgba(83,243,255,0.22)' }}>
               {['EMPRESA', 'SECTOR', 'ESTADO', 'RIESGO', 'ÚLTIMO ANÁLISIS'].map((heading) => (
                 <th key={heading} className="text-left py-3" style={{ color: GOLD, fontWeight: '600' }}>{heading}</th>
               ))}
@@ -326,12 +326,12 @@ function CompaniesPanel({ companies }) {
           </thead>
           <tbody>
             {companies.slice(0, 4).map((company) => (
-              <tr key={company.id} style={{ borderBottom: '1px solid rgba(197,160,89,0.15)' }}>
-                <td className="py-3 font-semibold" style={{ color: '#e8d5a3' }}>{company.name}</td>
-                <td style={{ color: 'rgba(200,190,170,0.8)' }}>{company.industry || '-'}</td>
+              <tr key={company.id} style={{ borderBottom: '1px solid rgba(83,243,255,0.10)' }}>
+                <td className="py-3 font-semibold" style={{ color: '#e0f2fe' }}>{company.name}</td>
+                <td style={{ color: 'rgba(186,230,253,0.8)' }}>{company.industry || '-'}</td>
                 <td><StatusPill label="Activa" /></td>
                 <td><StatusPill label="Bajo" /></td>
-                <td style={{ color: 'rgba(200,190,170,0.6)' }}>Hoy, 09:15 AM</td>
+                <td style={{ color: 'rgba(148,163,184,0.72)' }}>Hoy, 09:15 AM</td>
               </tr>
             ))}
           </tbody>
@@ -343,7 +343,7 @@ function CompaniesPanel({ companies }) {
 
 function StatusPill({ label }) {
   return (
-    <span className="px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: 'rgba(76,175,80,0.25)', color: '#4caf50', border: '1px solid rgba(76,175,80,0.3)' }}>
+    <span className="px-3 py-1.5 rounded-full text-xs font-semibold" style={{ background: 'rgba(52,211,153,0.14)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)' }}>
       {label}
     </span>
   );
@@ -357,14 +357,14 @@ function RealtimeAnalysisPanel() {
         <Suspense fallback={<ChartFallback height={180} />}>
           <DashboardRealtimePie />
         </Suspense>
-        <p className="text-center text-3xl font-bold mt-3" style={{ color: GOLD, textShadow: '0 0 20px rgba(240,208,128,0.3)' }}>92%</p>
-        <p className="text-xs" style={{ color: 'rgba(200,190,170,0.7)' }}>Tiempo: 00:21:24</p>
+        <p className="text-center text-3xl font-bold mt-3" style={{ color: GOLD, textShadow: '0 0 24px rgba(83,243,255,0.38)' }}>92%</p>
+        <p className="text-xs" style={{ color: 'rgba(186,230,253,0.7)' }}>Tiempo: 00:21:24</p>
       </div>
       <div className="mt-4 space-y-2 text-xs">
         {['Saturación de datos', 'Validación documentaria', 'Análisis financiero'].map((item) => (
           <div key={item} className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4" style={{ color: '#4caf50' }} />
-            <span style={{ color: 'rgba(200,190,170,0.9)' }}>{item}</span>
+            <CheckCircle className="w-4 h-4" style={{ color: '#34d399' }} />
+            <span style={{ color: 'rgba(224,242,254,0.9)' }}>{item}</span>
           </div>
         ))}
       </div>
@@ -381,11 +381,11 @@ function AlertsPanel() {
       </div>
       <div className="space-y-3 text-xs">
         {ALERTS.map((alert) => (
-          <div key={alert.title} className="flex gap-2 p-3 rounded-xl" style={{ background: 'rgba(197,160,89,0.08)', border: '1px solid rgba(197,160,89,0.2)' }}>
+          <div key={alert.title} className="flex gap-2 p-3 rounded-xl" style={{ background: 'rgba(14,116,144,0.10)', border: '1px solid rgba(197,160,89,0.2)' }}>
             <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: alert.type === 'warning' ? '#f44336' : '#2196f3' }} />
             <div>
-              <p className="font-semibold" style={{ color: '#e8d5a3' }}>{alert.title}</p>
-              <p style={{ color: 'rgba(200,190,170,0.6)' }}>{alert.desc}</p>
+              <p className="font-semibold" style={{ color: '#e0f2fe' }}>{alert.title}</p>
+              <p style={{ color: 'rgba(148,163,184,0.72)' }}>{alert.desc}</p>
             </div>
           </div>
         ))}
@@ -403,10 +403,10 @@ function RecentActivityPanel() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 text-xs text-center">
         {RECENT_ACTIVITY.map((item) => (
-          <div key={item.label} className="rounded-xl p-4" style={{ background: 'rgba(197,160,89,0.08)', border: '1px solid rgba(197,160,89,0.15)' }}>
+          <div key={item.label} className="rounded-xl p-4" style={{ background: 'rgba(14,116,144,0.10)', border: '1px solid rgba(83,243,255,0.12)' }}>
             <item.icon className="w-5 h-5 mx-auto mb-2" style={{ color: MUTED_GOLD }} />
-            <p className="font-semibold" style={{ color: '#e8d5a3' }}>{item.label}</p>
-            <p className="text-xs mt-1" style={{ color: 'rgba(200,190,170,0.6)' }}>{item.value}</p>
+            <p className="font-semibold" style={{ color: '#e0f2fe' }}>{item.label}</p>
+            <p className="text-xs mt-1" style={{ color: 'rgba(148,163,184,0.72)' }}>{item.value}</p>
           </div>
         ))}
       </div>
@@ -416,7 +416,7 @@ function RecentActivityPanel() {
 
 function DashboardFooter() {
   return (
-    <footer className="flex justify-between items-center px-6 py-4 border-t text-xs" style={{ borderColor: 'rgba(197,160,89,0.1)', color: 'rgba(200,190,170,0.5)' }}>
+    <footer className="flex justify-between items-center px-6 py-4 border-t text-xs" style={{ borderColor: 'rgba(83,243,255,0.1)', color: 'rgba(148,163,184,0.62)' }}>
       <p>GEMAILLA IA © {new Date().getFullYear()}</p>
       <div className="flex gap-4">
         <span>Última sync: Hoy, 03:15 AM</span>
@@ -454,7 +454,9 @@ export default function Dashboard() {
   if (companyLoading) return <LoadingState variant="screen" style={{ background: DARK_BACKGROUND }} />;
 
   return (
-    <div className="min-h-screen" style={{ background: DARK_BACKGROUND }}>
+    <div className="relative min-h-screen overflow-hidden" style={{ background: DARK_BACKGROUND }}>
+      <div className="pointer-events-none fixed inset-0" aria-hidden="true" style={{ background: 'radial-gradient(circle at 15% 15%, rgba(83,243,255,0.10), transparent 28%), radial-gradient(circle at 85% 10%, rgba(124,58,237,0.13), transparent 30%), linear-gradient(rgba(83,243,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(83,243,255,0.025) 1px, transparent 1px)', backgroundSize: 'auto, auto, 42px 42px, 42px 42px' }} />
+      <div className="relative z-10">
       <DashboardHeader
         isAuthenticated={isAuthenticated}
         onLoginRequest={setLoginDestination}
@@ -476,6 +478,7 @@ export default function Dashboard() {
         <RecentActivityPanel />
       </main>
       <DashboardFooter />
+      </div>
       <DashboardLoginDialog
         open={Boolean(loginDestination)}
         destinationPath={loginDestination}
