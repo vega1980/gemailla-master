@@ -8,11 +8,15 @@ import {
   Line,
   Pie,
   PieChart,
+  Rectangle,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
+
+const DashboardIncomeBar = (props) => <Rectangle {...props} fill="url(#dashboardIncome)" />;
+const DashboardExpensesBar = (props) => <Rectangle {...props} fill="url(#dashboardExpenses)" />;
 
 const formatAxis = (value) => {
   const amount = Number(value) || 0;
@@ -42,12 +46,12 @@ export function DashboardIncomeExpenseChart({ data }) {
           </linearGradient>
         </defs>
         <CartesianGrid stroke="#dbeff1" strokeDasharray="0" vertical={false} />
-        <XAxis dataKey="month" tick={{ fill: '#526777', fontSize: 12 }} axisLine={{ stroke: '#b9dfe3' }} tickLine={false} />
-        <YAxis tickFormatter={formatAxis} tick={{ fill: '#526777', fontSize: 12 }} axisLine={false} tickLine={false} width={44} />
+        <XAxis dataKey="month" interval={0} tick={{ fill: '#526777', fontSize: 12 }} axisLine={{ stroke: '#b9dfe3' }} tickLine={false} />
+        <YAxis tickFormatter={formatAxis} interval={0} tick={{ fill: '#526777', fontSize: 12 }} axisLine={false} tickLine={false} width={44} />
         <Tooltip formatter={(value) => formatMoney(value)} contentStyle={{ borderRadius: 12, border: '1px solid #b9dfe3', boxShadow: '0 10px 25px rgba(11,52,68,0.12)' }} />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
-        <Bar name="Ingresos" dataKey="income" fill="url(#dashboardIncome)" radius={[5, 5, 0, 0]} maxBarSize={30} />
-        <Bar name="Gastos" dataKey="expenses" fill="url(#dashboardExpenses)" radius={[5, 5, 0, 0]} maxBarSize={30} />
+        <Bar name="Ingresos" dataKey="income" fill="#0799a8" shape={<DashboardIncomeBar />} radius={[5, 5, 0, 0]} maxBarSize={30} />
+        <Bar name="Gastos" dataKey="expenses" fill="#d48b09" shape={<DashboardExpensesBar />} radius={[5, 5, 0, 0]} maxBarSize={30} />
         <Line name="Balance" type="monotone" dataKey="balance" stroke="#087f8c" strokeWidth={3} dot={{ r: 4, fill: '#ffffff', stroke: '#087f8c', strokeWidth: 2 }} activeDot={{ r: 6 }} />
       </ComposedChart>
     </ResponsiveContainer>
