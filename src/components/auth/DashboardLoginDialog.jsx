@@ -42,9 +42,8 @@ export default function DashboardLoginDialog({
     >
       <DialogContent className="border-cyan-200 bg-white text-slate-900 shadow-[0_24px_60px_rgba(15,43,58,0.16)] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="gold-title text-2xl">
-            Iniciar sesión
-          </DialogTitle>
+          <img src="/assets/logo-emblem-metallic.png" alt="GEMAILLA IA" className="mx-auto h-20 w-20 object-contain" />
+          <DialogTitle className="text-center font-display text-2xl text-[#12344f]">Iniciar sesión</DialogTitle>
           <DialogDescription className="text-slate-500">
             Accede a los módulos sin salir del Dashboard.
           </DialogDescription>
@@ -79,7 +78,7 @@ export default function DashboardLoginDialog({
           )}
 
           <button
-            className="w-full rounded-lg bg-cyan-700 px-4 py-3 font-bold text-white disabled:opacity-60"
+            className="embossed-button w-full rounded-xl px-4 py-3 font-bold text-white disabled:opacity-60"
             type="submit"
             disabled={isSubmitting}
           >

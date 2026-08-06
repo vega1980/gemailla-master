@@ -30,18 +30,22 @@ export default function AuthRequiredPage() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(8,145,160,0.12),transparent_30%),radial-gradient(circle_at_85%_8%,rgba(180,134,11,0.1),transparent_28%)]" aria-hidden="true" />
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100svh-clamp(2.75rem,9svh,7rem))] w-full max-w-[760px] flex-col items-center justify-start">
-        <img
-          className="h-auto max-h-[34svh] w-[min(72vw,34rem)] shrink-0 object-contain"
-          src="/assets/logo-full.png"
-          alt="Gemailla IA"
-        />
+        <div className="text-center">
+          <img
+            className="mx-auto h-44 w-44 shrink-0 object-contain drop-shadow-[0_12px_14px_rgba(105,67,0,0.28)] sm:h-52 sm:w-52"
+            src="/assets/logo-emblem-metallic.png"
+            alt="Gemailla IA"
+          />
+          <p className="mt-2 font-display text-sm font-bold uppercase tracking-[0.08em] text-[#626c71]">La evolución de la asesoría empresarial</p>
+          <h1 className="metallic-gray-title mt-1 font-display text-4xl font-bold tracking-[0.05em] sm:text-5xl">GEMAILLA IA</h1>
+        </div>
 
         <p className="mt-[clamp(0.75rem,2svh,1.25rem)] text-center text-base font-medium leading-7 text-slate-600 sm:text-lg">
           Inicia sesión con tu correo y contraseña para acceder al panel.
         </p>
 
         <form
-          className="mt-[clamp(1rem,2.75svh,2rem)] w-full max-w-[680px] space-y-4 rounded-2xl border border-cyan-200 bg-white/95 p-5 text-left shadow-[0_24px_60px_rgba(15,43,58,0.10)] backdrop-blur-sm sm:p-7"
+          className="enterprise-panel mt-[clamp(1rem,2.75svh,2rem)] w-full max-w-[680px] space-y-4 rounded-2xl p-5 text-left sm:p-7"
           onSubmit={handleSubmit}
         >
           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-cyan-800" htmlFor="auth-email">
@@ -77,7 +81,7 @@ export default function AuthRequiredPage() {
           )}
 
           <button
-            className="w-full rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-700 px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white shadow-md transition hover:from-cyan-700 hover:to-cyan-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="embossed-button w-full rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-white disabled:cursor-not-allowed disabled:opacity-60"
             type="submit"
             disabled={isSubmitting}
           >

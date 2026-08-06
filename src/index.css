@@ -9,38 +9,38 @@
     --font-sans: 'Inter', sans-serif;
     --font-display: 'Playfair Display', serif;
 
-    --background: 190 42% 98%;
-    --foreground: 201 56% 14%;
+    --background: 187 58% 97%;
+    --foreground: 206 63% 16%;
     --card: 0 0% 100%;
     --card-foreground: 201 56% 14%;
     --popover: 0 0% 100%;
     --popover-foreground: 201 56% 14%;
-    --primary: 186 90% 32%;
+    --primary: 185 88% 31%;
     --primary-foreground: 0 0% 100%;
     --secondary: 188 48% 95%;
     --secondary-foreground: 201 56% 18%;
     --muted: 195 28% 94%;
     --muted-foreground: 199 22% 42%;
-    --accent: 42 68% 49%;
+    --accent: 41 77% 47%;
     --accent-foreground: 201 56% 14%;
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 187 36% 82%;
-    --input: 187 32% 86%;
+    --border: 186 42% 78%;
+    --input: 186 36% 82%;
     --ring: 186 90% 32%;
     --chart-1: 186 90% 32%;
     --chart-2: 42 68% 49%;
     --chart-3: 160 55% 42%;
     --chart-4: 200 65% 48%;
     --chart-5: 280 55% 52%;
-    --radius: 0.6rem;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 201 56% 14%;
-    --sidebar-primary: 186 90% 32%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 188 48% 95%;
-    --sidebar-accent-foreground: 201 56% 14%;
-    --sidebar-border: 187 36% 82%;
+    --radius: 0.8rem;
+    --sidebar-background: 192 100% 10%;
+    --sidebar-foreground: 185 28% 92%;
+    --sidebar-primary: 184 96% 44%;
+    --sidebar-primary-foreground: 192 100% 8%;
+    --sidebar-accent: 190 86% 17%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 41 72% 45%;
     --sidebar-ring: 186 90% 32%;
   }
 
@@ -69,13 +69,13 @@
     --chart-3: 160 55% 42%;
     --chart-4: 200 65% 48%;
     --chart-5: 280 55% 52%;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 201 56% 14%;
-    --sidebar-primary: 186 90% 32%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 188 48% 95%;
-    --sidebar-accent-foreground: 201 56% 14%;
-    --sidebar-border: 187 36% 82%;
+    --sidebar-background: 192 100% 10%;
+    --sidebar-foreground: 185 28% 92%;
+    --sidebar-primary: 184 96% 44%;
+    --sidebar-primary-foreground: 192 100% 8%;
+    --sidebar-accent: 190 86% 17%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 41 72% 45%;
     --sidebar-ring: 186 90% 32%;
   }
 }
@@ -86,17 +86,16 @@
   }
 
   html {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   body {
     @apply bg-background text-foreground font-sans;
     background-image:
-      radial-gradient(circle at 12% 10%, rgba(8, 145, 160, 0.08), transparent 24rem),
-      radial-gradient(circle at 88% 8%, rgba(212, 167, 44, 0.08), transparent 22rem),
-      linear-gradient(rgba(8, 145, 160, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(8, 145, 160, 0.035) 1px, transparent 1px);
-    background-size: auto, auto, 44px 44px, 44px 44px;
+      linear-gradient(rgba(242, 251, 252, 0.88), rgba(242, 251, 252, 0.88)),
+      url('/assets/enterprise-circuit-bg.png');
+    background-position: center top;
+    background-size: cover;
     background-attachment: fixed;
     letter-spacing: 0.01em;
     font-weight: 500;
@@ -128,6 +127,14 @@ button, a, [role="button"] {
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+button, [role="button"] {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+button:not(:disabled):active, [role="button"]:not([aria-disabled="true"]):active {
+  transform: translateY(1px);
 }
 
 svg {
@@ -165,16 +172,25 @@ svg {
 }
 
 .gold-card {
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(8, 145, 160, 0.22);
-  box-shadow: 0 14px 34px rgba(15, 43, 58, 0.09), inset 0 1px 0 rgba(255,255,255,0.9);
+  background: linear-gradient(145deg, rgba(255,255,255,0.99), rgba(246,252,253,0.97));
+  border: 1px solid rgba(201, 151, 22, 0.35);
+  box-shadow: 0 12px 28px rgba(11, 52, 68, 0.12), inset 0 1px 0 rgba(255,255,255,0.95);
 }
 
 .gold-title {
-  background: linear-gradient(135deg, #7f5a00 0%, #d4a72c 48%, #8d6500 100%);
+  background: linear-gradient(120deg, #7b5100 0%, #f5cf58 34%, #ae7410 60%, #f7dc79 82%, #7b5100 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.metallic-gray-title {
+  color: #aeb8bc;
+  background: linear-gradient(180deg, #f1f4f5 0%, #aab4b8 32%, #5c686d 58%, #d4dadd 82%, #657177 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.55));
 }
 
 @keyframes pulse-gold {
@@ -186,12 +202,45 @@ svg {
 }
 
 .app-shell {
-  background: transparent;
+  background:
+    linear-gradient(rgba(242, 251, 252, 0.72), rgba(242, 251, 252, 0.84)),
+    url('/assets/enterprise-circuit-bg.png') center top / cover fixed;
   color: hsl(var(--foreground));
 }
 
 .enterprise-panel {
-  background: rgba(255, 255, 255, 0.96);
+  background: linear-gradient(145deg, rgba(255,255,255,0.99), rgba(247,252,253,0.98));
+  border: 1px solid rgba(8, 145, 160, 0.23);
+  box-shadow: 0 12px 28px rgba(11, 52, 68, 0.12), 0 2px 5px rgba(11, 52, 68, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.enterprise-card {
+  background: linear-gradient(145deg, #ffffff 0%, #f7fcfd 100%);
   border: 1px solid rgba(8, 145, 160, 0.22);
-  box-shadow: 0 16px 40px rgba(15, 43, 58, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 9px 22px rgba(11, 52, 68, 0.12), 0 2px 5px rgba(11, 52, 68, 0.08), inset 0 1px 0 #ffffff;
+}
+
+.enterprise-card:hover {
+  border-color: rgba(198, 145, 12, 0.55);
+  box-shadow: 0 14px 30px rgba(11, 52, 68, 0.16), 0 4px 10px rgba(198, 145, 12, 0.1), inset 0 1px 0 #ffffff;
+  transform: translateY(-2px);
+}
+
+.embossed-button {
+  border: 1px solid rgba(218, 169, 42, 0.72);
+  background: linear-gradient(145deg, #0f8290 0%, #006a78 58%, #005563 100%);
+  box-shadow: 0 6px 14px rgba(0, 76, 87, 0.24), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.16);
+}
+
+.embossed-button:hover {
+  box-shadow: 0 9px 20px rgba(0, 76, 87, 0.3), 0 0 0 2px rgba(218, 169, 42, 0.1), inset 0 1px 0 rgba(255,255,255,0.36);
+  transform: translateY(-2px);
+}
+
+.circuit-header {
+  background:
+    linear-gradient(105deg, rgba(255,255,255,0.97), rgba(235,249,251,0.94)),
+    url('/assets/enterprise-circuit-bg.png') right center / cover;
+  border-bottom: 1px solid rgba(204, 151, 20, 0.58);
+  box-shadow: 0 7px 20px rgba(11, 52, 68, 0.08);
 }
