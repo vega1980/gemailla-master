@@ -5,6 +5,7 @@ const FIREBASE_CONFIG_KEYS = new Set([
   'storageBucket',
   'messagingSenderId',
   'appId',
+  'appCheckSiteKey',
   'measurementId',
 ]);
 

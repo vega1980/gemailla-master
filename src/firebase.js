@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 import { connectAuthEmulator, getAuth } from 'firebase/auth';
 import {
   connectFirestoreEmulator,
@@ -42,6 +43,11 @@ const firebaseConfig = {
   appId: getConfigValue(import.meta.env.VITE_FIREBASE_APP_ID, runtimeConfig.appId),
 };
 
+const appCheckSiteKey = getConfigValue(
+  import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY,
+  runtimeConfig.appCheckSiteKey,
+);
+
 const useFirebaseEmulators = shouldUseFirebaseEmulators(firebaseConfig.projectId);
 
 if (useFirebaseEmulators && !firebaseConfig.projectId) {
@@ -61,6 +67,32 @@ if (missingConfigKeys.length > 0) {
 }
 
 export const app = initializeApp(firebaseConfig);
+
+function isLocalDevelopment() {
+  if (typeof window === 'undefined' || !import.meta.env.DEV) return false;
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+}
+
+function initializeConfiguredAppCheck() {
+  if (useFirebaseEmulators) return null;
+
+  if (!appCheckSiteKey) {
+    throw new Error(
+      'Configuración de App Check incompleta. Falta VITE_FIREBASE_APPCHECK_SITE_KEY.',
+    );
+  }
+
+  if (isLocalDevelopment()) {
+    globalThis.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
+
+  return initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(appCheckSiteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
+
+export const appCheck = initializeConfiguredAppCheck();
 export const auth = getAuth(app);
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
@@ -68,6 +100,17 @@ export const db = initializeFirestore(app, {
   }),
 });
 export const storage = getStorage(app);
+
+export async function getAppCheckHeaders() {
+  if (!appCheck) return {};
+
+  try {
+    const result = await getToken(appCheck, false);
+    return result.token ? { 'X-Firebase-AppCheck': result.token } : {};
+  } catch (_error) {
+    return {};
+  }
+}
 
 if (useFirebaseEmulators && !globalThis.__GEMAILLA_FIREBASE_EMULATORS__) {
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });

@@ -2,12 +2,17 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  FRONTEND_REQUIRED,
   getFunctionsConfigSource,
   getFunctionsRequiredNames,
   validateEnvironment,
 } from '../../scripts/validate-env.js';
 
 describe('validate-env', () => {
+  it('exige la clave pública de App Check en el frontend', () => {
+    assert.equal(FRONTEND_REQUIRED.includes('VITE_FIREBASE_APPCHECK_SITE_KEY'), true);
+  });
+
   it('usa runtimeConfig/ai cuando no hay configuración Vertex en entorno', () => {
     const env = {};
     assert.equal(getFunctionsConfigSource(env), 'runtimeConfig/ai');

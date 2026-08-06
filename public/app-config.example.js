@@ -5,6 +5,7 @@ window.GEMAILLA_FIREBASE_CONFIG = {
   storageBucket: "TU_PROJECT_ID.firebasestorage.app",
   messagingSenderId: "TU_MESSAGING_SENDER_ID",
   appId: "TU_APP_ID",
+  appCheckSiteKey: "TU_CLAVE_PUBLICA_RECAPTCHA_ENTERPRISE",
 };
 
 window.GEMAILLA_USE_FIREBASE_EMULATORS = "auto";

@@ -1,5 +1,5 @@
-import { auth, db } from '@/firebase';
-export { default as app, auth, db, storage } from '@/firebase';
+import { auth, db, getAppCheckHeaders } from '@/firebase';
+export { default as app, appCheck, auth, db, storage } from '@/firebase';
 import { DOCUMENT_STATUSES, AI_DISABLED_RESPONSE_STATUSES } from '@/features/documents/constants/documentStatuses';
 import { ENTITY_COLLECTIONS } from '@/infrastructure/firebase/repositories/entityCollections';
 import { normalizeData } from '@/infrastructure/firebase/repositories/normalization';
@@ -128,6 +128,7 @@ export async function invokeLLM(params = {}) {
       'Content-Type': 'application/json',
       'X-Correlation-Id': correlationId,
       ...getParentCorrelationHeaders(parentCorrelationId),
+      ...(await getAppCheckHeaders()),
       ...(await getAuthHeader()),
     },
     body: JSON.stringify({
@@ -205,6 +206,7 @@ async function invokeFunction(name, payload = {}) {
       'Content-Type': 'application/json',
       'X-Correlation-Id': correlationId,
       ...getParentCorrelationHeaders(parentCorrelationId),
+      ...(await getAppCheckHeaders()),
       ...(await getAuthHeader()),
     },
     body: JSON.stringify({

@@ -5,6 +5,7 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_STORAGE_BUCKET?: string;
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID?: string;
   readonly VITE_FIREBASE_APP_ID?: string;
+  readonly VITE_FIREBASE_APPCHECK_SITE_KEY?: string;
   readonly VITE_APP_VERSION?: string;
   readonly VITE_BUILD_ID?: string;
   readonly VITE_GIT_SHA?: string;
@@ -23,6 +24,7 @@ interface Window {
     storageBucket?: string;
     messagingSenderId?: string;
     appId?: string;
+    appCheckSiteKey?: string;
   };
   GEMAILLA_USE_FIREBASE_EMULATORS?: 'auto' | 'true' | 'false' | boolean;
   GEMAILLA_RELEASE?: {

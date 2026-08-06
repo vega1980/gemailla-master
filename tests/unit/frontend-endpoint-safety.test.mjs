@@ -23,4 +23,9 @@ describe('fachada pública firebaseClient', () => {
     assert.match(source, /const safeFunctionName = encodeURIComponent\(String\(name \|\| ''\)\.trim\(\)\);/);
     assert.match(source, /fetch\(`.*safeFunctionName.*`/);
   });
+
+  it('adjunta App Check a las solicitudes internas', () => {
+    assert.match(source, /import \{ auth, db, getAppCheckHeaders \} from '@\/firebase';/);
+    assert.equal((source.match(/\.\.\.\(await getAppCheckHeaders\(\)\)/g) || []).length, 2);
+  });
 });
