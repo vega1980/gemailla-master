@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from './Sidebar';
+import DesktopHeader from './DesktopHeader';
 import MobileHeader from './MobileHeader';
 import BottomNav from './BottomNav';
 
@@ -25,14 +26,14 @@ export default function AppLayout() {
         {/* Mobile Header + Modules Bar */}
         <MobileHeader />
         <main
-          className={`min-h-screen flex-1 pt-16 transition-all duration-300 md:pt-0 ${sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[280px]'}`}
+          className={`min-h-screen flex-1 pt-16 transition-all duration-300 md:pt-0 ${sidebarCollapsed ? 'md:ml-[76px]' : 'md:ml-[272px]'}`}
           style={{
             background: 'transparent',
             paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
           }}
         >
-          <div className="hidden md:block h-px w-full" style={{background: 'linear-gradient(90deg, transparent, rgba(8,145,160,0.28), rgba(212,167,44,0.5), rgba(8,145,160,0.28), transparent)'}} />
-          <div className="p-4 md:p-6 lg:p-8 max-w-[1700px] mx-auto">
+          <DesktopHeader />
+          <div className="mx-auto max-w-[1700px] p-4 md:p-6 lg:p-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}

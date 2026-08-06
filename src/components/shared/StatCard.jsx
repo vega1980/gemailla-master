@@ -6,14 +6,14 @@ export default function StatCard({ title, value, subtitle, icon: Icon, trend, tr
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group relative overflow-hidden rounded-2xl p-5 transition-all duration-300"
+      className="enterprise-card group relative overflow-hidden rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1"
       style={{
         background: 'linear-gradient(145deg, #ffffff 0%, #f5fbfc 100%)',
-        border: '1px solid rgba(8,145,160,0.2)',
-        boxShadow: '0 12px 30px rgba(15,43,58,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
+        border: '1px solid rgba(8,145,160,0.22)',
+        boxShadow: '0 10px 24px rgba(11,52,68,0.11), 0 2px 5px rgba(11,52,68,0.07), inset 0 1px 0 rgba(255,255,255,0.96)',
       }}
-      onMouseEnter={(event) => { event.currentTarget.style.borderColor = 'rgba(8,145,160,0.42)'; event.currentTarget.style.boxShadow = '0 16px 36px rgba(15,43,58,0.11)'; }}
-      onMouseLeave={(event) => { event.currentTarget.style.borderColor = 'rgba(8,145,160,0.2)'; event.currentTarget.style.boxShadow = '0 12px 30px rgba(15,43,58,0.07), inset 0 1px 0 rgba(255,255,255,0.9)'; }}
+      onMouseEnter={(event) => { event.currentTarget.style.borderColor = 'rgba(198,145,12,0.55)'; event.currentTarget.style.boxShadow = '0 16px 34px rgba(11,52,68,0.15)'; }}
+      onMouseLeave={(event) => { event.currentTarget.style.borderColor = 'rgba(8,145,160,0.22)'; event.currentTarget.style.boxShadow = '0 10px 24px rgba(11,52,68,0.11), 0 2px 5px rgba(11,52,68,0.07), inset 0 1px 0 rgba(255,255,255,0.96)'; }}
     >
       {/* Corner accent */}
       <div className="absolute top-0 right-0 w-16 h-16 opacity-30" style={{
