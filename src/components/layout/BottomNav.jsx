@@ -13,44 +13,22 @@ export default function BottomNav() {
   const location = useLocation();
 
   return (
-    <div
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around border-t"
-      style={{
-        background: 'linear-gradient(180deg, #0d0d0d 0%, #080808 100%)',
-        borderColor: 'rgba(197,160,89,0.25)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        height: 'calc(56px + env(safe-area-inset-bottom))',
-      }}
+    <nav
+      className="fixed inset-x-0 bottom-0 z-50 flex items-center justify-around border-t border-cyan-100 bg-white/95 shadow-[0_-8px_24px_rgba(15,43,58,0.08)] backdrop-blur-xl md:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(60px + env(safe-area-inset-bottom))' }}
     >
       {items.map(({ path, label, icon: Icon }) => {
         const isActive = location.pathname === path;
         return (
-          <Link
-            key={path}
-            to={path}
-            className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all"
-          >
-            <div
-              className="p-1.5 rounded-lg transition-all"
-              style={isActive ? {
-                background: 'rgba(197,160,89,0.2)',
-                boxShadow: '0 0 10px rgba(197,160,89,0.25)',
-              } : {}}
-            >
-              <Icon
-                className="w-5 h-5"
-                style={{ color: isActive ? '#f0d080' : 'rgba(197,160,89,0.5)' }}
-              />
-            </div>
-            <span
-              className="text-[0.6rem] font-medium"
-              style={{ color: isActive ? '#f0d080' : 'rgba(197,160,89,0.45)' }}
-            >
-              {label}
+          <Link key={path} to={path} className="flex h-full flex-1 flex-col items-center justify-center gap-0.5">
+            <span className={`rounded-lg p-1.5 transition-colors ${isActive ? 'bg-cyan-50 text-cyan-700' : 'text-slate-400'}`}>
+              <Icon className="h-5 w-5" />
             </span>
+            <span className={`text-[10px] font-semibold ${isActive ? 'text-cyan-800' : 'text-slate-400'}`}>{label}</span>
+            {isActive && <span className="absolute bottom-1 h-1 w-5 rounded-full bg-gradient-to-r from-cyan-500 to-amber-400" />}
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

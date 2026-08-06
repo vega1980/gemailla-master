@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils"
 const Card = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("rounded-lg text-card-foreground", className)}
+    className={cn("rounded-2xl text-card-foreground", className)}
     style={{
-      background: '#0a0a0a',
-      border: '1px solid rgba(197,160,89,0.2)',
-      boxShadow: '0 2px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(197,160,89,0.06)'
+      background: 'linear-gradient(145deg, #ffffff 0%, #f7fcfc 100%)',
+      border: '1px solid rgba(8,145,160,0.18)',
+      boxShadow: '0 14px 34px rgba(15,43,58,0.07), inset 0 1px 0 rgba(255,255,255,0.9)',
     }}
     {...props} />
 ))

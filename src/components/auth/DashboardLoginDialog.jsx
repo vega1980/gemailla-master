@@ -40,19 +40,19 @@ export default function DashboardLoginDialog({
         if (!isSubmitting) onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="border-amber-300/25 bg-[#080808] text-amber-50 sm:max-w-md">
+      <DialogContent className="border-cyan-200 bg-white text-slate-900 shadow-[0_24px_60px_rgba(15,43,58,0.16)] sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-amber-100">
+          <DialogTitle className="gold-title text-2xl">
             Iniciar sesión
           </DialogTitle>
-          <DialogDescription className="text-amber-50/60">
+          <DialogDescription className="text-slate-500">
             Accede a los módulos sin salir del Dashboard.
           </DialogDescription>
         </DialogHeader>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <input
-            className="w-full rounded-lg border border-amber-300/25 bg-black/40 px-4 py-3"
+            className="w-full rounded-lg border border-cyan-200 bg-cyan-50/60 px-4 py-3 text-slate-900 outline-none focus:border-cyan-500"
             type="email"
             placeholder="Correo autorizado"
             autoComplete="email"
@@ -63,7 +63,7 @@ export default function DashboardLoginDialog({
           />
 
           <input
-            className="w-full rounded-lg border border-amber-300/25 bg-black/40 px-4 py-3"
+            className="w-full rounded-lg border border-cyan-200 bg-cyan-50/60 px-4 py-3 text-slate-900 outline-none focus:border-cyan-500"
             type="password"
             placeholder="Contraseña"
             autoComplete="current-password"
@@ -73,13 +73,13 @@ export default function DashboardLoginDialog({
           />
 
           {errorMessage && (
-            <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-100" role="alert">
+            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
               {errorMessage}
             </p>
           )}
 
           <button
-            className="w-full rounded-lg bg-amber-200 px-4 py-3 font-bold text-stone-950 disabled:opacity-60"
+            className="w-full rounded-lg bg-cyan-700 px-4 py-3 font-bold text-white disabled:opacity-60"
             type="submit"
             disabled={isSubmitting}
           >

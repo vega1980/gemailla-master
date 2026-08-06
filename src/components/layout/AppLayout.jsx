@@ -17,7 +17,7 @@ export default function AppLayout() {
   const location = useLocation();
 
   return (
-    <div className="flex min-h-screen" style={{background: '#050505'}}>
+    <div className="app-shell flex min-h-screen">
         {/* Desktop Sidebar */}
         <div className="hidden md:block">
           <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
@@ -25,15 +25,14 @@ export default function AppLayout() {
         {/* Mobile Header + Modules Bar */}
         <MobileHeader />
         <main
-          className={`flex-1 min-h-screen transition-all duration-300 pt-14 md:pt-0 ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'}`}
+          className={`min-h-screen flex-1 pt-16 transition-all duration-300 md:pt-0 ${sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[280px]'}`}
           style={{
-            background: '#050505',
-            paddingBottom: 'calc(56px + env(safe-area-inset-bottom))',
+            background: 'transparent',
+            paddingBottom: 'calc(60px + env(safe-area-inset-bottom))',
           }}
         >
-          {/* Top gold accent line */}
-          <div className="hidden md:block h-px w-full" style={{background: 'linear-gradient(90deg, transparent, rgba(197,160,89,0.3), rgba(197,160,89,0.5), rgba(197,160,89,0.3), transparent)'}} />
-          <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
+          <div className="hidden md:block h-px w-full" style={{background: 'linear-gradient(90deg, transparent, rgba(8,145,160,0.28), rgba(212,167,44,0.5), rgba(8,145,160,0.28), transparent)'}} />
+          <div className="p-4 md:p-6 lg:p-8 max-w-[1700px] mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
