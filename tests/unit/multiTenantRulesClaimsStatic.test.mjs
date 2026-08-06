@@ -31,7 +31,7 @@ describe('multi-tenant rules authorization source', () => {
     assert.match(source, /\/documents\/companyMembers\/\$\(membershipId\(companyId\)\)/);
     assert.match(source, /function isActiveMember\(companyId\)/);
     assert.match(source, /membershipData\(companyId\)\.get\('status', null\) == 'active'/);
-    assert.match(source, /function canReadCompany\(companyId\)[\s\S]*\(isCompanyOwner\(companyId\) \|\| isActiveMember\(companyId\)\)/);
+    assert.match(source, /function canReadCompany\(companyId\)[\s\S]*&& isActiveMember\(companyId\);/);
     assert.match(source, /function canWriteCompany\(companyId\)[\s\S]*hasCompanyRole\(companyId, \['owner', 'director', 'admin', 'editor'\]\)/);
     assert.match(source, /function canManageCompany\(companyId\)[\s\S]*hasCompanyRole\(companyId, \['owner', 'director', 'admin'\]\)/);
   });
