@@ -100,11 +100,11 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
       {/* Cost overview chart con estilo dorado */}
       {chartData.length > 0 && (
         <div className="rounded-2xl p-5" style={{
-          background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-          border: '1px solid rgba(197,160,89,0.15)',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+          background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+          border: '1px solid rgba(8,145,160,0.15)',
+          boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
         }}>
-          <p className="text-sm font-semibold mb-4" style={{color: '#c5a059'}}>Distribución de Costos Operativos</p>
+          <p className="text-sm font-semibold mb-4" style={{color: '#087f8c'}}>Distribución de Costos Operativos</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 14%)" />
@@ -119,11 +119,11 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
 
       {/* Process selector + analyze con estilo dorado */}
       <div className="rounded-2xl p-5" style={{
-        background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-        border: '1px solid rgba(197,160,89,0.15)',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+        background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+        border: '1px solid rgba(8,145,160,0.15)',
+        boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
       }}>
-        <p className="text-sm font-semibold mb-4 flex items-center gap-2" style={{color: '#c5a059'}}>
+        <p className="text-sm font-semibold mb-4 flex items-center gap-2" style={{color: '#087f8c'}}>
           <GitBranch className="w-4 h-4" /> Análisis de Proceso
         </p>
         <div className="flex flex-wrap gap-3 items-end">
@@ -141,12 +141,12 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
             </Select>
           </div>
           <Button onClick={analyze} disabled={loading || !company} className="gap-2" style={{
-            background: 'linear-gradient(135deg, #f0d080 0%, #c5a059 100%)',
-            color: '#050505',
-            boxShadow: '0 2px 8px rgba(197,160,89,0.3)',
+            background: 'linear-gradient(135deg, #b4860b 0%, #087f8c 100%)',
+            color: '#f7fbfc',
+            boxShadow: '0 2px 8px rgba(8,145,160,0.3)',
             opacity: !company ? 0.5 : 1
           }}>
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" style={{color: '#050505'}} /> : <Sparkles className="w-4 h-4" style={{color: '#050505'}} />}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" style={{color: '#f7fbfc'}} /> : <Sparkles className="w-4 h-4" style={{color: '#f7fbfc'}} />}
             {loading ? 'Analizando...' : (!company ? 'Selecciona empresa' : 'Analizar con IA')}
           </Button>
         </div>
@@ -165,12 +165,12 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
           {/* Summary */}
           {result.executive_summary && (
             <div className="p-4 rounded-2xl" style={{
-              background: 'linear-gradient(135deg, rgba(197,160,89,0.12) 0%, rgba(197,160,89,0.05) 100%)',
-              border: '1px solid rgba(197,160,89,0.25)',
-              boxShadow: '0 2px 12px rgba(197,160,89,0.1)'
+              background: 'linear-gradient(135deg, rgba(8,145,160,0.12) 0%, rgba(8,145,160,0.05) 100%)',
+              border: '1px solid rgba(8,145,160,0.25)',
+              boxShadow: '0 2px 12px rgba(8,145,160,0.1)'
             }}>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{color: '#c5a059'}}>Resumen Ejecutivo</p>
-              <p className="text-sm" style={{color: '#e8d5a3'}}>{result.executive_summary}</p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{color: '#087f8c'}}>Resumen Ejecutivo</p>
+              <p className="text-sm" style={{color: '#0f2b3a'}}>{result.executive_summary}</p>
             </div>
           )}
 
@@ -178,12 +178,12 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
             {/* Inefficiencies */}
             {result.inefficiencies?.length > 0 && (
               <div className="rounded-2xl p-4" style={{
-                background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-                border: '1px solid rgba(197,160,89,0.15)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+                background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+                border: '1px solid rgba(8,145,160,0.15)',
+                boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
               }}>
-                <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#c5a059'}}>
-                  <AlertTriangle className="w-4 h-4" style={{color: '#f0d080'}} /> Ineficiencias Detectadas
+                <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#087f8c'}}>
+                  <AlertTriangle className="w-4 h-4" style={{color: '#b4860b'}} /> Ineficiencias Detectadas
                 </p>
                 <div className="space-y-3">
                   {result.inefficiencies.map((item, i) => (
@@ -200,12 +200,12 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
             {/* Savings */}
             {result.savings_opportunities?.length > 0 && (
               <div className="rounded-2xl p-4" style={{
-                background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-                border: '1px solid rgba(197,160,89,0.15)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+                background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+                border: '1px solid rgba(8,145,160,0.15)',
+                boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
               }}>
-                <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#c5a059'}}>
-                  <TrendingDown className="w-4 h-4" style={{color: '#c5a059'}} /> Oportunidades de Ahorro
+                <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#087f8c'}}>
+                  <TrendingDown className="w-4 h-4" style={{color: '#087f8c'}} /> Oportunidades de Ahorro
                 </p>
                 <div className="space-y-3">
                   {result.savings_opportunities.map((item, i) => (
@@ -225,12 +225,12 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
           {/* Best practices */}
           {result.best_practices?.length > 0 && (
             <div className="rounded-2xl p-4" style={{
-              background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-              border: '1px solid rgba(197,160,89,0.15)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+              background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+              border: '1px solid rgba(8,145,160,0.15)',
+              boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
             }}>
-              <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#c5a059'}}>
-                <CheckCircle2 className="w-4 h-4" style={{color: '#c5a059'}} /> Mejores Prácticas Recomendadas
+              <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#087f8c'}}>
+                <CheckCircle2 className="w-4 h-4" style={{color: '#087f8c'}} /> Mejores Prácticas Recomendadas
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {result.best_practices.map((bp, i) => (
@@ -246,12 +246,12 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
           {/* Implementation plan */}
           {result.implementation_plan?.length > 0 && (
             <div className="rounded-2xl p-4" style={{
-              background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-              border: '1px solid rgba(197,160,89,0.15)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+              background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+              border: '1px solid rgba(8,145,160,0.15)',
+              boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
             }}>
-              <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#c5a059'}}>
-                <Clock className="w-4 h-4" style={{color: '#c5a059'}} /> Plan de Implementación
+              <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#087f8c'}}>
+                <Clock className="w-4 h-4" style={{color: '#087f8c'}} /> Plan de Implementación
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {result.implementation_plan.map((phase, i) => (
@@ -273,11 +273,11 @@ Responde en español, tono profesional de consultor senior, con datos y cifras c
           {/* Recommended KPIs */}
           {result.recommended_kpis?.length > 0 && (
             <div className="rounded-2xl p-4" style={{
-              background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-              border: '1px solid rgba(197,160,89,0.15)',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+              background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+              border: '1px solid rgba(8,145,160,0.15)',
+              boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
             }}>
-              <p className="text-sm font-semibold mb-3" style={{color: '#c5a059'}}>📊 KPIs Recomendados para este Proceso</p>
+              <p className="text-sm font-semibold mb-3" style={{color: '#087f8c'}}>📊 KPIs Recomendados para este Proceso</p>
               <div className="flex flex-wrap gap-2">
                 {result.recommended_kpis.map((kpi, i) => (
                   <span key={i} className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-xs text-primary">{kpi}</span>

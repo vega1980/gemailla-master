@@ -108,17 +108,17 @@ export default function ProjectTracker({ company }) {
       {total > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'En curso', count: byStatus.en_curso, color: '#f0d080' },
-            { label: 'Completados', count: byStatus.completado, color: '#c5a059' },
-            { label: 'Presupuesto', count: fmt(totalBudget), color: '#e8d5a3' },
-            { label: 'Ejecutado', count: fmt(totalSpent), color: totalSpent > totalBudget ? '#ef4444' : '#e8d5a3' },
+            { label: 'En curso', count: byStatus.en_curso, color: '#b4860b' },
+            { label: 'Completados', count: byStatus.completado, color: '#087f8c' },
+            { label: 'Presupuesto', count: fmt(totalBudget), color: '#0f2b3a' },
+            { label: 'Ejecutado', count: fmt(totalSpent), color: totalSpent > totalBudget ? '#ef4444' : '#0f2b3a' },
           ].map(({ label, count, color }) => (
             <div key={label} className="rounded-2xl p-4" style={{
-              background: 'linear-gradient(135deg, rgba(197,160,89,0.08) 0%, rgba(197,160,89,0.02) 100%)',
-              border: '1px solid rgba(197,160,89,0.2)',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+              background: 'linear-gradient(135deg, rgba(8,145,160,0.08) 0%, rgba(8,145,160,0.02) 100%)',
+              border: '1px solid rgba(8,145,160,0.2)',
+              boxShadow: '0 2px 8px rgba(15,43,58,0.08)'
             }}>
-              <p className="text-xs mb-1" style={{color: 'rgba(197,160,89,0.7)'}}>{label}</p>
+              <p className="text-xs mb-1" style={{color: 'rgba(8,145,160,0.7)'}}>{label}</p>
               <p className="text-xl font-bold font-mono" style={{color}}>{count ?? 0}</p>
             </div>
           ))}
@@ -129,12 +129,12 @@ export default function ProjectTracker({ company }) {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{total} proyecto{total !== 1 ? 's' : ''}</p>
         <Button size="sm" onClick={openNewProj} disabled={!company} className="gap-2" style={{
-          background: 'linear-gradient(135deg, #f0d080 0%, #c5a059 100%)',
-          color: '#050505',
-          boxShadow: '0 2px 8px rgba(197,160,89,0.3)',
+          background: 'linear-gradient(135deg, #b4860b 0%, #087f8c 100%)',
+          color: '#f7fbfc',
+          boxShadow: '0 2px 8px rgba(8,145,160,0.3)',
           opacity: !company ? 0.5 : 1
         }}>
-          <Plus className="w-4 h-4" style={{color: '#050505'}} /> {company ? 'Nuevo Proyecto' : 'Selecciona empresa'}
+          <Plus className="w-4 h-4" style={{color: '#f7fbfc'}} /> {company ? 'Nuevo Proyecto' : 'Selecciona empresa'}
         </Button>
       </div>
 
@@ -157,18 +157,18 @@ export default function ProjectTracker({ company }) {
 
             return (
               <div key={proj.id} className="rounded-2xl overflow-hidden" style={{
-                background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-                border: '1px solid rgba(197,160,89,0.15)',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+                background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+                border: '1px solid rgba(8,145,160,0.15)',
+                boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
               }}>
                 <div className="p-4">
                   <div className="flex items-start gap-3">
-                    <button onClick={() => toggleExpand(proj.id)} className="mt-0.5 hover:text-foreground transition-colors" style={{color: 'rgba(197,160,89,0.6)'}}>
+                    <button onClick={() => toggleExpand(proj.id)} className="mt-0.5 hover:text-foreground transition-colors" style={{color: 'rgba(8,145,160,0.6)'}}>
                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold" style={{color: '#e8d5a3'}}>{proj.name}</p>
+                        <p className="text-sm font-semibold" style={{color: '#0f2b3a'}}>{proj.name}</p>
                         <Badge className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
                         <span className={`text-xs font-medium ${pCfg.color}`}>↑ {pCfg.label}</span>
                       </div>
@@ -190,7 +190,7 @@ export default function ProjectTracker({ company }) {
 
                   {/* Progress bar */}
                   <div className="mt-3 ml-7">
-                    <div className="flex justify-between text-xs mb-1" style={{color: 'rgba(197,160,89,0.6)'}}>
+                    <div className="flex justify-between text-xs mb-1" style={{color: 'rgba(8,145,160,0.6)'}}>
                       <span>Progreso</span>
                       <span>{proj.progress || 0}%</span>
                     </div>

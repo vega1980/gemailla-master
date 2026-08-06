@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Source+Serif+4:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,77 +6,77 @@
 
 @layer base {
   :root {
-    --font-sans: 'Cormorant Garamond', serif;
-    --font-display: 'Source Serif 4', serif;
+    --font-sans: 'Inter', sans-serif;
+    --font-display: 'Playfair Display', serif;
 
-    --background: 0 3% 6%;
-    --foreground: 45 20% 94%;
-    --card: 0 0% 5%;
-    --card-foreground: 45 20% 94%;
-    --popover: 0 0% 6%;
-    --popover-foreground: 45 20% 94%;
-    --primary: 230 0% 53%;
-    --primary-foreground: 0 0% 3%;
-    --secondary: 0 0% 9%;
-    --secondary-foreground: 45 18% 82%;
-    --muted: 0 0% 8%;
-    --muted-foreground: 45 10% 72%;
-    --accent: 43 74% 62%;
-    --accent-foreground: 0 0% 3%;
+    --background: 190 42% 98%;
+    --foreground: 201 56% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 201 56% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 201 56% 14%;
+    --primary: 186 90% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 188 48% 95%;
+    --secondary-foreground: 201 56% 18%;
+    --muted: 195 28% 94%;
+    --muted-foreground: 199 22% 42%;
+    --accent: 42 68% 49%;
+    --accent-foreground: 201 56% 14%;
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 43 35% 24%;
-    --input: 0 0% 10%;
-    --ring: 43 74% 62%;
-    --chart-1: 43 74% 62%;
-    --chart-2: 38 38% 38%;
+    --border: 187 36% 82%;
+    --input: 187 32% 86%;
+    --ring: 186 90% 32%;
+    --chart-1: 186 90% 32%;
+    --chart-2: 42 68% 49%;
     --chart-3: 160 55% 42%;
     --chart-4: 200 65% 48%;
     --chart-5: 280 55% 52%;
     --radius: 0.6rem;
-    --sidebar-background: 0 0% 3%;
-    --sidebar-foreground: 45 20% 90%;
-    --sidebar-primary: 43 74% 62%;
-    --sidebar-primary-foreground: 0 0% 3%;
-    --sidebar-accent: 0 0% 8%;
-    --sidebar-accent-foreground: 45 20% 90%;
-    --sidebar-border: 43 22% 18%;
-    --sidebar-ring: 43 74% 62%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 201 56% 14%;
+    --sidebar-primary: 186 90% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 188 48% 95%;
+    --sidebar-accent-foreground: 201 56% 14%;
+    --sidebar-border: 187 36% 82%;
+    --sidebar-ring: 186 90% 32%;
   }
 
   .dark {
-    --background: 0 0% 2%;
-    --foreground: 45 20% 94%;
-    --card: 0 0% 5%;
-    --card-foreground: 45 20% 94%;
-    --popover: 0 0% 6%;
-    --popover-foreground: 45 20% 94%;
-    --primary: 43 74% 62%;
-    --primary-foreground: 0 0% 3%;
-    --secondary: 0 0% 9%;
-    --secondary-foreground: 45 18% 82%;
-    --muted: 0 0% 8%;
-    --muted-foreground: 45 10% 72%;
-    --accent: 43 74% 62%;
-    --accent-foreground: 0 0% 3%;
+    --background: 190 42% 98%;
+    --foreground: 201 56% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 201 56% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 201 56% 14%;
+    --primary: 186 90% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 188 48% 95%;
+    --secondary-foreground: 201 56% 18%;
+    --muted: 195 28% 94%;
+    --muted-foreground: 199 22% 42%;
+    --accent: 42 68% 49%;
+    --accent-foreground: 201 56% 14%;
     --destructive: 0 72% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 43 35% 24%;
-    --input: 0 0% 10%;
-    --ring: 43 74% 62%;
-    --chart-1: 43 74% 62%;
-    --chart-2: 38 38% 38%;
+    --border: 187 36% 82%;
+    --input: 187 32% 86%;
+    --ring: 186 90% 32%;
+    --chart-1: 186 90% 32%;
+    --chart-2: 42 68% 49%;
     --chart-3: 160 55% 42%;
     --chart-4: 200 65% 48%;
     --chart-5: 280 55% 52%;
-    --sidebar-background: 0 0% 3%;
-    --sidebar-foreground: 45 20% 90%;
-    --sidebar-primary: 43 74% 62%;
-    --sidebar-primary-foreground: 0 0% 3%;
-    --sidebar-accent: 0 0% 8%;
-    --sidebar-accent-foreground: 45 20% 90%;
-    --sidebar-border: 43 22% 18%;
-    --sidebar-ring: 43 74% 62%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 201 56% 14%;
+    --sidebar-primary: 186 90% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 188 48% 95%;
+    --sidebar-accent-foreground: 201 56% 14%;
+    --sidebar-border: 187 36% 82%;
+    --sidebar-ring: 186 90% 32%;
   }
 }
 
@@ -91,6 +91,13 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+    background-image:
+      radial-gradient(circle at 12% 10%, rgba(8, 145, 160, 0.08), transparent 24rem),
+      radial-gradient(circle at 88% 8%, rgba(212, 167, 44, 0.08), transparent 22rem),
+      linear-gradient(rgba(8, 145, 160, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(8, 145, 160, 0.035) 1px, transparent 1px);
+    background-size: auto, auto, 44px 44px, 44px 44px;
+    background-attachment: fixed;
     letter-spacing: 0.01em;
     font-weight: 500;
     text-rendering: optimizeLegibility;
@@ -133,14 +140,14 @@ svg {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(0 0% 6%);
+  background: hsl(190 42% 96%);
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 20%);
+  background: hsl(187 34% 72%);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(43 74% 62%);
+  background: hsl(186 90% 32%);
 }
 
 @keyframes shimmer {
@@ -158,13 +165,13 @@ svg {
 }
 
 .gold-card {
-  background: #0a0a0a;
-  border: 1px solid rgba(216,179,93,0.35);
-  box-shadow: 0 2px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,224,140,0.08);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(8, 145, 160, 0.22);
+  box-shadow: 0 14px 34px rgba(15, 43, 58, 0.09), inset 0 1px 0 rgba(255,255,255,0.9);
 }
 
 .gold-title {
-  background: linear-gradient(135deg, #ffe08c 0%, #d8b35d 50%, #fff1b8 100%);
+  background: linear-gradient(135deg, #7f5a00 0%, #d4a72c 48%, #8d6500 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -176,4 +183,15 @@ svg {
 }
 .gold-glow {
   animation: pulse-gold 3s ease-in-out infinite;
+}
+
+.app-shell {
+  background: transparent;
+  color: hsl(var(--foreground));
+}
+
+.enterprise-panel {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(8, 145, 160, 0.22);
+  box-shadow: 0 16px 40px rgba(15, 43, 58, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }

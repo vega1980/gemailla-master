@@ -158,7 +158,7 @@ export default function WelcomeTutorial({ onComplete }) {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0" style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)', border: '1px solid rgba(197,160,89,0.3)' }}>
+        <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden border-cyan-200 bg-white p-0 text-slate-900 shadow-[0_24px_60px_rgba(15,43,58,0.16)]">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'rgba(197,160,89,0.2)' }}>
             <div className="flex items-center gap-3">
@@ -166,7 +166,7 @@ export default function WelcomeTutorial({ onComplete }) {
                 <Icon className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-display font-bold" style={{ color: '#c5a059' }}>
+                <h2 className="gold-title font-display text-xl font-bold">
                   {currentStep === 0 ? '¡Bienvenido a GEMAILLA IA!' : currentData.title}
                 </h2>
                 <p className="text-xs text-muted-foreground">
@@ -194,7 +194,7 @@ export default function WelcomeTutorial({ onComplete }) {
                     <div className="w-24 h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #c5a059, #8b6914)', boxShadow: '0 0 30px rgba(197,160,89,0.4)' }}>
                       <LayoutDashboard className="w-12 h-12 text-white" />
                     </div>
-                    <h3 className="text-2xl font-display font-bold mb-4" style={{ color: '#fef3c7' }}>
+                    <h3 className="gold-title mb-4 font-display text-2xl font-bold">
                       La Evolución de la Asesoría Empresarial
                     </h3>
                     <p className="text-muted-foreground mb-6 max-w-md mx-auto">
@@ -203,11 +203,11 @@ export default function WelcomeTutorial({ onComplete }) {
                     <div className="grid grid-cols-2 gap-3 max-w-md mx-auto mb-6">
                       <div className="p-3 rounded-lg border" style={{ borderColor: 'rgba(197,160,89,0.2)', background: 'rgba(197,160,89,0.05)' }}>
                         <CheckCircle className="w-5 h-5 mx-auto mb-2" style={{ color: '#c5a059' }} />
-                        <p className="text-xs font-medium" style={{ color: '#e8d5a3' }}>14 Módulos</p>
+                        <p className="text-xs font-medium text-slate-700">14 Módulos</p>
                       </div>
                       <div className="p-3 rounded-lg border" style={{ borderColor: 'rgba(197,160,89,0.2)', background: 'rgba(197,160,89,0.05)' }}>
                         <CheckCircle className="w-5 h-5 mx-auto mb-2" style={{ color: '#c5a059' }} />
-                        <p className="text-xs font-medium" style={{ color: '#e8d5a3' }}>IA Integrada</p>
+                        <p className="text-xs font-medium text-slate-700">IA Integrada</p>
                       </div>
                     </div>
                   </div>
@@ -227,7 +227,7 @@ export default function WelcomeTutorial({ onComplete }) {
                           style={{ borderColor: 'rgba(197,160,89,0.2)', background: 'rgba(197,160,89,0.05)' }}
                         >
                           <CheckCircle className="w-4 h-4 shrink-0" style={{ color: '#c5a059' }} />
-                          <span className="text-sm" style={{ color: '#e8d5a3' }}>{feature}</span>
+                          <span className="text-sm text-slate-700">{feature}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -266,7 +266,7 @@ export default function WelcomeTutorial({ onComplete }) {
             <Button
               onClick={handleNext}
               className="gap-2"
-              style={{ background: 'linear-gradient(135deg, #c5a059, #8b6914)', color: '#050505' }}
+              style={{ background: 'linear-gradient(135deg, #0891a0, #08717b)', color: '#ffffff' }}
             >
               {currentStep === tutorialSteps.length - 1 ? 'Comenzar' : 'Siguiente'}
               {currentStep < tutorialSteps.length - 1 && <ChevronRight className="w-4 h-4" />}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer } from 'recharts';
+import { Line, LineChart, ResponsiveContainer } from 'recharts';
 
 export function DashboardSparkline({ data, color }) {
   return (
@@ -13,13 +13,13 @@ export function DashboardSparkline({ data, color }) {
 
 export function DashboardRealtimePie() {
   return (
-    <ResponsiveContainer width="100%" height={180}>
-      <PieChart>
-        <Pie data={[{ value: 92 }, { value: 8 }]} innerRadius={60} outerRadius={90} startAngle={90} endAngle={-270} dataKey="value">
-          <Cell fill="#f0d080" />
-          <Cell fill="rgba(197,160,89,0.2)" />
-        </Pie>
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="flex h-[180px] w-full items-center justify-center" role="img" aria-label="Análisis completado al 92 por ciento">
+      <div
+        className="relative h-36 w-36 rounded-full shadow-[0_12px_28px_rgba(15,43,58,0.08)]"
+        style={{ background: 'conic-gradient(#d9aa2b 0deg 331.2deg, #d7eef1 331.2deg 360deg)' }}
+      >
+        <div className="absolute inset-5 rounded-full border border-cyan-100 bg-white" />
+      </div>
+    </div>
   );
 }

@@ -22,7 +22,7 @@ const statusConfig = {
 };
 
 const catColors = {
-  financiero: 'text-[#f0d080]', operacional: 'text-[#c5a059]',
+  financiero: 'text-[#b4860b]', operacional: 'text-[#087f8c]',
   comercial: 'text-[#e8c97a]', talento: 'text-[#d4b57a]', cliente: 'text-[#b8956a]',
 };
 
@@ -90,21 +90,21 @@ Responde en español, formato estructurado, tono de consultor senior.`,
       {/* Header actions con estilo dorado */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm" style={{color: 'rgba(197,160,89,0.7)'}}>{displayKPIs.length} KPI{displayKPIs.length !== 1 ? 's' : ''} definidos</p>
+          <p className="text-sm" style={{color: 'rgba(8,145,160,0.7)'}}>{displayKPIs.length} KPI{displayKPIs.length !== 1 ? 's' : ''} definidos</p>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={getAIAnalysis} disabled={aiLoading || !displayKPIs.length} className="gap-2" style={{
-            background: 'rgba(197,160,89,0.08)',
-            border: '1px solid rgba(197,160,89,0.2)',
-            color: '#c5a059'
+            background: 'rgba(8,145,160,0.08)',
+            border: '1px solid rgba(8,145,160,0.2)',
+            color: '#087f8c'
           }}>
-            {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{color: '#c5a059'}} /> : <Sparkles className="w-3.5 h-3.5" style={{color: '#f0d080'}} />}
+            {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" style={{color: '#087f8c'}} /> : <Sparkles className="w-3.5 h-3.5" style={{color: '#b4860b'}} />}
             Análisis IA
           </Button>
           <Button size="sm" onClick={openNew} disabled={!company} className="gap-2" style={{
-            background: 'linear-gradient(135deg, #f0d080 0%, #c5a059 100%)',
-            color: '#050505',
-            boxShadow: '0 2px 8px rgba(197,160,89,0.3)',
+            background: 'linear-gradient(135deg, #b4860b 0%, #087f8c 100%)',
+            color: '#f7fbfc',
+            boxShadow: '0 2px 8px rgba(8,145,160,0.3)',
             opacity: !company ? 0.5 : 1
           }}>
             <Plus className="w-4 h-4" /> {company ? 'Nuevo KPI' : 'Selecciona empresa'}
@@ -119,12 +119,12 @@ Responde en español, formato estructurado, tono de consultor senior.`,
             const count = kpis.filter(k => k.status === key).length;
             return (
               <div key={key} className="rounded-xl border p-3" style={{
-                background: 'linear-gradient(135deg, rgba(197,160,89,0.08) 0%, rgba(197,160,89,0.02) 100%)',
-                border: '1px solid rgba(197,160,89,0.2)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                background: 'linear-gradient(135deg, rgba(8,145,160,0.08) 0%, rgba(8,145,160,0.02) 100%)',
+                border: '1px solid rgba(8,145,160,0.2)',
+                boxShadow: '0 2px 8px rgba(15,43,58,0.08)'
               }}>
-                <p className="text-xs mb-1" style={{color: 'rgba(197,160,89,0.7)'}}>{cfg.label}</p>
-                <p className="text-2xl font-bold" style={{color: '#c5a059'}}>{count}</p>
+                <p className="text-xs mb-1" style={{color: 'rgba(8,145,160,0.7)'}}>{cfg.label}</p>
+                <p className="text-2xl font-bold" style={{color: '#087f8c'}}>{count}</p>
               </div>
             );
           })}
@@ -151,14 +151,14 @@ Responde en español, formato estructurado, tono de consultor senior.`,
                  const cfg = statusConfig[kpi.status] || statusConfig.en_curso;
                  return (
                    <div key={kpi.id || `demo-${kpi.name}`} className="rounded-2xl p-4 space-y-3" style={{
-                     background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-                     border: '1px solid rgba(197,160,89,0.15)',
-                     boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+                     background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+                     border: '1px solid rgba(8,145,160,0.15)',
+                     boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
                    }}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{color: '#e8d5a3'}}>{kpi.name}</p>
-                        {kpi.owner && <p className="text-xs" style={{color: 'rgba(197,160,89,0.6)'}}>{kpi.owner}</p>}
+                        <p className="text-sm font-semibold truncate" style={{color: '#0f2b3a'}}>{kpi.name}</p>
+                        {kpi.owner && <p className="text-xs" style={{color: 'rgba(8,145,160,0.6)'}}>{kpi.owner}</p>}
                       </div>
                       <div className="flex items-center gap-1 ml-2">
                         {company && (<>
@@ -169,12 +169,12 @@ Responde en español, formato estructurado, tono de consultor senior.`,
                     </div>
                     <div className="flex items-end justify-between">
                       <div>
-                        <span className="text-2xl font-bold font-mono" style={{color: '#c5a059'}}>{kpi.current ?? '—'}</span>
-                        <span className="text-xs ml-1" style={{color: 'rgba(197,160,89,0.6)'}}>{kpi.unit}</span>
+                        <span className="text-2xl font-bold font-mono" style={{color: '#087f8c'}}>{kpi.current ?? '—'}</span>
+                        <span className="text-xs ml-1" style={{color: 'rgba(8,145,160,0.6)'}}>{kpi.unit}</span>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs" style={{color: 'rgba(197,160,89,0.6)'}}>Meta</p>
-                        <p className="text-sm font-semibold" style={{color: '#e8d5a3'}}>{kpi.target} {kpi.unit}</p>
+                        <p className="text-xs" style={{color: 'rgba(8,145,160,0.6)'}}>Meta</p>
+                        <p className="text-sm font-semibold" style={{color: '#0f2b3a'}}>{kpi.target} {kpi.unit}</p>
                       </div>
                     </div>
                     <Progress value={p} className="h-1.5" />
@@ -193,15 +193,15 @@ Responde en español, formato estructurado, tono de consultor senior.`,
       {/* AI Insight */}
       {(aiInsight || aiLoading) && (
         <div className="rounded-2xl p-5" style={{
-          background: 'linear-gradient(135deg, rgba(197,160,89,0.06) 0%, rgba(197,160,89,0.02) 100%)',
-          border: '1px solid rgba(197,160,89,0.15)',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.3)'
+          background: 'linear-gradient(135deg, rgba(8,145,160,0.06) 0%, rgba(8,145,160,0.02) 100%)',
+          border: '1px solid rgba(8,145,160,0.15)',
+          boxShadow: '0 2px 12px rgba(15,43,58,0.08)'
         }}>
-          <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#c5a059'}}>
+          <p className="text-sm font-semibold flex items-center gap-2 mb-3" style={{color: '#087f8c'}}>
             <Sparkles className="w-4 h-4" /> Diagnóstico Estratégico IA
           </p>
           {aiLoading && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin text-primary" /> Analizando KPIs...</div>}
-          {aiInsight && <div className="prose prose-sm prose-invert max-w-none text-sm text-muted-foreground leading-relaxed"><ReactMarkdown>{aiInsight}</ReactMarkdown></div>}
+          {aiInsight && <div className="prose prose-sm max-w-none text-sm text-muted-foreground leading-relaxed"><ReactMarkdown>{aiInsight}</ReactMarkdown></div>}
         </div>
       )}
 
