@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 
 const { buildDocumentContext } = require('../handlers/documentContextBuilder');
 
@@ -26,9 +26,8 @@ test('DCB-3 allows same-company storagePath and proceeds to Storage download', a
   let metadataCalls = 0;
   let downloadCalls = 0;
 
-  Object.defineProperty(admin, 'storage', {
-    configurable: true,
-    value: () => ({
+  const originalGetAdminStorage = firebaseAdmin.getAdminStorage;
+  firebaseAdmin.getAdminStorage = () => ({
       bucket: () => ({
         file: (storagePath) => {
           requestedPaths.push(storagePath);
@@ -49,10 +48,9 @@ test('DCB-3 allows same-company storagePath and proceeds to Storage download', a
           };
         },
       }),
-    }),
-  });
+    });
   t.after(() => {
-    delete admin.storage;
+    firebaseAdmin.getAdminStorage = originalGetAdminStorage;
   });
 
   const context = await buildDocumentContext([{

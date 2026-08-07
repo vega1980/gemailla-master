@@ -1,9 +1,9 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('./firebaseAdmin');
 const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 
-admin.initializeApp();
+firebaseAdmin.initializeAdminApp();
 
 const aiExports = require('./handlers/aiHandler');
 const { syncCompanyClaimsHandler } = require('./handlers/syncCompanyClaimsHandler');

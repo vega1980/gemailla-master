@@ -19,6 +19,7 @@ jobs:
       VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET || 'demo-gemailla-ci.appspot.com' }}
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890' }}
       VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID || '1:1234567890:web:ci' }}
+      VITE_FIREBASE_APPCHECK_SITE_KEY: ${{ vars.VITE_FIREBASE_APPCHECK_SITE_KEY || 'ci-app-check-site-key' }}
       VERTEX_GEMINI_MODEL: gemini-3.6-flash
       GOOGLE_CLOUD_PROJECT: demo-gemailla-ci
       VERTEX_GEMINI_LOCATION: global
@@ -66,9 +67,9 @@ jobs:
       - name: Security Scan
         run: |
           # Bloquear VITE_* sensibles que contengan ENDPOINT, URL o KEY en el cliente.
-          # VITE_FIREBASE_API_KEY es configuración pública de Firebase y se permite explícitamente.
+          # Las claves públicas de Firebase y App Check se permiten explícitamente.
           matches=$(rg -n --glob '*.{js,jsx}' 'VITE_.*(ENDPOINT|URL|KEY)' src || true)
-          sensitive_matches=$(printf '%s\n' "$matches" | rg -v 'VITE_FIREBASE_API_KEY' || true)
+          sensitive_matches=$(printf '%s\n' "$matches" | rg -v 'VITE_FIREBASE_(API_KEY|APPCHECK_SITE_KEY)' || true)
           if [ -n "$sensitive_matches" ]; then
             printf '%s\n' "$sensitive_matches"
             echo "ERROR: Variables VITE_* sensibles detectadas en cliente"

@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 
 const CLAIM_RELEVANT_FIELDS = ['companyId', 'role', 'status', 'userUid'];
 
@@ -38,7 +38,7 @@ async function revokeMembershipUserRefreshTokens(event = {}, dependencies = {}) 
     return { revoked: false, reason: 'missing_user_uid' };
   }
 
-  const auth = dependencies.auth || admin.auth();
+  const auth = dependencies.auth || firebaseAdmin.getAdminAuth();
   try {
     await auth.revokeRefreshTokens(uid);
   } catch (error) {

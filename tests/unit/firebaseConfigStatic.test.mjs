@@ -5,6 +5,7 @@ import { describe, it } from 'node:test';
 const FIREBASE_JSON = new URL('../../firebase.json', import.meta.url);
 const FIREBASERC = new URL('../../.firebaserc', import.meta.url);
 const FIRESTORE_INDEXES = new URL('../../firestore.indexes.json', import.meta.url);
+const CI_WORKFLOW = new URL('../../.github/workflows/ci.yml', import.meta.url);
 
 async function readJson(url) {
   return JSON.parse(await readFile(url, 'utf8'));
@@ -69,5 +70,12 @@ describe('Firebase project and deploy configuration invariants', () => {
     assert.match(packageJson.scripts['test:e2e:emulators'], /CLOUDSDK_CONFIG=\/tmp\/gemailla-emulator-cloudsdk/);
     assert.match(packageJson.scripts['emulators:start'], /VERTEX_GEMINI_PROJECT=demo-gemailla-local/);
     assert.match(packageJson.scripts['test:e2e:emulators'], /VERTEX_GEMINI_PROJECT=demo-gemailla-e2e/);
+  });
+
+  it('provides App Check configuration to CI and treats its site key as public', async () => {
+    const workflow = await readFile(CI_WORKFLOW, 'utf8');
+
+    assert.match(workflow, /VITE_FIREBASE_APPCHECK_SITE_KEY: \$\{\{ vars\.VITE_FIREBASE_APPCHECK_SITE_KEY/);
+    assert.match(workflow, /VITE_FIREBASE_\(API_KEY\|APPCHECK_SITE_KEY\)/);
   });
 });

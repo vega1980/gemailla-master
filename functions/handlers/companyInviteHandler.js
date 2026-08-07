@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 const crypto = require('node:crypto');
 const { fail } = require('../policies/httpPolicy');
 
@@ -21,7 +21,7 @@ async function verifyFirebaseUser(req) {
   const token = getBearerToken(req);
   if (!token) fail(401, 'Autenticación requerida.');
   try {
-    return await admin.auth().verifyIdToken(token);
+    return await firebaseAdmin.getAdminAuth().verifyIdToken(token);
   } catch (_error) {
     fail(401, 'Token de Firebase inválido o expirado.');
   }
@@ -124,7 +124,7 @@ async function inviteCompanyMemberHandler(req, res) {
 
   try {
     const user = await verifyFirebaseUser(req);
-    const db = admin.firestore();
+    const db = firebaseAdmin.getAdminFirestore();
     const companyId = String(req.body?.companyId || '').trim();
     const email = normalizeEmail(req.body?.userEmail || req.body?.email);
     const role = parseInviteRole(req.body?.role);
@@ -155,7 +155,7 @@ async function inviteCompanyMemberHandler(req, res) {
     const continueUrl = buildInvitationContinueUrl({ invitationId, token });
     let emailLink = continueUrl;
     try {
-      emailLink = await admin.auth().generateSignInWithEmailLink(email, {
+      emailLink = await firebaseAdmin.getAdminAuth().generateSignInWithEmailLink(email, {
         url: continueUrl,
         handleCodeInApp: true,
       });
@@ -183,7 +183,7 @@ async function acceptCompanyInvitationHandler(req, res) {
 
   try {
     const user = await verifyFirebaseUser(req);
-    const db = admin.firestore();
+    const db = firebaseAdmin.getAdminFirestore();
     const invitationId = String(req.body?.invitationId || '').trim();
     const token = String(req.body?.token || '').trim();
     if (!invitationId || !token) fail(400, 'invitationId y token son obligatorios.');

@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 const { XMLParser } = require('fast-xml-parser');
 // unpdf: extracción PDF sin binarios nativos, apta para serverless. Evita el
 // parser regex manual (ReDoS + object streams no soportados).
@@ -186,7 +186,7 @@ async function readDocumentBytes(document) {
     throw error;
   }
 
-  const file = admin.storage().bucket().file(storagePath);
+  const file = firebaseAdmin.getAdminStorage().bucket().file(storagePath);
   const [metadata] = await file.getMetadata();
   const size = Number(metadata.size || 0);
   if (size > MAX_DOCUMENT_BYTES) {

@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 
 const {
   isActiveCompanyEntitlement,
@@ -46,9 +46,8 @@ test('active company entitlement requires active status and current or grace per
 });
 
 function mockEntitlement(t, entitlementByCompanyId) {
-  Object.defineProperty(admin, 'firestore', {
-    configurable: true,
-    value: () => ({
+  const originalGetAdminFirestore = firebaseAdmin.getAdminFirestore;
+  firebaseAdmin.getAdminFirestore = () => ({
       collection: (collectionName) => {
         assert.equal(collectionName, 'companyEntitlements');
         return {
@@ -64,10 +63,9 @@ function mockEntitlement(t, entitlementByCompanyId) {
           }),
         };
       },
-    }),
-  });
+    });
   t.after(() => {
-    delete admin.firestore;
+    firebaseAdmin.getAdminFirestore = originalGetAdminFirestore;
   });
 }
 

@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 
 const {
   cleanupOrphanDocumentStorageHandler,
@@ -65,11 +65,13 @@ function mockAdmin(t, { documents = {}, files = [], firestoreError = null } = {}
     },
   };
 
-  Object.defineProperty(admin, 'firestore', { configurable: true, value: () => db });
-  Object.defineProperty(admin, 'storage', { configurable: true, value: () => ({ bucket: () => bucket }) });
+  const originalGetAdminFirestore = firebaseAdmin.getAdminFirestore;
+  const originalGetAdminStorage = firebaseAdmin.getAdminStorage;
+  firebaseAdmin.getAdminFirestore = () => db;
+  firebaseAdmin.getAdminStorage = () => ({ bucket: () => bucket });
   t.after(() => {
-    delete admin.firestore;
-    delete admin.storage;
+    firebaseAdmin.getAdminFirestore = originalGetAdminFirestore;
+    firebaseAdmin.getAdminStorage = originalGetAdminStorage;
   });
   return { db, bucket };
 }

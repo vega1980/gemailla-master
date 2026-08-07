@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('./firebaseAdmin');
 
 const DEFAULT_VERTEX_GEMINI_PROVIDER = 'vertex-gemini';
 const DEFAULT_VERTEX_GEMINI_MODEL = 'gemini-3.6-flash';
@@ -146,7 +146,7 @@ async function getAiRuntimeConfig({ forceRefresh = false } = {}) {
   }
 
   try {
-    const snap = await admin.firestore().collection(AI_RUNTIME_CONFIG_COLLECTION).doc(AI_RUNTIME_CONFIG_DOC).get();
+    const snap = await firebaseAdmin.getAdminFirestore().collection(AI_RUNTIME_CONFIG_COLLECTION).doc(AI_RUNTIME_CONFIG_DOC).get();
     cachedAiRuntimeConfig = snap.exists ? mergeFirestoreAiRuntimeConfig(envConfig, snap.data() || {}) : envConfig;
   } catch (_error) {
     cachedAiRuntimeConfig = envConfig;

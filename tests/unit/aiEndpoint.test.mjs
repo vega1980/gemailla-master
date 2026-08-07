@@ -153,19 +153,19 @@ async function loadAiEndpoint({
   storageFiles = {},
 }) {
   const firestore = createFirestore(store);
-  const admin = {
-    initializeApp() {},
-    auth() {
+  const firebaseAdmin = {
+    initializeAdminApp() {},
+    getAdminAuth() {
       return {
         verifyIdToken,
         async setCustomUserClaims() {},
         async revokeRefreshTokens() {},
       };
     },
-    firestore() {
+    getAdminFirestore() {
       return firestore;
     },
-    storage() {
+    getAdminStorage() {
       return {
         bucket() {
           return {
@@ -191,7 +191,7 @@ async function loadAiEndpoint({
   const modulePath = fileURLToPath(MODULE_PATH);
   const originalLoad = Module._load;
   Module._load = function patchedLoad(request, parent, isMain) {
-    if (request === 'firebase-admin') return admin;
+    if (request === './firebaseAdmin' || request === '../firebaseAdmin') return firebaseAdmin;
     if (request === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler };
     if (request === 'firebase-functions/v2/scheduler') return { onSchedule: (_options, handler) => handler };
     if (request === 'firebase-functions/v2/firestore') return { onDocumentWritten: (_path, handler) => handler };

@@ -18,13 +18,17 @@ import DashboardLoginDialog from '@/components/auth/DashboardLoginDialog';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useCompanyData } from '@/hooks/useCompanyData';
 import { useCompany } from '@/lib/companyContext';
+import {
+  buildFinancialDistribution,
+  buildMonthlyTrends,
+  isExpenseTransaction,
+} from '@modules/dashboard/domain/dashboardMetrics';
 
 const DashboardIncomeExpenseChart = lazy(() => import('@modules/dashboard/components/DashboardCharts').then((module) => ({ default: module.DashboardIncomeExpenseChart })));
 const DashboardDistributionChart = lazy(() => import('@modules/dashboard/components/DashboardCharts').then((module) => ({ default: module.DashboardDistributionChart })));
 
 const TURQUOISE = '#0799a8';
 const GOLD = '#d89a16';
-const NAVY = '#12344f';
 
 function formatCurrency(value) {
   const amount = Number(value) || 0;
@@ -79,12 +83,15 @@ function buildRecentActivity(documents = [], transactions = []) {
     description: 'Documento agregado al expediente seguro',
     icon: FileText,
   }));
-  const transactionItems = transactions.slice(0, 1).map((transaction) => ({
-    id: `transaction-${transaction.id}`,
-    title: transaction.description || transaction.concept || 'Movimiento financiero',
-    description: `${transaction.type === 'expense' ? 'Gasto' : 'Ingreso'} registrado`,
-    icon: transaction.type === 'expense' ? TrendingDown : TrendingUp,
-  }));
+  const transactionItems = transactions.slice(0, 1).map((transaction) => {
+    const isExpense = isExpenseTransaction(transaction);
+    return {
+      id: `transaction-${transaction.id}`,
+      title: transaction.description || transaction.concept || 'Movimiento financiero',
+      description: `${isExpense ? 'Gasto' : 'Ingreso'} registrado`,
+      icon: isExpense ? TrendingDown : TrendingUp,
+    };
+  });
 
   const items = [...documentItems, ...transactionItems];
   if (items.length) return items;
@@ -110,9 +117,17 @@ function PublicBrandHeader({ onLoginRequest }) {
   );
 }
 
-function OverviewCard({ label, value, change, icon: Icon, tone = 'cyan' }) {
+function OverviewCard({ label, value, change, icon: Icon, tone = 'cyan', positiveWhen = 'up', comparisonLabel = 'Sin datos del mes anterior' }) {
   const color = tone === 'gold' ? GOLD : TURQUOISE;
-  const isNegative = String(change).startsWith('-');
+  const hasChange = Number.isFinite(change);
+  const isNeutral = change === 0;
+  const isDecrease = hasChange && change < 0;
+  const isFavorable = positiveWhen === 'down' ? change < 0 : change > 0;
+  const trendColor = isNeutral ? 'text-slate-500' : isFavorable ? 'text-cyan-700' : 'text-red-600';
+  const trendSymbol = isNeutral ? '→' : isDecrease ? '↓' : '↑';
+  const formattedChange = hasChange
+    ? `${Math.abs(change).toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+    : null;
 
   return (
     <article className="enterprise-card group flex min-h-[142px] items-center gap-4 rounded-2xl p-5 transition-all duration-200 hover:-translate-y-1">
@@ -122,8 +137,10 @@ function OverviewCard({ label, value, change, icon: Icon, tone = 'cyan' }) {
       <div className="min-w-0">
         <p className="font-display text-lg font-semibold text-[#17334b]">{label}</p>
         <p className="mt-1 truncate font-display text-[38px] font-bold leading-none text-[#12344f]">{value}</p>
-        <p className={`mt-3 text-xs font-semibold ${isNegative ? 'text-red-600' : 'text-cyan-700'}`}>
-          {isNegative ? '↓' : '↑'} {change} <span className="font-medium text-slate-500">vs. mes anterior</span>
+        <p className={`mt-3 text-xs font-semibold ${hasChange ? trendColor : 'text-slate-500'}`}>
+          {hasChange ? (
+            <>{trendSymbol} {formattedChange} <span className="font-medium text-slate-500">vs. mes anterior</span></>
+          ) : comparisonLabel}
         </p>
       </div>
     </article>
@@ -208,20 +225,24 @@ export default function Dashboard() {
   const expenses = Number(companyMetric.totalExpenses) || 0;
   const balance = Number(companyMetric.netCashFlow) || 0;
   const monthlyData = useMemo(() => buildMonthlyData(companyMonthlyMetrics), [companyMonthlyMetrics]);
+  const monthlyTrends = useMemo(() => buildMonthlyTrends(companyMonthlyMetrics), [companyMonthlyMetrics]);
   const activityItems = useMemo(() => buildRecentActivity(documents, transactions), [documents, transactions]);
-  const distributionData = useMemo(() => [
-    { name: 'Ingresos', value: Math.max(income, 0), color: TURQUOISE },
-    { name: 'Gastos', value: Math.max(expenses, 0), color: GOLD },
-    { name: 'Balance', value: Math.max(balance, 0), color: '#7fcbd4' },
-  ], [balance, expenses, income]);
+  const distributionData = useMemo(() => buildFinancialDistribution(income, expenses).map((item) => ({
+    ...item,
+    color: item.name === 'Ingresos' ? TURQUOISE : GOLD,
+  })), [expenses, income]);
+  const distributionTotal = useMemo(
+    () => distributionData.reduce((total, item) => total + item.value, 0),
+    [distributionData],
+  );
 
   if (companyLoading) return <LoadingState variant="screen" />;
 
   const overviewCards = [
-    { label: 'Empresas activas', value: companies.length, change: '12.5%', icon: Building2 },
-    { label: 'Ingresos', value: shortCurrency(income), change: '18.7%', icon: DollarSign },
-    { label: 'Gastos', value: shortCurrency(expenses), change: expenses > income && income > 0 ? '-5.3%' : '5.3%', icon: WalletCards, tone: 'gold' },
-    { label: 'Balance', value: shortCurrency(balance), change: balance < 0 ? '-22.1%' : '22.1%', icon: Scale },
+    { label: 'Empresas activas', value: companies.length, change: null, comparisonLabel: 'Total actual', icon: Building2 },
+    { label: 'Ingresos', value: shortCurrency(income), change: monthlyTrends.income, icon: DollarSign },
+    { label: 'Gastos', value: shortCurrency(expenses), change: monthlyTrends.expenses, icon: WalletCards, tone: 'gold', positiveWhen: 'down' },
+    { label: 'Balance', value: shortCurrency(balance), change: monthlyTrends.balance, icon: Scale },
   ];
 
   return (
@@ -242,7 +263,7 @@ export default function Dashboard() {
         <div className="enterprise-panel min-h-[360px] rounded-2xl p-6">
           <PanelTitle>Distribución financiera</PanelTitle>
           <Suspense fallback={<div className="h-[270px] animate-pulse rounded-xl bg-cyan-50" />}>
-            <DashboardDistributionChart data={distributionData} total={income} />
+            <DashboardDistributionChart data={distributionData} total={distributionTotal} />
           </Suspense>
         </div>
       </section>

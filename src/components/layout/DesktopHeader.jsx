@@ -1,6 +1,6 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { Bell, CircleUserRound } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Activity } from 'lucide-react';
 
 const pageTitles = {
   '/dashboard': ['Dashboard', 'Visión integral de tu empresa'],
@@ -44,22 +44,13 @@ export default function DesktopHeader() {
       </div>
 
       <div className="flex items-center gap-5 text-[#b57b0b]">
-        <button
-          type="button"
-          aria-label="Ver notificaciones"
+        <Link
+          to="/activity"
+          aria-label="Ver actividad"
           className="relative rounded-full border border-amber-300/70 bg-white/75 p-3 shadow-[0_5px_12px_rgba(89,64,8,0.12),inset_0_1px_0_white] hover:-translate-y-0.5 hover:border-cyan-400 hover:text-cyan-700"
         >
-          <Bell className="h-6 w-6" />
-          <span className="absolute right-2 top-2 h-2 w-2 rounded-full border border-white bg-red-500" />
-        </button>
-        <span className="h-9 w-px bg-gradient-to-b from-transparent via-amber-400 to-transparent" aria-hidden="true" />
-        <button
-          type="button"
-          aria-label="Abrir perfil"
-          className="rounded-full border border-amber-400 bg-gradient-to-br from-white to-amber-50 p-2.5 shadow-[0_5px_12px_rgba(89,64,8,0.14),inset_0_1px_0_white] hover:-translate-y-0.5 hover:border-cyan-400 hover:text-cyan-700"
-        >
-          <CircleUserRound className="h-7 w-7" />
-        </button>
+          <Activity className="h-6 w-6" />
+        </Link>
       </div>
     </header>
   );

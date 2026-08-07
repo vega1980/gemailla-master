@@ -10,14 +10,12 @@ async function getAdminAuth() {
       process.env.GCLOUD_PROJECT ||= process.env.VITE_FIREBASE_PROJECT_ID || 'demo-gemailla-e2e';
 
       const requireFromFunctions = createRequire(`${process.cwd()}/functions/package.json`);
-      const admin = requireFromFunctions('firebase-admin');
+      const { getApps, initializeApp } = requireFromFunctions('firebase-admin/app');
+      const { getAuth } = requireFromFunctions('firebase-admin/auth');
       const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'demo-gemailla-e2e';
+      const app = getApps()[0] || initializeApp({ projectId });
 
-      if (!admin.apps.length) {
-        admin.initializeApp({ projectId });
-      }
-
-      return admin.auth();
+      return getAuth(app);
     });
   }
 

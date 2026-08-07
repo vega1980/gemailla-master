@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 require('../contracts/aiContracts');
 const { enforceAllowedOrigin, fail, getAllowedOrigins, handleCorsPolicy } = require('../policies/httpPolicy');
 const {
@@ -213,7 +213,7 @@ async function writeAiAuditLog({ eventName, status, user, authorization, correla
     errorMessage: errorMessage || null,
   });
 
-  await admin.firestore().collection(AI_AUDIT_LOG_COLLECTION).doc(logId).set(payload, { merge: true });
+  await firebaseAdmin.getAdminFirestore().collection(AI_AUDIT_LOG_COLLECTION).doc(logId).set(payload, { merge: true });
   structuredLog(status >= 500 ? 'ERROR' : status >= 400 ? 'WARNING' : 'INFO', 'ai_audit_logged', {
     correlationId,
     eventName,
@@ -247,7 +247,7 @@ async function writeAiCostLog({
       : roundCostUsd(estimatedCostUsd);
   const logId = `${timestamp.replace(/[^0-9A-Za-z]/g, '')}_${String(correlationId || createCorrelationId('cost')).replace(/[^A-Za-z0-9_-]/g, '_')}`.slice(0, 220);
 
-  await admin.firestore().collection(AI_COST_LOG_COLLECTION).doc(logId).set({
+  await firebaseAdmin.getAdminFirestore().collection(AI_COST_LOG_COLLECTION).doc(logId).set({
     timestamp,
     tokens,
     inputTokens: usageTokens.inputTokens,
@@ -296,7 +296,7 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, pro
     runtimeConfig: config,
   });
   const { usageDocId, rateDocId } = getLimitDocIds({ companyId: authorization.companyId, uid: user.uid, now });
-  const db = admin.firestore();
+  const db = firebaseAdmin.getAdminFirestore();
   const rateRef = db.collection('aiRateLimits').doc(rateDocId);
   const usageRef = db.collection('aiUsage').doc(usageDocId);
   const nowMs = now.getTime();
@@ -429,7 +429,7 @@ async function reconcileAiReservation({
     throw error;
   }
 
-  const db = admin.firestore();
+  const db = firebaseAdmin.getAdminFirestore();
   const usageRef = db.collection('aiUsage').doc(reservation.usageDocId);
   const estimatedTokens = toCounterNumber(reservation.estimatedTokens);
   const estimatedCostUsd = toCounterNumber(reservation.estimatedCostUsd);
@@ -573,7 +573,7 @@ async function verifyFirebaseUser(req) {
   }
 
   try {
-    return await admin.auth().verifyIdToken(token);
+    return await firebaseAdmin.getAdminAuth().verifyIdToken(token);
   } catch (_error) {
     const error = new Error('Token de Firebase inválido o expirado.');
     error.status = 401;
@@ -698,7 +698,7 @@ function validateDocumentStoragePrefix(document) {
 }
 
 async function validateCompanyMembershipAccess({ user, companyId }) {
-  const companyRef = admin.firestore().collection('companies').doc(companyId);
+  const companyRef = firebaseAdmin.getAdminFirestore().collection('companies').doc(companyId);
   const companySnap = await companyRef.get();
   if (!companySnap.exists) fail(403, 'Empresa no válida o sin acceso.');
 
@@ -711,7 +711,7 @@ async function validateCompanyMembershipAccess({ user, companyId }) {
   }
 
   const membershipId = `${companyId}_${user.uid}`;
-  const membershipSnap = await admin.firestore().collection('companyMembers').doc(membershipId).get();
+  const membershipSnap = await firebaseAdmin.getAdminFirestore().collection('companyMembers').doc(membershipId).get();
   if (!membershipSnap.exists) fail(403, 'Se requiere membresía activa en la empresa para usar IA.');
 
   const membership = membershipSnap.data() || {};
@@ -756,7 +756,7 @@ function isActiveCompanyEntitlement(entitlement, now = new Date()) {
 }
 
 async function getCompanyEntitlement(companyId) {
-  const snap = await admin.firestore().collection('companyEntitlements').doc(companyId).get();
+  const snap = await firebaseAdmin.getAdminFirestore().collection('companyEntitlements').doc(companyId).get();
   if (!snap.exists) return null;
   return { id: snap.id, ...(snap.data() || {}) };
 }
@@ -778,7 +778,7 @@ async function validateRequestedDocuments({ companyId, documentIds, storagePaths
   const seenDocIds = new Set();
 
   for (const documentId of documentIds) {
-    const docSnap = await admin.firestore().collection('documents').doc(documentId).get();
+    const docSnap = await firebaseAdmin.getAdminFirestore().collection('documents').doc(documentId).get();
     if (!docSnap.exists) fail(403, 'Documento solicitado no válido o sin acceso.');
     const data = docSnap.data() || {};
     if (data.companyId !== companyId) fail(403, 'Documento solicitado no pertenece a la empresa validada.');
@@ -790,7 +790,7 @@ async function validateRequestedDocuments({ companyId, documentIds, storagePaths
   }
 
   for (const storagePath of storagePaths) {
-    const querySnap = await admin.firestore()
+    const querySnap = await firebaseAdmin.getAdminFirestore()
       .collection('documents')
       .where('companyId', '==', companyId)
       .where('storagePath', '==', storagePath)

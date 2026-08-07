@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 const { requireCompanyId, validateCompanyMembershipAccess } = require('./aiHandler');
 
 
@@ -17,7 +17,7 @@ async function verifyFirebaseUser(req) {
   }
 
   try {
-    return await admin.auth().verifyIdToken(token);
+    return await firebaseAdmin.getAdminAuth().verifyIdToken(token);
   } catch (_error) {
     const error = new Error('Token de Firebase inválido o expirado.');
     error.status = 401;

@@ -210,11 +210,11 @@ function loadAiHandler({
 }) {
   delete process.env.OPENAI_API_KEY;
   const firestore = createFirestore(store);
-  const admin = {
-    auth() {
+  const firebaseAdmin = {
+    getAdminAuth() {
       return { verifyIdToken };
     },
-    firestore() {
+    getAdminFirestore() {
       return firestore;
     },
   };
@@ -223,7 +223,7 @@ function loadAiHandler({
   const modulePath = require.resolve('../handlers/aiHandler');
 
   Module._load = function patchedLoad(request, parent, isMain) {
-    if (request === 'firebase-admin') return admin;
+    if (request === '../firebaseAdmin') return firebaseAdmin;
     if (request === '../config') {
       return {
         DEFAULT_AI_REQUEST_TIMEOUT_MS: 45000,

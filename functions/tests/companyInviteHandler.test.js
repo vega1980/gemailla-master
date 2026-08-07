@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 
 const {
   acceptCompanyInvitationHandler,
@@ -81,20 +81,19 @@ function mockAdmin(t, initial = {}, options = {}) {
     },
   };
 
-  Object.defineProperty(admin, 'firestore', { configurable: true, value: () => firestore });
-  Object.defineProperty(admin, 'auth', {
-    configurable: true,
-    value: () => ({
+  const originalGetAdminFirestore = firebaseAdmin.getAdminFirestore;
+  const originalGetAdminAuth = firebaseAdmin.getAdminAuth;
+  firebaseAdmin.getAdminFirestore = () => firestore;
+  firebaseAdmin.getAdminAuth = () => ({
       verifyIdToken: async (token) => {
         const [uid, email, emailVerified] = token.split(':');
         return { uid, email, email_verified: emailVerified === 'true', name: email };
       },
       generateSignInWithEmailLink: async (email, settings) => `https://mail.gemailla.test/?email=${encodeURIComponent(email)}&continue=${encodeURIComponent(settings.url)}`,
-    }),
-  });
+    });
   t.after(() => {
-    delete admin.firestore;
-    delete admin.auth;
+    firebaseAdmin.getAdminFirestore = originalGetAdminFirestore;
+    firebaseAdmin.getAdminAuth = originalGetAdminAuth;
   });
 
   return store;

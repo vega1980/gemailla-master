@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 
 const {
   aggregateCompanyMetricsOnWrite,
@@ -47,9 +47,9 @@ function mockAdmin(t, initial = {}) {
     },
   };
   firestore.FieldValue = { increment: (value) => ({ __increment: value }) };
-  Object.defineProperty(admin, 'firestore', { configurable: true, value: () => firestore });
-  admin.firestore.FieldValue = firestore.FieldValue;
-  t.after(() => { delete admin.firestore; });
+  const originalGetAdminFirestore = firebaseAdmin.getAdminFirestore;
+  firebaseAdmin.getAdminFirestore = () => firestore;
+  t.after(() => { firebaseAdmin.getAdminFirestore = originalGetAdminFirestore; });
   return { store, FieldValue: firestore.FieldValue };
 }
 

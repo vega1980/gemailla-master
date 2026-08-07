@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const firebaseAdmin = require('../firebaseAdmin');
 
 const DOCUMENT_STORAGE_PATH_PATTERN = /^companies\/([^/]+)\/documents\/([^/]+)\/[^/]+$/;
 
@@ -28,8 +28,8 @@ async function documentHasValidMetadata({ db, companyId, documentId }) {
 
 async function cleanupOrphanDocumentStorageHandler(_event = {}) {
   const { dryRun, maxFiles, minFileAgeMinutes, quarantinePrefix } = getOrphanCleanupConfig();
-  const db = admin.firestore();
-  const bucket = admin.storage().bucket();
+  const db = firebaseAdmin.getAdminFirestore();
+  const bucket = firebaseAdmin.getAdminStorage().bucket();
   const result = { scanned: 0, quarantined: 0, skipped: 0, dryRun };
   let nextQuery = { prefix: 'companies/', maxResults: Math.min(maxFiles, 1000) };
 
