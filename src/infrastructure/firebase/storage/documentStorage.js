@@ -41,13 +41,15 @@ export async function uploadFile({ file, companyId, documentId, folder = 'docume
     throw new Error('No se puede subir el archivo sin una empresa activa. Falta companyId.');
   }
 
-  const safeFolder = folder === 'documents' ? 'documents' : 'documents';
+  // Toda entrada es cuarentena; el backend es el único que puede promoverla.
+  const safeFolder = 'quarantine';
   const safeDocumentId = sanitizePathSegment(documentId || '', '');
   if (!safeDocumentId) {
     throw new Error('No se puede subir el archivo sin un ID de documento preasignado.');
   }
-  const storagePath = `companies/${safeCompanyId}/${safeFolder}/${safeDocumentId}/${safeName}`;
-  const storageRef = ref(storage, storagePath);
+  const quarantinePath = `companies/${safeCompanyId}/${safeFolder}/${safeDocumentId}/${safeName}`;
+  const storagePath = `companies/${safeCompanyId}/documents/${safeDocumentId}/${safeName}`;
+  const storageRef = ref(storage, quarantinePath);
 
   await uploadBytes(storageRef, file, {
     contentType,
@@ -69,6 +71,7 @@ export async function uploadFile({ file, companyId, documentId, folder = 'docume
 
   return {
     storagePath,
+    quarantinePath,
     fileName: file.name,
     contentType,
     fileSize: file.size,

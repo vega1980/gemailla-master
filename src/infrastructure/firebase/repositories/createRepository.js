@@ -8,6 +8,8 @@ import {
   limit as firestoreLimit,
   orderBy,
   query,
+  runTransaction,
+  serverTimestamp,
   setDoc,
   startAfter,
   updateDoc,
@@ -18,6 +20,7 @@ import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/filterValidation';
 import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
+import { mutableCollectionSchemas, validateDomainWrite } from '@/shared/validation/domainSchemas';
 
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
@@ -212,9 +215,10 @@ function buildCompanyOptions(companyId, options = {}, extraWhere = []) {
 
 export const createRepository = (collectionName) => {
   const collectionRef = collection(db, collectionName);
+  const isPhaseOneCollection = Boolean(mutableCollectionSchemas[collectionName]);
   const auditMiddleware = createAuditMutationMiddleware({
     getCurrentUserUid: () => auth.currentUser?.uid || null,
-    nowIso: () => new Date().toISOString(),
+    nowIso: () => isPhaseOneCollection ? serverTimestamp() : new Date().toISOString(),
   });
 
   const newId = () => doc(collectionRef).id;
@@ -402,7 +406,8 @@ export const createRepository = (collectionName) => {
   };
 
   const create = async (data, id = null) => {
-    const dataWithAudit = auditMiddleware.withCreateAuditFields(data);
+    const validatedData = validateDomainWrite(collectionName, data);
+    const dataWithAudit = auditMiddleware.withCreateAuditFields(validatedData);
 
     if (id) {
       const documentRef = doc(db, collectionName, id);
@@ -426,12 +431,20 @@ export const createRepository = (collectionName) => {
 
   const update = async (id, data) => {
     const documentRef = doc(db, collectionName, id);
-    const dataWithAudit = auditMiddleware.withUpdateAuditFields(data);
-    await updateDoc(documentRef, dataWithAudit);
+    if (isPhaseOneCollection) {
+      await runTransaction(db, async transaction => {
+        const current = await transaction.get(documentRef);
+        if (!current.exists()) throw new Error(`No existe ${collectionName}/${id}.`);
+        validateDomainWrite(collectionName, { ...current.data(), ...data });
+        transaction.update(documentRef, auditMiddleware.withUpdateAuditFields(data));
+      });
+    } else {
+      await updateDoc(documentRef, auditMiddleware.withUpdateAuditFields(data));
+    }
 
     return {
       id,
-      ...dataWithAudit,
+      ...data,
     };
   };
 
@@ -449,7 +462,7 @@ export const createRepository = (collectionName) => {
 
       for (const item of chunk) {
         const documentRef = doc(collectionRef);
-        const dataWithAudit = auditMiddleware.withCreateAuditFields(item);
+        const dataWithAudit = auditMiddleware.withCreateAuditFields(validateDomainWrite(collectionName, item));
         batch.set(documentRef, dataWithAudit);
         created.push({ id: documentRef.id, ...dataWithAudit });
       }
@@ -461,13 +474,10 @@ export const createRepository = (collectionName) => {
   };
 
   const archive = async (id) => {
-    const archiveData = auditMiddleware.withUpdateAuditFields({
+    return update(id, {
       status: 'archived',
-      archivedAt: new Date().toISOString(),
+      archivedAt: isPhaseOneCollection ? serverTimestamp() : new Date().toISOString(),
     });
-
-    await updateDoc(doc(db, collectionName, id), archiveData);
-    return { id, ...archiveData };
   };
 
   return {

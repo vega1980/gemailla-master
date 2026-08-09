@@ -1,5 +1,5 @@
 import { auth } from '@/infrastructure/firebase/auth';
-import { addDoc, collection, db } from '@/infrastructure/firebase/firestore';
+import { addDoc, collection, db, serverTimestamp } from '@/infrastructure/firebase/firestore';
 import { ensureCorrelationId, getObservabilityEventPolicy, sanitizeObservabilityPayload } from '@/lib/observabilityPolicy';
 export { createCorrelationId, ensureCorrelationId, getObservabilityEventPolicy, sanitizeObservabilityPayload } from '@/lib/observabilityPolicy';
 
@@ -57,14 +57,14 @@ export async function persistObservabilityEvent(eventName, payload = {}) {
   const policy = getObservabilityEventPolicy(eventName, payload.severity || 'INFO');
   if (!policy.persist) return null;
 
-  const normalizedPayload = sanitizeObservabilityPayload({
-    eventName,
-    ...releaseMetadata,
-    ...payload,
-    logPolicy: policy,
-    ownerUid: payload.ownerUid || user?.uid || '',
-    createdAt: new Date().toISOString(),
-  });
+  const safe = sanitizeObservabilityPayload(payload);
+  const normalizedPayload = {
+    eventName: String(eventName).slice(0, 80), severity: String(payload.severity || 'ERROR').toUpperCase(), source: 'frontend',
+    correlationId: ensureCorrelationId(payload.correlationId, 'obs'), ownerUid: payload.ownerUid || user?.uid || '', companyId: payload.companyId || undefined,
+    route: String(safe.route || '').slice(0, 300), errorName: String(safe.error?.name || '').slice(0, 100), errorMessage: String(safe.error?.message || '').slice(0, 500),
+    appVersion: releaseMetadata.appVersion, buildId: releaseMetadata.buildId, gitSha: releaseMetadata.gitSha, deployEnv: releaseMetadata.deployEnv,
+    retentionDays: Math.min(90, Math.max(1, Number(policy.retentionDays) || 30)), createdAt: serverTimestamp(),
+  };
 
   if (!normalizedPayload.ownerUid && !payload.companyId) return null;
   return addDoc(collection(db, 'observabilityEvents'), normalizedPayload);

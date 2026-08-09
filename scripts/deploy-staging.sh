@@ -20,7 +20,9 @@ echo "project=$PROJECT_ID buildId=$BUILD_ID gitSha=$GIT_SHA appVersion=$APP_VERS
 npm run validate:env
 npm run test:unit
 npm run build
-npx firebase-tools deploy --project "$PROJECT_ID" --only hosting,functions,firestore:rules,storage --non-interactive
+node scripts/prepare-staging-firebase-config.mjs
+trap 'rm -f .firebase.staging.generated.json' EXIT
+npx firebase-tools deploy --config .firebase.staging.generated.json --project "$PROJECT_ID" --only hosting,functions,firestore:rules,storage --non-interactive
 npm run smoke:staging
 
 echo "Staging deploy complete. Record evidence in docs/evidencia/release-${BUILD_ID}.md"

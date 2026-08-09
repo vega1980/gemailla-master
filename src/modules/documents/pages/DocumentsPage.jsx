@@ -22,6 +22,7 @@ import { useDebouncedValue, useFilteredDocuments } from '@/features/documents/ho
 const statusColors = {
   [DOCUMENT_STATUSES.UPLOADED]: 'bg-slate-500/10 text-slate-300 border-slate-500/20',
   [DOCUMENT_STATUSES.UPLOADING]: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+  [DOCUMENT_STATUSES.QUARANTINED]: 'bg-amber-500/10 text-amber-300 border-amber-500/20',
   [DOCUMENT_STATUSES.PENDING]: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
   [DOCUMENT_STATUSES.PROCESSING]: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   [DOCUMENT_STATUSES.ANALYZED]: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -33,6 +34,7 @@ const statusColors = {
 const statusLabels = {
   [DOCUMENT_STATUSES.UPLOADED]: 'Subido',
   [DOCUMENT_STATUSES.UPLOADING]: 'Subiendo',
+  [DOCUMENT_STATUSES.QUARANTINED]: 'En cuarentena',
   [DOCUMENT_STATUSES.PENDING]: 'Pendiente',
   [DOCUMENT_STATUSES.PROCESSING]: 'Procesando',
   [DOCUMENT_STATUSES.ANALYZED]: 'Analizado',

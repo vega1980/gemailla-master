@@ -88,15 +88,23 @@ service firebase.storage {
       allow read: if activeCompanyAccess(companyId)
                   && hasExistingObjectMetadata(companyId, documentId);
 
+      // La promoción solo la realiza el Admin SDK después del escaneo.
+      allow create: if false;
+
+      // Files are immutable once created — updates and deletes are never allowed
+      allow update, delete: if false;
+    }
+
+    // Zona de entrada write-only. Solo una Function con Admin SDK puede escanear
+    // y promover el objeto al prefijo legible `documents`.
+    match /companies/{companyId}/quarantine/{documentId}/{fileName} {
+      allow read, update, delete: if false;
       allow create: if request.resource.size > 0
                     && request.resource.size < 15 * 1024 * 1024
                     && contentTypeMatchesExtension(fileName)
                     && canWriteCompanyDocuments(companyId)
                     && documentExists(companyId, documentId)
                     && isValidMetadata(companyId, documentId);
-
-      // Files are immutable once created — updates and deletes are never allowed
-      allow update, delete: if false;
     }
   }
 }

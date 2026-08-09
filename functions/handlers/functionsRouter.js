@@ -1,11 +1,15 @@
 const { syncCompanyClaimsHandler } = require('./syncCompanyClaimsHandler');
 const { acceptCompanyInvitationHandler, inviteCompanyMemberHandler } = require('./companyInviteHandler');
 const { handleCorsPolicy } = require('../policies/httpPolicy');
+const { appendAuditLog } = require('./auditLogHandler');
+const { predictionLogHandler } = require('./predictionLogHandler');
 
 const FUNCTION_HANDLERS = new Map([
   ['syncCompanyClaims', syncCompanyClaimsHandler],
   ['inviteCompanyMember', inviteCompanyMemberHandler],
   ['acceptCompanyInvitation', acceptCompanyInvitationHandler],
+  ['appendAuditLog', appendAuditLog],
+  ['recordPrediction', predictionLogHandler],
 ]);
 
 function getFunctionNameFromRequest(req) {
