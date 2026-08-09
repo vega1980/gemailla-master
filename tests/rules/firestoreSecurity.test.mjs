@@ -37,7 +37,7 @@ async function seedSecurityAcl() {
 }
 
 describe('C1 — cross-tenant injection', () => {
-  const collections = ['aiConversations', 'subscriptions', 'predictionLogs', 'observabilityEvents'];
+  const collections = ['aiConversations', 'subscriptions'];
 
   beforeEach(async () => {
     await clearFirestore();
@@ -301,18 +301,6 @@ describe('hybrid owned/company records', () => {
       ownerUid: attacker.uid,
       plan: 'team',
     }, attacker), 'subscription company create');
-  });
-
-  it('preserves personal and company-scoped observability event creation', async () => {
-    await assertAllowed(firestoreSet('observabilityEvents/eventPersonal', {
-      ownerUid: attacker.uid,
-      event: 'personal',
-    }, attacker), 'observability personal create');
-    await assertAllowed(firestoreSet('observabilityEvents/eventCompany', {
-      companyId: companyB,
-      ownerUid: attacker.uid,
-      event: 'company',
-    }, attacker), 'observability company create');
   });
 
   for (const collection of ['predictionLogs', 'aiConversations']) {

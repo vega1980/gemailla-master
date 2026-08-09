@@ -85,7 +85,7 @@ export function SubscriptionProvider({ children }) {
       if (!mountedRef.current || sessionIdRef.current !== requestSessionId) return;
       setSubscription(subs[0] || null);
       const thisMonth = new Date().toISOString().slice(0, 7);
-      const monthLogs = logs.filter(l => l.fecha_generacion?.startsWith(thisMonth));
+      const monthLogs = logs.filter(l => l.monthKey === thisMonth || l.fecha_generacion?.startsWith(thisMonth));
       setPredictionCount(monthLogs.length);
     } catch (error) {
       console.error('Error loading subscription:', error);

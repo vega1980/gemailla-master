@@ -127,6 +127,20 @@ export async function firestoreDomainSet(path, data, auth) {
   return response;
 }
 
+export async function firestoreSetWithServerTimestamps(path, data, auth, fieldPaths = ['createdAt']) {
+  return fetch(`${firestoreBase}:commit`, {
+    method: 'POST',
+    headers: authHeaders(auth, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ writes: [{
+      update: {
+        name: `projects/${PROJECT_ID}/databases/(default)/documents/${path}`,
+        fields: firestoreFields(data),
+      },
+      updateTransforms: fieldPaths.map(fieldPath => ({ fieldPath, setToServerValue: 'REQUEST_TIME' })),
+    }] }),
+  });
+}
+
 export async function firestoreDomainPatch(path, patch, auth) {
   const actorUid = typeof auth === 'string' ? auth : auth?.uid;
   const fields = { ...patch, updatedBy: actorUid };

@@ -4,13 +4,13 @@ import { mutableCollectionSchemas } from '../../src/shared/validation/domainSche
 
 const fixtures = {
   crmClients: { companyId: 'acme', name: 'Cliente', status: 'activo' },
-  crmDeals: { companyId: 'acme', title: 'Venta', stage: 'propuesta', probability: 50 },
+  crmDeals: { companyId: 'acme', title: 'Venta', stage: 'contactado', probability: 25 },
   crmInteractions: { companyId: 'acme', clientId: 'c1', type: 'llamada', date: '2026-08-08', summary: 'Seguimiento' },
   employees: { companyId: 'acme', fullName: 'Ada', employmentType: 'tiempo_completo', status: 'activo' },
   payroll: { companyId: 'acme', employeeId: 'e1', period: '2026-08', period_type: 'mensual', baseSalary: 10, bonuses: 0, overtime: 0, deductions_imss: 0, deductions_isr: 0, other_deductions: 0, netPay: 10, status: 'pendiente' },
   performanceReviews: { companyId: 'acme', employeeId: 'e1', period: '2026-Q3', reviewDate: '2026-08-08', score_productivity: 7, score_quality: 7, score_teamwork: 7, score_punctuality: 7, score_leadership: 7, overallRating: 'bueno', salary_adjustment: 0 },
   kpis: { companyId: 'acme', name: 'MRR', target: 10, current: 5, frequency: 'mensual', status: 'en_curso' },
-  projects: { companyId: 'acme', name: 'Migración', status: 'en_curso', priority: 'alta', progress: 50 },
+  projects: { companyId: 'acme', name: 'Migración', status: 'en_curso', priority: 'alta', progress: 50, team: ['Ada'], tags: ['importado'] },
   projectTasks: { companyId: 'acme', projectId: 'p1', title: 'Plan', status: 'pendiente', priority: 'media' },
   supportTickets: { companyId: 'acme', subject: 'Ayuda', description: 'Detalle', status: 'abierto', priority: 'media' },
 };
@@ -30,11 +30,23 @@ test('los contratos numéricos no convierten strings silenciosamente', () => {
   assert.throws(() => mutableCollectionSchemas.payroll.parse({ ...fixtures.payroll, netPay: '10' }));
 });
 
+test('CRM acepta etapas usadas por la interfaz y valores existentes', () => {
+  for (const stage of ['contactado', 'cerrado_ganado', 'cerrado_perdido', 'calificado', 'ganado', 'perdido']) {
+    assert.doesNotThrow(() => mutableCollectionSchemas.crmDeals.parse({ ...fixtures.crmDeals, stage }));
+  }
+});
+
+test('proyectos acepta team y tags del importador con límites estrictos', () => {
+  assert.doesNotThrow(() => mutableCollectionSchemas.projects.parse(fixtures.projects));
+  assert.throws(() => mutableCollectionSchemas.projects.parse({ ...fixtures.projects, team: [42] }));
+  assert.throws(() => mutableCollectionSchemas.projects.parse({ ...fixtures.projects, tags: Array(101).fill('tag') }));
+});
+
 const boundaries = {
-  crmClients: { text: 'name' }, crmDeals: { text: 'title', number: ['probability', 0, 100] }, crmInteractions: { text: 'clientId', date: 'date' },
-  employees: { text: 'fullName', number: ['baseSalary', 0, 1_000_000_000] }, payroll: { text: 'employeeId', number: ['netPay', 0, 1_000_000_000], date: 'period' },
-  performanceReviews: { text: 'employeeId', number: ['score_quality', 0, 10], date: 'reviewDate' }, kpis: { text: 'name' }, projects: { text: 'name', number: ['progress', 0, 100] },
-  projectTasks: { text: 'title', number: ['estimatedHours', 0, 100000] }, supportTickets: { text: 'subject' },
+  crmClients: { text: 'name', number: ['total_revenue', 0, 1_000_000_000] }, crmDeals: { text: 'title', number: ['probability', 0, 100], date: 'expectedClose' }, crmInteractions: { text: 'clientId', date: 'date' },
+  employees: { text: 'fullName', number: ['baseSalary', 0, 1_000_000_000], date: 'hireDate' }, payroll: { text: 'employeeId', number: ['netPay', 0, 1_000_000_000], date: 'period' },
+  performanceReviews: { text: 'employeeId', number: ['score_quality', 0, 10], date: 'reviewDate' }, kpis: { text: 'name', number: ['target', -1_000_000_000, 1_000_000_000] }, projects: { text: 'name', number: ['progress', 0, 100], date: 'startDate' },
+  projectTasks: { text: 'title', number: ['estimatedHours', 0, 100000], date: 'dueDate' }, supportTickets: { text: 'subject', date: 'resolved_date' },
 };
 for (const [collection, boundary] of Object.entries(boundaries)) {
   test(`${collection}: mínimos, máximos, fecha y actualización de negocio`, () => {

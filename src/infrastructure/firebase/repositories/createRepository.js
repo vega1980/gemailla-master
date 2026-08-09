@@ -19,6 +19,7 @@ import {
 import { auth, db } from '@/firebase';
 import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';
 import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/filterValidation';
+import { serializeRepositoryData, stripRepositoryDocumentId } from '@/infrastructure/firebase/repositories/repositoryData';
 import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
 import { mutableCollectionSchemas, validateDomainWrite } from '@/shared/validation/domainSchemas';
 
@@ -109,9 +110,10 @@ function createBatchQueryMetrics(collectionName, operation, requestedCount, chun
 }
 
 function serializeDocSnapshot(snapshot) {
+  const data = serializeRepositoryData(snapshot.data());
   return {
     id: snapshot.id,
-    ...snapshot.data(),
+    ...data,
   };
 }
 
@@ -218,7 +220,7 @@ export const createRepository = (collectionName) => {
   const isPhaseOneCollection = Boolean(mutableCollectionSchemas[collectionName]);
   const auditMiddleware = createAuditMutationMiddleware({
     getCurrentUserUid: () => auth.currentUser?.uid || null,
-    nowIso: () => isPhaseOneCollection ? serverTimestamp() : new Date().toISOString(),
+    getTimestamp: () => isPhaseOneCollection ? serverTimestamp() : new Date().toISOString(),
   });
 
   const newId = () => doc(collectionRef).id;
@@ -431,20 +433,22 @@ export const createRepository = (collectionName) => {
 
   const update = async (id, data) => {
     const documentRef = doc(db, collectionName, id);
+    const writeData = isPhaseOneCollection ? stripRepositoryDocumentId(data) : data;
+    const dataWithAudit = auditMiddleware.withUpdateAuditFields(writeData);
     if (isPhaseOneCollection) {
       await runTransaction(db, async transaction => {
         const current = await transaction.get(documentRef);
         if (!current.exists()) throw new Error(`No existe ${collectionName}/${id}.`);
-        validateDomainWrite(collectionName, { ...current.data(), ...data });
-        transaction.update(documentRef, auditMiddleware.withUpdateAuditFields(data));
+        validateDomainWrite(collectionName, { ...current.data(), ...writeData });
+        transaction.update(documentRef, dataWithAudit);
       });
     } else {
-      await updateDoc(documentRef, auditMiddleware.withUpdateAuditFields(data));
+      await updateDoc(documentRef, dataWithAudit);
     }
 
     return {
       id,
-      ...data,
+      ...dataWithAudit,
     };
   };
 
