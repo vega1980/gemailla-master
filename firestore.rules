@@ -279,10 +279,33 @@ service cloud.firestore {
       return canUpdateCompanyRecord()
         && validDocumentEnvelope(request.resource.data)
         && (
-          (resource.data.status == 'uploading' && request.resource.data.status in ['quarantined','error'])
-          || (resource.data.status == 'quarantined' && request.resource.data.status == 'error')
-        )
-        && changed.hasOnly(['status','correlationId','errorMessage','updatedAt','updatedBy']);
+          (
+            (
+              (resource.data.status == 'uploading' && request.resource.data.status in ['quarantined','error'])
+              || (resource.data.status == 'quarantined' && request.resource.data.status == 'error')
+            )
+            && changed.hasOnly(['status','correlationId','errorMessage','updatedAt','updatedBy'])
+          )
+          || (
+            resource.data.status in ['active','pending','uploaded']
+            && request.resource.data.status == 'processing'
+            && changed.hasOnly(['status','aiDisabled','errorMessage','correlationId','release','updatedAt','updatedBy'])
+          )
+          || (
+            resource.data.status == 'processing'
+            && request.resource.data.status in ['analyzed','ai_disabled','error']
+            && changed.hasOnly([
+              'status','aiDisabled','errorMessage','correlationId','release','docType',
+              'rfc_emisor','rfc_receptor','subtotal','iva','total','currency','docDate',
+              'concepts','ai_summary','ai_classification','tags','updatedAt','updatedBy'
+            ])
+          )
+          || (
+            resource.data.status != 'archived'
+            && request.resource.data.status == 'archived'
+            && changed.hasOnly(['status','archivedAt','updatedAt','updatedBy'])
+          )
+        );
     }
 
     function canCreateAiBudget() {

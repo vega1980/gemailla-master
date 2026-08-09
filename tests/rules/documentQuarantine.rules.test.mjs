@@ -14,4 +14,15 @@ describe('frontera Firestore de cuarentena', () => {
     await assertAllowed(firestoreDomainPatch('documents/doc', { status: 'error', errorMessage: 'falló' }, editor), 'quarantined to error');
     for (const patch of [{ status: 'uploaded' }, { storagePath: 'companies/doc-sec/documents/doc/a.pdf' }, { scanStatus: 'clean' }, { scanEventId: 'fake' }, { scanGeneration: '1' }, { scannedAt: 'fake' }, { scanHash: 'fake' }, { quarantineCleanupPending: false }]) { await assertAllowed(firestoreSet('documents/attack', base), 'reset'); await assertDenied(firestoreDomainPatch('documents/attack', patch, editor), `bloquea ${Object.keys(patch)[0]}`); }
   });
+  it('permite únicamente las transiciones de análisis y archivado usadas por la aplicación', async () => {
+    await assertAllowed(firestoreSet('documents/analysis', { ...base, status: 'uploaded', storagePath: `companies/${companyId}/documents/analysis/file.pdf` }), 'seed promoted document');
+    await assertAllowed(firestoreDomainPatch('documents/analysis', { status: 'processing', aiDisabled: false, errorMessage: null, correlationId: 'analysis-1', release: { version: 'test' } }, editor), 'uploaded to processing');
+    await assertAllowed(firestoreDomainPatch('documents/analysis', { status: 'analyzed', aiDisabled: false, errorMessage: null, correlationId: 'analysis-1', total: 100, tags: ['factura'] }, editor), 'processing to analyzed');
+    await assertAllowed(firestoreDomainPatch('documents/analysis', { status: 'archived', archivedAt: '2026-01-02T00:00:00.000Z' }, editor), 'analyzed to archived');
+  });
+  it('mantiene bloqueados los campos del escáner durante análisis y archivado', async () => {
+    await assertAllowed(firestoreSet('documents/locked', { ...base, status: 'uploaded', storagePath: `companies/${companyId}/documents/locked/file.pdf` }), 'seed promoted document');
+    await assertDenied(firestoreDomainPatch('documents/locked', { status: 'processing', storagePath: 'companies/doc-sec/documents/other/file.pdf' }, editor), 'analysis cannot replace storage path');
+    await assertDenied(firestoreDomainPatch('documents/locked', { status: 'archived', scanStatus: 'clean' }, editor), 'archive cannot forge scan status');
+  });
 });
