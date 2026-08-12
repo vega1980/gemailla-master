@@ -12,14 +12,24 @@ const { cleanupOrphanDocumentStorageHandler } = require('./handlers/orphanDocume
 const { revokeMembershipUserRefreshTokens } = require('./handlers/companyMembershipClaimsHandler');
 const { acceptCompanyInvitationHandler, inviteCompanyMemberHandler } = require('./handlers/companyInviteHandler');
 const { aggregateCompanyMetricsOnWrite } = require('./handlers/companyMetricsAggregationHandler');
+const { enforceAppCheckPolicy } = require('./policies/appCheckPolicy');
 const { handleCorsPolicy } = require('./policies/httpPolicy');
 
-exports.ai = onRequest({ cors: false, timeoutSeconds: 120, memory: '512MiB' }, aiExports.aiHandler);
-exports.syncCompanyClaims = onRequest({ cors: false }, (req, res) => {
+function withAppCheck(handler) {
+  return async (req, res) => {
+    // Each handler keeps ownership of CORS/OPTIONS. App Check is evaluated only
+    // for actual application requests so browser preflight remains unaffected.
+    if (req.method !== 'OPTIONS' && await enforceAppCheckPolicy(req, res)) return;
+    return handler(req, res);
+  };
+}
+
+exports.ai = onRequest({ cors: false, timeoutSeconds: 120, memory: '512MiB' }, withAppCheck(aiExports.aiHandler));
+exports.syncCompanyClaims = onRequest({ cors: false }, withAppCheck((req, res) => {
   if (handleCorsPolicy(req, res)) return;
   return syncCompanyClaimsHandler(req, res);
-});
-exports.functionsRouter = onRequest({ cors: false }, functionsRouterHandler);
+}));
+exports.functionsRouter = onRequest({ cors: false }, withAppCheck(functionsRouterHandler));
 exports.cleanupOrphanDocumentStorage = onSchedule({ schedule: 'every sunday 03:00', timeZone: 'Etc/UTC' }, cleanupOrphanDocumentStorageHandler);
 exports.revokeMembershipClaimsOnWrite = onDocumentWritten('companyMembers/{memberId}', revokeMembershipUserRefreshTokens);
 exports.aggregateMetricsOnTransactionWrite = onDocumentWritten('transactions/{transactionId}', aggregateCompanyMetricsOnWrite);
@@ -35,4 +45,5 @@ exports._test = {
   aggregateCompanyMetricsOnWrite,
   cleanupOrphanDocumentStorageHandler,
   revokeMembershipUserRefreshTokens,
+  withAppCheck,
 };
