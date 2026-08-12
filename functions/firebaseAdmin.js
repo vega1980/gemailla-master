@@ -1,10 +1,15 @@
 const { getApps, initializeApp } = require('firebase-admin/app');
+const { getAppCheck } = require('firebase-admin/app-check');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
 
 function initializeAdminApp() {
   return getApps()[0] || initializeApp();
+}
+
+function getAdminAppCheck() {
+  return getAppCheck(initializeAdminApp());
 }
 
 function getAdminAuth() {
@@ -20,6 +25,7 @@ function getAdminStorage() {
 }
 
 module.exports = {
+  getAdminAppCheck,
   getAdminAuth,
   getAdminFirestore,
   getAdminStorage,
