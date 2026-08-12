@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MessageCircle, X, Send, Bot, Minimize2, Maximize2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 const SUGGESTED_PROMPTS = [
   '¿Cómo está mi flujo de caja este mes?',
@@ -67,8 +68,7 @@ export default function ConsultorVirtual({ company, transactions, monthlyData })
   // Build context string from company data
   const buildContext = useCallback(() => {
     if (!company) return '';
-    const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+    const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
     const lastMonths = monthlyData.slice(-3).map(m => `${m.month}: Ingresos $${Math.round(m.ingresos).toLocaleString()}, Gastos $${Math.round(m.gastos).toLocaleString()}`).join('; ');
     return `\n\n[CONTEXTO DEL NEGOCIO - ${company.name}]\n- Ingresos totales: $${Math.round(totalIngresos).toLocaleString()}\n- Gastos totales: $${Math.round(totalGastos).toLocaleString()}\n- Utilidad neta: $${Math.round(totalIngresos - totalGastos).toLocaleString()}\n- Últimos meses: ${lastMonths || 'Sin datos'}\n- Industria: ${company.industry || 'No especificada'}\n`;
   }, [company, transactions, monthlyData]);

@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Shield, TrendingUp, AlertTriangle, CheckCircle, Loader2, BarChart3 } from 'lucide-react';
 import ReportGenerator from '@/features/reports/components/ReportGenerator';
 import { motion } from 'framer-motion';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 import { askLLM } from '@modules/ai/services/aiService';
 export default function Audit() {
@@ -24,8 +25,7 @@ export default function Audit() {
 
   const runAudit = async () => {
     setRunning(true);
-    const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+    const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
     const balance = totalIngresos - totalGastos;
     const margin = totalIngresos > 0 ? (balance / totalIngresos) * 100 : 0;
 
@@ -86,8 +86,7 @@ Genera un informe de auditoría que incluya:
 
   if (!activeCompany) return <EmptyState icon={Shield} title="Selecciona una empresa" description="Necesitas una empresa activa." />;
 
-  const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-  const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+  const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
 
   return (
     <div className="animate-fade-in">

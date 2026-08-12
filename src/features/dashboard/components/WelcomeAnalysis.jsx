@@ -3,6 +3,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import { Sparkles, X, TrendingUp, AlertTriangle, Calendar, ChevronRight, Loader2 } from 'lucide-react';
 import { format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 import { askLLM } from '@modules/ai/services/aiService';
 const LOCAL_KEY = 'gemailla_welcome_dismissed';
@@ -68,8 +69,7 @@ export default function WelcomeAnalysis({ company, transactions, monthlyData }) 
       : null;
 
     const fixedExpRatio = thisMonthInc > 0 ? ((thisMonthExp / thisMonthInc) * 100).toFixed(1) : 0;
-    const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+    const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
 
     const res = await askLLM({
       companyId: company.id,

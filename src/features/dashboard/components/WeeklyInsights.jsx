@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { format, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 import { askLLM } from '@modules/ai/services/aiService';
 const CACHE_KEY = 'gemailla_weekly_insight';
@@ -45,8 +46,7 @@ export default function WeeklyInsights({ company, transactions, monthlyData }) {
     if (loading) return;
     setLoading(true);
 
-    const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+    const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
     const utilidad = totalIngresos - totalGastos;
     const margen = totalIngresos > 0 ? ((utilidad / totalIngresos) * 100).toFixed(1) : 0;
 

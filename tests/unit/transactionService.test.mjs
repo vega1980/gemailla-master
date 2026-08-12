@@ -185,7 +185,8 @@ describe('transaction domain service', () => {
     assert.deepEqual(calculateTransactionTotals([
       { type: 'ingreso', amount: 100 },
       { type: 'gasto', amount: 30 },
-      { type: 'ingreso', amount: 20 },
+      { type: 'ingreso', amount: '20' },
+      { type: 'ingreso', amount: 'no-numérico' },
     ]), { totalIngresos: 120, totalGastos: 30 });
   });
 });

@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import jsPDF from 'jspdf';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 export default function ReportGenerator({ company, transactions = [], documents = [], auditReport = null, prediction = null, monthlyData = [] }) {
   const [generating, setGenerating] = useState(false);
@@ -125,8 +126,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
       // ── KPIs ──────────────────────────────────────────────────────
       sectionTitle('1. Indicadores Clave de Desempeño (KPIs)');
 
-      const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-      const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+      const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
       const balance = totalIngresos - totalGastos;
       const margin_pct = totalIngresos > 0 ? ((balance / totalIngresos) * 100).toFixed(1) : '0.0';
 
@@ -526,8 +526,7 @@ export default function ReportGenerator({ company, transactions = [], documents 
   const generateExcel = () => {
     setGenerating(true);
     try {
-      const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-      const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+      const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
       const balance = totalIngresos - totalGastos;
 
       // Build CSV content (opens in Excel)

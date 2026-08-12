@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Download, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 const categoryLabels = {
   ventas: 'Ventas', servicios: 'Servicios', inversiones: 'Inversiones', otros_ingresos: 'Otros Ingresos',
@@ -76,8 +77,7 @@ export default function FinancialStatements({ transactions, company }) {
 
   // Balance General (simplificado)
   const balanceData = useMemo(() => {
-    const allIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const allGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+    const { totalIngresos: allIngresos, totalGastos: allGastos } = calculateTransactionTotals(transactions);
     const efectivo = allIngresos - allGastos;
     const totalActivos = efectivo > 0 ? efectivo : 0;
     const patrimonio = efectivo;

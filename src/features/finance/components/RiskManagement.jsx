@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShieldAlert, Loader2, Brain, AlertTriangle, CheckCircle2, TrendingDown, Scale, RefreshCw, Lock, CalendarDays, CalendarRange, CalendarCheck, Zap } from 'lucide-react';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 import { askLLM } from '@modules/ai/services/aiService';
 const RISK_COLORS = {
@@ -250,8 +251,7 @@ export default function RiskManagement({ transactions, monthlyData, company, mem
     setLoading(true);
     setResult(null);
 
-    const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+    const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
     const balance = totalIngresos - totalGastos;
     const margen = totalIngresos > 0 ? ((balance / totalIngresos) * 100).toFixed(1) : 0;
 

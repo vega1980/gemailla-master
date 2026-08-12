@@ -210,7 +210,8 @@ export function prepareTransactionImportRows(rows = [], companyId, options = {})
 /** @param {Array<Pick<import('@/domain/dtos').TransactionDto, 'amount' | 'type'>>} transactions */
 export function calculateTransactionTotals(transactions = []) {
   return transactions.reduce((totals, transaction) => {
-    const amount = Number(transaction.amount || 0);
+    const parsedAmount = Number(transaction.amount);
+    const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
     if (transaction.type === 'ingreso') return { ...totals, totalIngresos: totals.totalIngresos + amount };
     if (transaction.type === 'gasto') return { ...totals, totalGastos: totals.totalGastos + amount };
     return totals;

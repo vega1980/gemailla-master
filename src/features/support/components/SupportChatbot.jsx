@@ -10,6 +10,7 @@ import { Send, Bot, User, Loader2, Ticket } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 import { askLLM } from '@modules/ai/services/aiService';
 const ticketStatusConfig = {
@@ -67,8 +68,7 @@ export default function SupportChatbot({ company }) {
     setMessages(newMessages);
     setAiLoading(true);
 
-    const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+    const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
     const analyzedDocs = documents.filter(d => d.status === 'analyzed').length;
 
     const history = newMessages.slice(-6).map(m => `${m.role === 'user' ? 'Usuario' : 'Asistente'}: ${m.content}`).join('\n');

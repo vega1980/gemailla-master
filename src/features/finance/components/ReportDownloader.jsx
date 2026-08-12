@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 import { toast } from 'sonner';
 
 export default function ReportDownloader({ transactions, company }) {
@@ -34,8 +35,7 @@ export default function ReportDownloader({ transactions, company }) {
       doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-MX')}`, 15, 48);
 
       // Summary
-      const income = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-      const expenses = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+      const { totalIngresos: income, totalGastos: expenses } = calculateTransactionTotals(transactions);
       const balance = income - expenses;
 
       doc.setFontSize(12);
@@ -110,8 +110,7 @@ export default function ReportDownloader({ transactions, company }) {
       ]);
 
       // Summary section
-      const income = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-      const expenses = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+      const { totalIngresos: income, totalGastos: expenses } = calculateTransactionTotals(transactions);
       const balance = income - expenses;
 
       const csv = [

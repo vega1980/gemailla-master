@@ -4,6 +4,7 @@ import { format, subMonths, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, FileText, Target, BarChart3 } from 'lucide-react';
+import { calculateTransactionTotals } from '@/domain/finance/transactionService';
 
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
@@ -35,8 +36,7 @@ export default function ClientDashboardShare({ company }) {
     return data;
   }, [transactions]);
 
-  const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-  const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
+  const { totalIngresos, totalGastos } = calculateTransactionTotals(transactions);
   const balance = totalIngresos - totalGastos;
   const margin = totalIngresos > 0 ? ((balance / totalIngresos) * 100).toFixed(1) : 0;
 
