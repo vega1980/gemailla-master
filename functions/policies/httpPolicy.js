@@ -29,7 +29,7 @@ function applyCors(req, res) {
   }
 
   res.set('Vary', 'Origin');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id, X-Firebase-AppCheck');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
 }
 
