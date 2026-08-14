@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  canStartPrediction,
   loadActiveSubscriptions,
   loadMonthlyPredictionCount,
 } from '../../src/lib/subscriptionData.js';
@@ -48,4 +49,19 @@ test('monthly prediction usage only counts matching records', async () => {
     userEmail: 'paid@example.com',
     month: '2026-08',
   }), 1);
+});
+
+test('prediction execution requires a verified quota and no concurrent write', () => {
+  assert.equal(canStartPrediction({
+    countAvailable: false, writeInFlight: false, count: 0, limit: 5,
+  }), false);
+  assert.equal(canStartPrediction({
+    countAvailable: true, writeInFlight: true, count: 0, limit: 5,
+  }), false);
+  assert.equal(canStartPrediction({
+    countAvailable: true, writeInFlight: false, count: 5, limit: 5,
+  }), false);
+  assert.equal(canStartPrediction({
+    countAvailable: true, writeInFlight: false, count: 4, limit: 5,
+  }), true);
 });

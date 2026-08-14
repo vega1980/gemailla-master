@@ -15,3 +15,8 @@ export async function loadMonthlyPredictionCount(entities, { userEmail, month } 
   const logs = await entities.PredictionLog.filter({ userEmail });
   return logs.filter((log) => log.fecha_generacion?.startsWith(month)).length;
 }
+
+export function canStartPrediction({ countAvailable, writeInFlight, count, limit }) {
+  if (!countAvailable || writeInFlight) return false;
+  return limit === Infinity || count < limit;
+}

@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useRef, useStat
 import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { createLatestRequestGuard } from '@/lib/latestRequestGuard';
-import { loadActiveSubscriptions, loadMonthlyPredictionCount } from '@/lib/subscriptionData';
+import { canStartPrediction, loadActiveSubscriptions, loadMonthlyPredictionCount } from '@/lib/subscriptionData';
 
 const SubscriptionContext = createContext(null);
 
@@ -45,6 +45,9 @@ export function SubscriptionProvider({ children }) {
   const mountedRef = useRef(true);
   const sessionIdRef = useRef(user?.uid || user?.id || user?.email || '');
   const requestGuardRef = useRef(createLatestRequestGuard());
+  const predictionCountRef = useRef(0);
+  const predictionCountAvailableRef = useRef(false);
+  const predictionWriteInFlightRef = useRef(null);
 
   // Purge plan entitlements before paint whenever the authenticated identity changes.
   useLayoutEffect(() => {
@@ -55,6 +58,9 @@ export function SubscriptionProvider({ children }) {
       setSubscription(null);
       setPredictionCount(0);
       setPredictionCountAvailable(false);
+      predictionCountRef.current = 0;
+      predictionCountAvailableRef.current = false;
+      predictionWriteInFlightRef.current = null;
       setLoading(Boolean(sessionId));
     }
   }, [user]);
@@ -72,6 +78,7 @@ export function SubscriptionProvider({ children }) {
     const requestSessionId = user?.uid || user?.id || user?.email || '';
     setLoading(true);
     setPredictionCountAvailable(false);
+    predictionCountAvailableRef.current = false;
     try {
       const userUid = user?.uid || user?.id;
       const subs = await loadActiveSubscriptions(firebase.entities, {
@@ -94,12 +101,15 @@ export function SubscriptionProvider({ children }) {
           || !requestGuardRef.current.isCurrent(requestToken)) return;
         setPredictionCount(monthlyPredictionCount);
         setPredictionCountAvailable(true);
+        predictionCountRef.current = monthlyPredictionCount;
+        predictionCountAvailableRef.current = true;
       } catch (predictionError) {
         console.error('Error loading prediction usage:', predictionError);
         if (mountedRef.current && sessionIdRef.current === requestSessionId
           && requestGuardRef.current.isCurrent(requestToken)) {
           // Fail closed for prediction quotas without changing plan access.
           setPredictionCountAvailable(false);
+          predictionCountAvailableRef.current = false;
         }
       }
     } catch (error) {
@@ -110,6 +120,8 @@ export function SubscriptionProvider({ children }) {
         setSubscription(null);
         setPredictionCount(0);
         setPredictionCountAvailable(false);
+        predictionCountRef.current = 0;
+        predictionCountAvailableRef.current = false;
       }
     } finally {
       if (mountedRef.current && sessionIdRef.current === requestSessionId
@@ -124,6 +136,8 @@ export function SubscriptionProvider({ children }) {
       setSubscription(null);
       setPredictionCount(0);
       setPredictionCountAvailable(false);
+      predictionCountRef.current = 0;
+      predictionCountAvailableRef.current = false;
       setLoading(false);
       return;
     }
@@ -140,10 +154,18 @@ export function SubscriptionProvider({ children }) {
   const isAtLimit = planCfg.predictionLimit !== Infinity && predictionCount >= planCfg.predictionLimit;
 
   const logPrediction = useCallback(async (companyId, tipo = 'general', resultado = '') => {
-    if (!canUsePredictions) return false;
+    const predictionLimit = planCfg.predictionLimit;
+    if (!canStartPrediction({
+      countAvailable: predictionCountAvailableRef.current,
+      writeInFlight: predictionWriteInFlightRef.current !== null,
+      count: predictionCountRef.current,
+      limit: predictionLimit,
+    })) return false;
     const requestSessionId = user?.uid || user?.id || user?.email || '';
     const requestUserEmail = user?.email || '';
     if (!requestSessionId || sessionIdRef.current !== requestSessionId) return false;
+    const operationToken = Symbol('prediction-write');
+    predictionWriteInFlightRef.current = operationToken;
     try {
       await firebase.entities.PredictionLog.create({
         companyId: companyId,
@@ -154,13 +176,18 @@ export function SubscriptionProvider({ children }) {
         plan_al_momento: plan,
       });
       if (!mountedRef.current || sessionIdRef.current !== requestSessionId) return false;
-      setPredictionCount(c => c + 1);
+      predictionCountRef.current += 1;
+      setPredictionCount(predictionCountRef.current);
       return true;
     } catch (error) {
       console.error('Error logging prediction:', error);
       return false;
+    } finally {
+      if (predictionWriteInFlightRef.current === operationToken) {
+        predictionWriteInFlightRef.current = null;
+      }
     }
-  }, [canUsePredictions, plan, user]);
+  }, [plan, planCfg.predictionLimit, user]);
 
   const value = useMemo(() => ({
     subscription,
