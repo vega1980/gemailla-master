@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { createLatestRequestGuard } from '@/lib/latestRequestGuard';
+import { loadActiveSubscriptions, loadMonthlyPredictionCount } from '@/lib/subscriptionData';
 
 const SubscriptionContext = createContext(null);
 
@@ -38,17 +40,21 @@ export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState(null);
   const [predictionCount, setPredictionCount] = useState(0);
+  const [predictionCountAvailable, setPredictionCountAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
   const sessionIdRef = useRef(user?.uid || user?.id || user?.email || '');
+  const requestGuardRef = useRef(createLatestRequestGuard());
 
   // Purge plan entitlements before paint whenever the authenticated identity changes.
   useLayoutEffect(() => {
     const sessionId = user?.uid || user?.id || user?.email || '';
     if (sessionIdRef.current !== sessionId) {
+      requestGuardRef.current.invalidate();
       sessionIdRef.current = sessionId;
       setSubscription(null);
       setPredictionCount(0);
+      setPredictionCountAvailable(false);
       setLoading(Boolean(sessionId));
     }
   }, [user]);
@@ -62,35 +68,52 @@ export function SubscriptionProvider({ children }) {
   }, []);
 
   const loadSubscription = useCallback(async () => {
+    const requestToken = requestGuardRef.current.begin();
     const requestSessionId = user?.uid || user?.id || user?.email || '';
     setLoading(true);
+    setPredictionCountAvailable(false);
     try {
       const userUid = user?.uid || user?.id;
-      const [subsByUid, subsByEmail, logs] = await Promise.all([
-        userUid
-          ? firebase.entities.Subscription.filter({ userUid, status: 'active' }).catch(() => [])
-          : [],
-        user?.email
-          ? firebase.entities.Subscription.filter({ userEmail: user.email, status: 'active' }).catch(() => [])
-          : [],
-        user?.email
-          ? firebase.entities.PredictionLog.filter({ userEmail: user.email }).catch(() => [])
-          : [],
-      ]);
-      const subsById = new Map();
-      [...subsByUid, ...subsByEmail].forEach((sub) => {
-        if (sub?.id) subsById.set(sub.id, sub);
+      const subs = await loadActiveSubscriptions(firebase.entities, {
+        userUid,
+        userEmail: user?.email,
       });
-      const subs = Array.from(subsById.values());
-      if (!mountedRef.current || sessionIdRef.current !== requestSessionId) return;
+      if (!mountedRef.current || sessionIdRef.current !== requestSessionId
+        || !requestGuardRef.current.isCurrent(requestToken)) return;
       setSubscription(subs[0] || null);
-      const thisMonth = new Date().toISOString().slice(0, 7);
-      const monthLogs = logs.filter(l => l.fecha_generacion?.startsWith(thisMonth));
-      setPredictionCount(monthLogs.length);
+
+      // Prediction history is operational data, not the source of plan
+      // entitlements. A failure here must not discard a valid subscription.
+      try {
+        const thisMonth = new Date().toISOString().slice(0, 7);
+        const monthlyPredictionCount = await loadMonthlyPredictionCount(firebase.entities, {
+          userEmail: user?.email,
+          month: thisMonth,
+        });
+        if (!mountedRef.current || sessionIdRef.current !== requestSessionId
+          || !requestGuardRef.current.isCurrent(requestToken)) return;
+        setPredictionCount(monthlyPredictionCount);
+        setPredictionCountAvailable(true);
+      } catch (predictionError) {
+        console.error('Error loading prediction usage:', predictionError);
+        if (mountedRef.current && sessionIdRef.current === requestSessionId
+          && requestGuardRef.current.isCurrent(requestToken)) {
+          // Fail closed for prediction quotas without changing plan access.
+          setPredictionCountAvailable(false);
+        }
+      }
     } catch (error) {
       console.error('Error loading subscription:', error);
+      if (mountedRef.current && sessionIdRef.current === requestSessionId
+        && requestGuardRef.current.isCurrent(requestToken)) {
+        // Fail closed: never retain paid-plan entitlements after a failed refresh.
+        setSubscription(null);
+        setPredictionCount(0);
+        setPredictionCountAvailable(false);
+      }
     } finally {
-      if (mountedRef.current && sessionIdRef.current === requestSessionId) setLoading(false);
+      if (mountedRef.current && sessionIdRef.current === requestSessionId
+        && requestGuardRef.current.isCurrent(requestToken)) setLoading(false);
     }
   }, [user]);
 
@@ -100,6 +123,7 @@ export function SubscriptionProvider({ children }) {
     if (!userUid && !user?.email) {
       setSubscription(null);
       setPredictionCount(0);
+      setPredictionCountAvailable(false);
       setLoading(false);
       return;
     }
@@ -109,7 +133,8 @@ export function SubscriptionProvider({ children }) {
   const plan = subscription?.plan || 'basic';
   const planCfg = PLAN_CONFIG[plan] || PLAN_CONFIG.basic;
 
-  const canUsePredictions = planCfg.predictionLimit === Infinity || predictionCount < planCfg.predictionLimit;
+  const canUsePredictions = predictionCountAvailable
+    && (planCfg.predictionLimit === Infinity || predictionCount < planCfg.predictionLimit);
   const canAccessAI = planCfg.aiAccess;
   const predictionsRemaining = planCfg.predictionLimit === Infinity ? '∞' : Math.max(0, planCfg.predictionLimit - predictionCount);
   const isAtLimit = planCfg.predictionLimit !== Infinity && predictionCount >= planCfg.predictionLimit;
@@ -146,6 +171,7 @@ export function SubscriptionProvider({ children }) {
     canAccessAI,
     predictionsRemaining,
     predictionCount,
+    predictionCountAvailable,
     isAtLimit,
     logPrediction,
     reload: loadSubscription,
@@ -159,6 +185,7 @@ export function SubscriptionProvider({ children }) {
     plan,
     planCfg,
     predictionCount,
+    predictionCountAvailable,
     predictionsRemaining,
     subscription,
   ]);
