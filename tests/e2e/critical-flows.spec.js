@@ -66,17 +66,18 @@ test.describe('flujos críticos multi-capa', () => {
 
     await page.locator('#file-upload').setInputFiles(path.join(fixturesDir, 'sample.pdf'));
     await expect(page.getByText('sample.pdf')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('Subido').first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Subido', { exact: true }).first()).toBeVisible({ timeout: 30_000 });
     await page.getByRole('button', { name: 'Ver documento sample.pdf' }).click();
     const popupPromise = page.waitForEvent('popup');
     await page.getByRole('button', { name: 'Ver archivo original →' }).click();
     const popup = await popupPromise;
-    await expect.poll(() => popup.url()).toMatch(/127\.0\.0\.1:9199|localhost:9199/);
+    await expect(popup.locator('iframe')).toHaveAttribute('src', /^blob:/);
     await popup.close();
+    await page.getByRole('button', { name: 'Close' }).click();
 
     await page.locator('#file-upload').setInputFiles(path.join(fixturesDir, 'sample.xml'));
     await expect(page.getByText('sample.xml')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText('Subido').last()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Subido', { exact: true }).last()).toBeVisible({ timeout: 30_000 });
 
     await page.getByPlaceholder('Buscar documentos...').fill('sample');
     await expect(page.getByText('sample.pdf')).toBeVisible();

@@ -1,7 +1,7 @@
 // @ts-check
 
 import { auth, storage } from '@/firebase';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { getBlob, ref, uploadBytes } from 'firebase/storage';
 import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
 import { validateDocumentFileContent } from '@/security/documentFileValidation';
 
@@ -91,5 +91,6 @@ export async function getDocumentAccessUrl(storagePath) {
   }
 
   const fileRef = ref(storage, safeStoragePath);
-  return getDownloadURL(fileRef);
+  const blob = await getBlob(fileRef);
+  return URL.createObjectURL(blob);
 }

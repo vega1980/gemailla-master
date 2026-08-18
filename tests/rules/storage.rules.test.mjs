@@ -1,4 +1,5 @@
 import { beforeEach, describe, it } from 'node:test';
+import { createRequire } from 'node:module';
 import {
   assertAllowed,
   assertDenied,
@@ -9,7 +10,23 @@ import {
   storageUpdate,
   firestoreSet,
   storageUpload,
+  PROJECT_ID,
+  STORAGE_BUCKET,
+  STORAGE_HOST,
 } from './rules-test-utils.mjs';
+
+const requireFromFunctions = createRequire(`${process.cwd()}/functions/package.json`);
+const { getApps, initializeApp } = requireFromFunctions('firebase-admin/app');
+const { getStorage } = requireFromFunctions('firebase-admin/storage');
+
+async function seedPromotedObject(path) {
+  process.env.STORAGE_EMULATOR_HOST ||= STORAGE_HOST;
+  const app = getApps().find(candidate => candidate.name === 'storage-rules-admin')
+    || initializeApp({ projectId: PROJECT_ID, storageBucket: STORAGE_BUCKET }, 'storage-rules-admin');
+  await getStorage(app).bucket().file(path).save(Buffer.from('%PDF-1.7 clean fixture'), {
+    contentType: 'application/pdf',
+  });
+}
 
 const companyId = 'company-storage';
 const otherCompanyId = 'company-storage-other';
@@ -197,6 +214,29 @@ describe('Cloud Storage security rules', () => {
     await assertDenied(storageRead(validPdfPath, viewer), 'viewer quarantine read');
     await assertDenied(storageRead(validPdfPath, inactiveOwner), 'inactive owner read');
     await assertDenied(storageRead(validPdfPath, outsider), 'outsider read');
+  });
+
+  it('keeps a clean promoted object readable across document workflow statuses', async () => {
+    const promotedPath = `companies/${companyId}/documents/${documentId}/clean.pdf`;
+    await seedPromotedObject(promotedPath);
+
+    for (const status of ['uploaded', 'processing', 'analyzed', 'ai_disabled', 'error', 'archived']) {
+      await assertAllowed(firestoreSet(`documents/${documentId}`, {
+        companyId,
+        status,
+        scanStatus: 'clean',
+        storagePath: promotedPath,
+      }), `admin seed clean ${status} document`);
+      await assertAllowed(storageRead(promotedPath, owner), `owner read clean ${status} document`);
+    }
+
+    await assertAllowed(firestoreSet(`documents/${documentId}`, {
+      companyId,
+      status: 'quarantined',
+      scanStatus: 'rejected',
+      storagePath: promotedPath,
+    }), 'admin seed rejected document');
+    await assertDenied(storageRead(promotedPath, owner), 'rejected document read');
   });
 
   it('blocks client updates and physical deletes even for permitted company users', async () => {

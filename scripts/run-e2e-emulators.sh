@@ -3,7 +3,20 @@ set -euo pipefail
 node scripts/mock-malware-scanner.mjs &
 scanner_pid=$!
 node scripts/prepare-staging-firebase-config.mjs
-trap 'kill "$scanner_pid" 2>/dev/null || true; rm -f .firebase.staging.generated.json' EXIT
+secret_file="functions/.secret.local"
+secret_created=false
+if [[ ! -e "$secret_file" ]]; then
+  printf 'MALWARE_SCANNER_API_KEY=emulator-only\n' > "$secret_file"
+  secret_created=true
+fi
+cleanup() {
+  kill "$scanner_pid" 2>/dev/null || true
+  rm -f .firebase.staging.generated.json
+  if [[ "$secret_created" == true ]]; then
+    rm -f "$secret_file"
+  fi
+}
+trap cleanup EXIT
 export MALWARE_SCANNER_URL="http://127.0.0.1:9399"
 export MALWARE_SCANNER_API_KEY="emulator-only"
 export CLOUDSDK_CONFIG=/tmp/gemailla-emulator-cloudsdk GCLOUD_PROJECT=demo-gemailla-e2e GOOGLE_CLOUD_PROJECT=demo-gemailla-e2e VERTEX_GEMINI_PROJECT=demo-gemailla-e2e

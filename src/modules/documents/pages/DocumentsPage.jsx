@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DOCUMENT_STATUSES, firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyEntityQueryKey, useCompanyDocuments } from '@/lib/companyEntityQueries';
@@ -17,6 +17,8 @@ import ReportGenerator from '@/features/reports/components/ReportGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { uploadDocumentFlow } from '@/features/documents/services/uploadDocumentFlow';
 import { analyzeDocumentFlow } from '@/features/documents/services/analyzeDocumentFlow';
+import { shouldPollDocumentScan } from '@/features/documents/services/documentScanPolling';
+import { createDocumentViewerLifecycle } from '@/features/documents/services/documentObjectUrlLifecycle';
 import { useDebouncedValue, useFilteredDocuments } from '@/features/documents/hooks/useFilteredDocuments';
 
 const statusColors = {
@@ -69,8 +71,24 @@ export default function Documents() {
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const documentViewerLifecycleRef = useRef(null);
+  if (!documentViewerLifecycleRef.current) {
+    documentViewerLifecycleRef.current = createDocumentViewerLifecycle();
+  }
 
-  const { data: documents = [], isLoading } = useCompanyDocuments(activeCompany);
+  useEffect(() => {
+    const lifecycle = documentViewerLifecycleRef.current;
+    lifecycle.mount();
+    return () => lifecycle.dispose();
+  }, []);
+
+  const { data: documents = [], isLoading } = useCompanyDocuments(activeCompany, {
+    query: {
+      refetchInterval: (query) => (
+        (query.state.data || []).some(shouldPollDocumentScan) ? 1_000 : false
+      ),
+    },
+  });
 
   const documentsQueryKey = companyEntityQueryKey('documents', activeCompany);
 
@@ -125,14 +143,44 @@ export default function Documents() {
       return;
     }
 
-    try {
-      const accessUrl = await firebase.integrations.Core.GetDocumentAccessUrl(doc.storagePath);
-      window.open(accessUrl, '_blank', 'noopener,noreferrer');
-    } catch (error) {
+    const documentWindow = window.open('about:blank', '_blank');
+
+    if (!documentWindow) {
       toast({
         title: 'No se pudo abrir el documento',
-        description: getErrorMessage(error, 'Verifica tus permisos de Firebase Storage y vuelve a intentar.'),
+        description: 'Permite las ventanas emergentes para abrir el visor seguro.',
         variant: 'destructive',
+      });
+      return;
+    }
+
+    const lifecycle = documentViewerLifecycleRef.current;
+    const request = lifecycle.startRequest(documentWindow);
+    let nextLease = null;
+
+    try {
+      const accessUrl = await firebase.integrations.Core.GetDocumentAccessUrl(doc.storagePath);
+      nextLease = request.activate(accessUrl);
+      if (!nextLease) return;
+      documentWindow.addEventListener('pagehide', () => lifecycle.release(nextLease), { once: true });
+
+      documentWindow.document.title = doc.title || 'Documento';
+      documentWindow.document.body.style.margin = '0';
+      const viewer = documentWindow.document.createElement('iframe');
+      viewer.title = doc.title || 'Documento';
+      viewer.src = accessUrl;
+      viewer.style.width = '100vw';
+      viewer.style.height = '100vh';
+      viewer.style.border = '0';
+      documentWindow.document.body.replaceChildren(viewer);
+    } catch (error) {
+      request.release({ closeWindow: true });
+      request.runIfCurrent(() => {
+        toast({
+          title: 'No se pudo abrir el documento',
+          description: getErrorMessage(error, 'Verifica tus permisos de Firebase Storage y vuelve a intentar.'),
+          variant: 'destructive',
+        });
       });
     }
   };

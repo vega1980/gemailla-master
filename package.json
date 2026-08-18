@@ -44,6 +44,7 @@
     "typecheck:critical": "tsc -p ./tsconfig.critical.json",
     "audit:iam": "bash scripts/audit-iam.sh",
     "configure:ttl": "bash scripts/configure-firestore-ttl.sh",
+    "configure:storage-cors": "bash scripts/configure-storage-cors.sh",
     "audit:phase-one-domain": "node scripts/audit-phase-one-domain.mjs --dry-run",
     "backfill:log-expiry": "node scripts/backfill-log-expiry.mjs --dry-run",
     "backfill:log-expiry:apply": "node scripts/backfill-log-expiry.mjs --apply --confirm=BACKFILL_LOG_EXPIRY",

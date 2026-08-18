@@ -118,6 +118,8 @@ El flujo documental está diseñado para evitar archivos huérfanos y URLs públ
 
 La propuesta de privacidad de GEMAILLA se basa en que el cliente conserva el control operativo del documento: la interfaz y las reglas no tratan el PDF/XML como un enlace público reutilizable, sino como un recurso privado referenciado por `storagePath`. El frontend solicita acceso solo cuando el usuario autorizado lo necesita y el análisis de IA se enruta por `/api/ai`, un endpoint same-origin protegido por Firebase Auth, validación de empresa/documentos, límites de uso y secretos cargados únicamente en backend.
 
+Las descargas privadas con `getBlob()` requieren aplicar `storage.cors.json` al bucket de producción. La lista coincide con los orígenes oficiales permitidos por Functions y no contiene comodines. Un operador autorizado puede aplicarla explícitamente con `npm run configure:storage-cors -- <bucket-name>`; este paso modifica configuración cloud y no forma parte del build ni se ejecuta automáticamente.
+
 Este posicionamiento permite comunicar el módulo documental como un ERP "Zero-Knowledge" para empresas que no quieren exponer facturas, contratos o finanzas en URLs públicas ni en variables de navegador. La implementación reduce superficie de fuga al evitar URLs públicas persistidas, exigir Storage privado por empresa y mantener la llamada a modelos detrás de Functions/Hosting.
 
 ## IA

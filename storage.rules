@@ -44,13 +44,6 @@ service firebase.storage {
         && isWriterRole(activeMembershipRole(companyId));
     }
 
-    function hasExistingObjectMetadata(companyId, documentId) {
-      return resource.metadata != null
-        && resource.metadata.keys().hasAll(['companyId', 'documentId'])
-        && resource.metadata.companyId == companyId
-        && resource.metadata.documentId == documentId;
-    }
-
     function documentExists(companyId, documentId) {
       let doc = firestore.get(
         /databases/(default)/documents/documents/$(documentId)
@@ -58,6 +51,17 @@ service firebase.storage {
       return doc != null
         && doc.data != null
         && doc.data.companyId == companyId;
+    }
+
+    function isCleanPromotedDocument(companyId, documentId, fileName) {
+      let doc = firestore.get(
+        /databases/(default)/documents/documents/$(documentId)
+      );
+      return doc != null
+        && doc.data != null
+        && doc.data.companyId == companyId
+        && doc.data.scanStatus == 'clean'
+        && doc.data.storagePath == 'companies/' + companyId + '/documents/' + documentId + '/' + fileName;
     }
 
     function isValidMetadata(companyId, documentId) {
@@ -86,7 +90,7 @@ service firebase.storage {
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
       allow read: if activeCompanyAccess(companyId)
-                  && hasExistingObjectMetadata(companyId, documentId);
+                  && isCleanPromotedDocument(companyId, documentId, fileName);
 
       // La promoción solo la realiza el Admin SDK después del escaneo.
       allow create: if false;
