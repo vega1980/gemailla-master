@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 export const TEST_PASSWORD = 'Gemailla-e2e-12345';
 
 let adminAppPromise;
@@ -59,7 +61,7 @@ export async function setActiveCompanyClaims(page, { userUid, companyId, role = 
 }
 
 export function uniqueId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Date.now()}-${randomUUID()}`;
 }
 
 export async function loadHarness(page) {
