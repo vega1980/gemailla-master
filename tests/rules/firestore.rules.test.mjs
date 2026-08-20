@@ -445,20 +445,21 @@ describe('Firestore security rules', () => {
     }, director), 'director self-promote membership update');
   });
 
-  it('allows an active editor to modify permitted documents', async () => {
+  it('allows an active editor to archive a document without changing protected fields', async () => {
     await assertAllowed(firestoreGet('documents/protected-doc', editor), 'editor document read');
     await assertAllowed(firestorePatch('documents/protected-doc', {
       companyId,
       ownerUid: owner.uid,
-      title: 'Documento actualizado por editor',
-      status: 'active',
+      title: 'Documento protegido',
+      status: 'archived',
       contentType: 'application/pdf',
       fileSize: 100,
       storagePath: `companies/${companyId}/documents/protected-doc/file.pdf`,
       createdAt: '2026-01-01T00:00:00.000Z',
       createdBy: owner.uid,
+      archivedAt: '2026-01-02T00:00:00.000Z',
       updatedBy: editor.uid,
-    }, editor), 'editor document update');
+    }, editor), 'editor document archive');
   });
 
   it('allows a viewer to read but not write permitted company records', async () => {

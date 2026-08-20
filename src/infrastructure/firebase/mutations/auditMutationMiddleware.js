@@ -2,13 +2,19 @@
 
 import { addDoc, setDoc, updateDoc } from 'firebase/firestore';
 
+/** @typedef {string | import('firebase/firestore').FieldValue} AuditTimestamp */
+
 function resolveActorId(getCurrentUserUid) {
   const actorId = typeof getCurrentUserUid === 'function' ? getCurrentUserUid() : null;
   return actorId || null;
 }
 
-function resolveTimestamp(nowIso) {
-  return typeof nowIso === 'function' ? nowIso() : new Date().toISOString();
+/**
+ * @param {(() => AuditTimestamp) | undefined} getTimestamp
+ * @returns {AuditTimestamp}
+ */
+function resolveTimestamp(getTimestamp) {
+  return typeof getTimestamp === 'function' ? getTimestamp() : new Date().toISOString();
 }
 
 /**
@@ -16,13 +22,13 @@ function resolveTimestamp(nowIso) {
  * This middleware is intentionally domain-agnostic: callers provide the data,
  * actor resolver and clock, while the helper injects security/audit metadata.
  *
- * @param {{ getCurrentUserUid?: () => string | null | undefined, nowIso?: () => string }} [options]
+ * @param {{ getCurrentUserUid?: () => string | null | undefined, getTimestamp?: () => AuditTimestamp, nowIso?: () => AuditTimestamp }} [options]
  */
 export function createAuditMutationMiddleware(options = {}) {
-  const { getCurrentUserUid, nowIso } = options;
+  const { getCurrentUserUid, getTimestamp = options.nowIso } = options;
   function withCreateAuditFields(data = {}) {
     const actorId = resolveActorId(getCurrentUserUid);
-    const timestamp = resolveTimestamp(nowIso);
+    const timestamp = resolveTimestamp(getTimestamp);
 
     return {
       ...data,
@@ -38,7 +44,7 @@ export function createAuditMutationMiddleware(options = {}) {
 
     return {
       ...data,
-      updatedAt: resolveTimestamp(nowIso),
+      updatedAt: resolveTimestamp(getTimestamp),
       updatedBy: actorId,
     };
   }

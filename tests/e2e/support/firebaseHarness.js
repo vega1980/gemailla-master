@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
+
 export const TEST_PASSWORD = 'Gemailla-e2e-12345';
 
 let adminAppPromise;
+let adminFirestorePromise;
 
 async function getAdminAuth() {
   if (!adminAppPromise) {
@@ -22,6 +25,25 @@ async function getAdminAuth() {
   return adminAppPromise;
 }
 
+async function getAdminFirestore() {
+  if (!adminFirestorePromise) {
+    adminFirestorePromise = import('node:module').then(({ createRequire }) => {
+      process.env.FIRESTORE_EMULATOR_HOST ||= '127.0.0.1:8080';
+      process.env.GCLOUD_PROJECT ||= process.env.VITE_FIREBASE_PROJECT_ID || 'demo-gemailla-e2e';
+
+      const requireFromFunctions = createRequire(`${process.cwd()}/functions/package.json`);
+      const { getApps, initializeApp } = requireFromFunctions('firebase-admin/app');
+      const { getFirestore } = requireFromFunctions('firebase-admin/firestore');
+      const projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.GCLOUD_PROJECT || 'demo-gemailla-e2e';
+      const app = getApps()[0] || initializeApp({ projectId });
+
+      return getFirestore(app);
+    });
+  }
+
+  return adminFirestorePromise;
+}
+
 export async function setActiveCompanyClaims(page, { userUid, companyId, role = 'owner' }) {
   const auth = await getAdminAuth();
   await auth.setCustomUserClaims(userUid, {
@@ -39,7 +61,7 @@ export async function setActiveCompanyClaims(page, { userUid, companyId, role = 
 }
 
 export function uniqueId(prefix) {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}-${Date.now()}-${randomUUID()}`;
 }
 
 export async function loadHarness(page) {
@@ -72,9 +94,28 @@ export async function addCompanyMember(page, payload) {
   return page.evaluate((member) => window.__gemaillaE2E.addCompanyMember(member), payload);
 }
 
-export async function createAnalyzableDocument(page, payload) {
-  await loadHarness(page);
-  return page.evaluate((doc) => window.__gemaillaE2E.createAnalyzableDocument(doc), payload);
+export async function createAnalyzableDocument(_page, {
+  documentId,
+  companyId,
+  ownerUid,
+  title = 'factura-e2e.pdf',
+}) {
+  const firestore = await getAdminFirestore();
+  const now = new Date().toISOString();
+  await firestore.collection('documents').doc(documentId).set({
+    companyId,
+    ownerUid,
+    title,
+    contentType: 'application/pdf',
+    fileSize: 100,
+    fileType: 'pdf',
+    status: 'pending',
+    storagePath: `companies/${companyId}/documents/${documentId}/${title}`,
+    createdAt: now,
+    createdBy: ownerUid,
+    updatedAt: now,
+    updatedBy: ownerUid,
+  });
 }
 
 export async function readDocument(page, documentId) {

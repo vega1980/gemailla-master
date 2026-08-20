@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { createLatestRequestGuard } from '../../src/lib/latestRequestGuard.js';
 
-test('only the latest asynchronous request may commit state', () => {
+test('concurrent loads allow only the latest asynchronous request to commit state', () => {
   const guard = createLatestRequestGuard();
   const slowRequest = guard.begin();
   const latestRequest = guard.begin();
@@ -12,7 +12,7 @@ test('only the latest asynchronous request may commit state', () => {
   assert.equal(guard.isCurrent(latestRequest), true);
 });
 
-test('invalidating a guard prevents an old session from committing state', () => {
+test('changing users invalidates the previous session request', () => {
   const guard = createLatestRequestGuard();
   const oldSessionRequest = guard.begin();
 

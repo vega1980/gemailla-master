@@ -34,21 +34,17 @@ export async function uploadDocumentFlow({ file, company, user, correlationId: p
   });
 
   try {
+    await firebase.entities.Document.update(documentId, {
+      status: DOCUMENT_STATUSES.QUARANTINED,
+      correlationId,
+      errorMessage: null,
+    });
+
     const uploaded = await firebase.integrations.Core.UploadFile({
       file,
       companyId: company.id,
       documentId,
       correlationId,
-    });
-
-    await firebase.entities.Document.update(documentId, {
-      storagePath: uploaded.storagePath,
-      contentType: uploaded.contentType,
-      fileSize: uploaded.fileSize,
-      status: DOCUMENT_STATUSES.PENDING,
-      correlationId,
-      uploadCompletedAt: new Date().toISOString(),
-      errorMessage: null,
     });
 
     await logAction({
@@ -66,7 +62,7 @@ export async function uploadDocumentFlow({ file, company, user, correlationId: p
       ...doc,
       ...uploaded,
       id: documentId,
-      status: DOCUMENT_STATUSES.PENDING,
+      status: DOCUMENT_STATUSES.QUARANTINED,
       correlationId,
     };
   } catch (uploadError) {

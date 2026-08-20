@@ -3,6 +3,7 @@
 export const DOCUMENT_STATUSES = Object.freeze({
   UPLOADED: 'uploaded',
   UPLOADING: 'uploading',
+  QUARANTINED: 'quarantined',
   PENDING: 'pending',
   PROCESSING: 'processing',
   ANALYZED: 'analyzed',

@@ -1,4 +1,5 @@
 const firebaseAdmin = require('../firebaseAdmin');
+const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 require('../contracts/aiContracts');
 const { enforceAllowedOrigin, fail, getAllowedOrigins, handleCorsPolicy } = require('../policies/httpPolicy');
 const {
@@ -32,6 +33,8 @@ const AI_COST_LOG_COLLECTION = 'aiCostLogs';
 const AI_AUDIT_LOG_COLLECTION = 'aiAuditLogs';
 const DEFAULT_AI_INTEGRATION = 'gemailla-ai';
 const TRACKED_AI_INTEGRATIONS = new Set(['ellmer', 'tidyllm', 'gemailla-ai', 'gemini.R', 'groqR']);
+const AI_LOG_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+function aiLogExpiry(now = Date.now()) { return Timestamp.fromMillis(now + AI_LOG_RETENTION_MS); }
 const SUPPORTED_LLM_PROVIDERS = new Set([DEFAULT_VERTEX_GEMINI_PROVIDER]);
 const EMAIL_PATTERN = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const TOKEN_PATTERN = /(bearer\s+|token['"\s:=]+|api[_-]?key['"\s:=]+|secret['"\s:=]+)[A-Za-z0-9._~+/=-]{12,}/gi;
@@ -213,7 +216,7 @@ async function writeAiAuditLog({ eventName, status, user, authorization, correla
     errorMessage: errorMessage || null,
   });
 
-  await firebaseAdmin.getAdminFirestore().collection(AI_AUDIT_LOG_COLLECTION).doc(logId).set(payload, { merge: true });
+  await firebaseAdmin.getAdminFirestore().collection(AI_AUDIT_LOG_COLLECTION).doc(logId).set({ ...payload, createdAt: FieldValue.serverTimestamp(), expiresAt: aiLogExpiry() }, { merge: true });
   structuredLog(status >= 500 ? 'ERROR' : status >= 400 ? 'WARNING' : 'INFO', 'ai_audit_logged', {
     correlationId,
     eventName,
@@ -260,6 +263,8 @@ async function writeAiCostLog({
     correlationId,
     companyId: authorization.companyId,
     userUid: user.uid || 'unknown',
+    createdAt: FieldValue.serverTimestamp(),
+    expiresAt: aiLogExpiry(),
   }, { merge: true });
 
   structuredLog('INFO', 'ai_cost_logged', {
@@ -366,6 +371,7 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, pro
       windowStartedAtMs: windowExpired ? nowMs : windowStartedAtMs,
       requestCount: nextRequestCount,
       updatedAtMs: nowMs,
+      expiresAt: aiLogExpiry(nowMs),
     }, { merge: true });
 
     transaction.set(usageRef, {
@@ -375,6 +381,7 @@ async function enforceAiLimits({ user, authorization, prompt, correlationId, pro
       reservedBudgetUsd: roundCostUsd(Math.max(0, toCounterNumber(usageData.reservedBudgetUsd) + estimatedCostUsd)),
       requestCount: toCounterNumber(usageData.requestCount) + 1,
       updatedAtMs: nowMs,
+      expiresAt: aiLogExpiry(nowMs),
     }, { merge: true });
   });
 

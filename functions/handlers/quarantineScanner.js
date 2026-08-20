@@ -1,0 +1,35 @@
+const { FieldValue } = require('firebase-admin/firestore');
+const { Timestamp } = require('firebase-admin/firestore');
+const { createHash, randomUUID } = require('node:crypto');
+const firebaseAdmin = require('../firebaseAdmin');
+const QUARANTINE_PATH = /^companies\/([^/]+)\/quarantine\/([^/]+)\/([^/]+)$/;
+const MAX_BYTES = 15 * 1024 * 1024;
+const EICAR = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*';
+function declaredType(fileName, contentType) { const lower = fileName.toLowerCase(); if (lower.endsWith('.pdf') && contentType === 'application/pdf') return 'pdf'; if (lower.endsWith('.xml') && ['application/xml', 'text/xml'].includes(contentType)) return 'xml'; return null; }
+function infectedError(message) { const error = new Error(message); error.infected = true; return error; }
+function validateContent(buffer, fileName, contentType) { const type = declaredType(fileName, contentType); if (!type) throw new Error('Extensión y MIME no coinciden.'); if (buffer.includes(Buffer.from(EICAR))) throw infectedError('Firma EICAR detectada.'); if (type === 'pdf' && buffer.subarray(0, 5).toString() !== '%PDF-') throw new Error('Firma PDF inválida.'); if (type === 'xml') { const xml = buffer.toString('utf8'); if (!(xml.trimStart().startsWith('<?xml') || xml.trimStart().startsWith('<'))) throw new Error('Firma XML inválida.'); if (/<!DOCTYPE|<!ENTITY|\bSYSTEM\b|\bPUBLIC\b/i.test(xml)) throw new Error('XML inseguro.'); } return type; }
+async function scanWithProvider(buffer, metadata, fetchImpl = global.fetch) { const url = String(process.env.MALWARE_SCANNER_URL || '').trim(); if (!url) throw new Error('Antivirus no configurado.'); const response = await fetchImpl(url, { method: 'POST', headers: { 'content-type': metadata.contentType, 'x-api-key': process.env.MALWARE_SCANNER_API_KEY || '' }, body: buffer, signal: AbortSignal.timeout(30000) }); if (!response.ok) throw new Error(`Antivirus no disponible (${response.status}).`); return (await response.json()).clean === true; }
+
+async function quarantineScannerHandler(event, dependencies = {}) {
+  const object = event.data || event; const match = String(object.name || '').match(QUARANTINE_PATH); if (!match) return { ignored: true };
+  const [, companyId, documentId, fileName] = match; const eventId = String(event.id || `${object.name}:${object.generation || 'unknown'}`); const generation = String(object.generation || 'unknown'); const attemptId = dependencies.attemptId || randomUUID(); const nowMs = dependencies.nowMs || Date.now(); const leaseUntil = Timestamp.fromMillis(nowMs + 5 * 60 * 1000);
+  const firestore = dependencies.firestore || firebaseAdmin.getAdminFirestore(); const bucket = dependencies.bucket || firebaseAdmin.getAdminStorage().bucket(object.bucket); const source = bucket.file(object.name); const documentRef = firestore.collection('documents').doc(documentId); const destination = `companies/${companyId}/documents/${documentId}/${fileName}`;
+  let claimed = false;
+  try {
+    if (Number(object.size) <= 0 || Number(object.size) >= MAX_BYTES) throw new Error('Tamaño inválido.');
+    if (object.metadata?.companyId !== companyId || object.metadata?.documentId !== documentId) throw new Error('Metadata de tenant inválida.');
+    const claim = await firestore.runTransaction(async transaction => { const snapshot = await transaction.get(documentRef); if (!snapshot.exists || snapshot.data().companyId !== companyId) throw new Error('Documento asociado inválido.'); const data = snapshot.data(); if (data.scanStatus === 'clean' && data.storagePath === destination) return 'clean'; if (data.scanStatus === 'rejected') return 'infected'; const activeLease = data.scanStatus === 'processing' && data.scanLeaseUntil?.toMillis?.() > nowMs; if (activeLease) return 'busy'; transaction.update(documentRef, { scanStatus: 'processing', scanEventId: eventId, scanGeneration: generation, scanAttemptId: attemptId, scanLeaseUntil: leaseUntil, scanStartedAt: FieldValue.serverTimestamp() }); return 'claimed'; });
+    if (claim === 'clean') return { promoted: true, destination, repeated: true }; if (claim === 'infected') return { promoted: false, infected: true }; if (claim === 'busy') return { promoted: false, busy: true }; claimed = true;
+    const [buffer] = await source.download(); validateContent(buffer, fileName, object.contentType); const clean = await (dependencies.scan || scanWithProvider)(buffer, { contentType: object.contentType, fileName }); if (!clean) { const infected = new Error('Archivo infectado.'); infected.infected = true; throw infected; }
+    const sha256 = createHash('sha256').update(buffer).digest('hex'); const destinationFile = bucket.file(destination); const [destinationExists] = await destinationFile.exists();
+    if (destinationExists) { const [metadata] = await destinationFile.getMetadata(); if (String(metadata.metadata?.sourceGeneration) !== generation || metadata.metadata?.sha256 !== sha256 || metadata.metadata?.companyId !== companyId || metadata.metadata?.documentId !== documentId) throw new Error('Destino preexistente no verificable.'); }
+    else await source.copy(destinationFile, { preconditionOpts: { ifGenerationMatch: 0 }, metadata: { metadata: { sourceGeneration: generation, sha256, companyId, documentId } } });
+    await firestore.runTransaction(async transaction => { const snapshot = await transaction.get(documentRef); const data = snapshot.data() || {}; if (data.scanStatus === 'clean') return; if (data.scanAttemptId !== attemptId || data.scanEventId !== eventId || data.scanGeneration !== generation) throw new Error('Claim de escaneo perdido.'); transaction.update(documentRef, { status: 'uploaded', storagePath: destination, scanStatus: 'clean', scanHash: sha256, scanError: FieldValue.delete(), scannedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); });
+    try { await source.delete({ ifGenerationMatch: generation }); } catch (cleanupError) { await documentRef.update({ quarantineCleanupPending: true, quarantineCleanupError: String(cleanupError.message).slice(0, 300) }); }
+    return { promoted: true, destination };
+  } catch (error) {
+    if (claimed) await firestore.runTransaction(async transaction => { const snapshot = await transaction.get(documentRef); const data = snapshot.data() || {}; if (data.scanStatus === 'clean' || data.scanAttemptId !== attemptId) return; transaction.update(documentRef, { status: 'quarantined', scanStatus: error.infected ? 'rejected' : 'scan_error', scanError: String(error.message).slice(0, 300), quarantinePath: object.name, quarantineExpiresAt: Timestamp.fromMillis(Date.now() + (error.infected ? 30 : 7) * 86400000), scannedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }); });
+    console.error(JSON.stringify({ eventName: 'quarantine_scan_rejected', companyId, documentId, eventId, generation, reason: error.message })); return { promoted: false, reason: error.message };
+  }
+}
+module.exports = { EICAR, MAX_BYTES, declaredType, quarantineScannerHandler, scanWithProvider, validateContent };

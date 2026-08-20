@@ -34,10 +34,12 @@ test('a prediction-log failure is independent from valid subscription data', asy
   assert.deepEqual(subscriptions, [paidSubscription]);
 });
 
-test('monthly prediction usage only counts matching records', async () => {
+test('monthly prediction usage counts monthKey records and legacy fecha_generacion records', async () => {
   const entities = {
     PredictionLog: {
       filter: async () => [
+        { monthKey: '2026-08' },
+        { monthKey: '2026-07' },
         { fecha_generacion: '2026-08-01T00:00:00.000Z' },
         { fecha_generacion: '2026-07-31T23:59:59.000Z' },
         {},
@@ -48,7 +50,7 @@ test('monthly prediction usage only counts matching records', async () => {
   assert.equal(await loadMonthlyPredictionCount(entities, {
     userEmail: 'paid@example.com',
     month: '2026-08',
-  }), 1);
+  }), 2);
 });
 
 test('prediction execution requires a verified quota and no concurrent write', () => {

@@ -111,6 +111,49 @@ export async function firestoreCommitSet(writes, auth = 'owner') {
   return response;
 }
 
+export async function firestoreDomainSet(path, data, auth) {
+  const actorUid = typeof auth === 'string' ? auth : auth?.uid;
+  const response = await fetch(`${firestoreBase}:commit`, {
+    method: 'POST',
+    headers: authHeaders(auth, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ writes: [{
+      update: { name: `projects/${PROJECT_ID}/databases/(default)/documents/${path}`, fields: firestoreFields({ ...data, createdBy: actorUid, updatedBy: actorUid }) },
+      updateTransforms: [
+        { fieldPath: 'createdAt', setToServerValue: 'REQUEST_TIME' },
+        { fieldPath: 'updatedAt', setToServerValue: 'REQUEST_TIME' },
+      ],
+    }] }),
+  });
+  return response;
+}
+
+export async function firestoreSetWithServerTimestamps(path, data, auth, fieldPaths = ['createdAt']) {
+  return fetch(`${firestoreBase}:commit`, {
+    method: 'POST',
+    headers: authHeaders(auth, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ writes: [{
+      update: {
+        name: `projects/${PROJECT_ID}/databases/(default)/documents/${path}`,
+        fields: firestoreFields(data),
+      },
+      updateTransforms: fieldPaths.map(fieldPath => ({ fieldPath, setToServerValue: 'REQUEST_TIME' })),
+    }] }),
+  });
+}
+
+export async function firestoreDomainPatch(path, patch, auth) {
+  const actorUid = typeof auth === 'string' ? auth : auth?.uid;
+  const fields = { ...patch, updatedBy: actorUid };
+  return fetch(`${firestoreBase}:commit`, {
+    method: 'POST', headers: authHeaders(auth, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ writes: [{
+      update: { name: `projects/${PROJECT_ID}/databases/(default)/documents/${path}`, fields: firestoreFields(fields) },
+      updateMask: { fieldPaths: Object.keys(fields) },
+      updateTransforms: [{ fieldPath: 'updatedAt', setToServerValue: 'REQUEST_TIME' }],
+    }] }),
+  });
+}
+
 export async function firestoreGet(path, auth) {
   return fetch(`${firestoreBase}/${path}`, {
     headers: authHeaders(auth),

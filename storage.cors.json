@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://gemailla.com",
+      "https://www.gemailla.com",
+      "https://gemailla-enterprise.firebaseapp.com",
+      "https://gemailla-enterprise.web.app"
+    ],
+    "method": ["GET"],
+    "responseHeader": ["Content-Type", "Content-Length", "ETag"],
+    "maxAgeSeconds": 3600
+  }
+]

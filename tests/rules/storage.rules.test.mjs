@@ -1,4 +1,5 @@
 import { beforeEach, describe, it } from 'node:test';
+import { createRequire } from 'node:module';
 import {
   assertAllowed,
   assertDenied,
@@ -9,7 +10,23 @@ import {
   storageUpdate,
   firestoreSet,
   storageUpload,
+  PROJECT_ID,
+  STORAGE_BUCKET,
+  STORAGE_HOST,
 } from './rules-test-utils.mjs';
+
+const requireFromFunctions = createRequire(`${process.cwd()}/functions/package.json`);
+const { getApps, initializeApp } = requireFromFunctions('firebase-admin/app');
+const { getStorage } = requireFromFunctions('firebase-admin/storage');
+
+async function seedPromotedObject(path) {
+  process.env.STORAGE_EMULATOR_HOST ||= STORAGE_HOST;
+  const app = getApps().find(candidate => candidate.name === 'storage-rules-admin')
+    || initializeApp({ projectId: PROJECT_ID, storageBucket: STORAGE_BUCKET }, 'storage-rules-admin');
+  await getStorage(app).bucket().file(path).save(Buffer.from('%PDF-1.7 clean fixture'), {
+    contentType: 'application/pdf',
+  });
+}
 
 const companyId = 'company-storage';
 const otherCompanyId = 'company-storage-other';
@@ -23,10 +40,10 @@ const otherOwner = { uid: 'other-storage-owner-uid', claims: { email: 'other-sto
 const documentId = 'doc-1';
 const missingDocumentId = 'doc-missing';
 const sameCompanyOtherDocumentId = 'doc-2-same-company';
-const validPdfPath = `companies/${companyId}/documents/${documentId}/file.pdf`;
-const validXmlPath = `companies/${companyId}/documents/${documentId}/file.xml`;
-const missingDocumentPdfPath = `companies/${companyId}/documents/${missingDocumentId}/file.pdf`;
-const otherCompanyPdfPath = `companies/${otherCompanyId}/documents/doc-1-other-company/file.pdf`;
+const validPdfPath = `companies/${companyId}/quarantine/${documentId}/file.pdf`;
+const validXmlPath = `companies/${companyId}/quarantine/${documentId}/file.xml`;
+const missingDocumentPdfPath = `companies/${companyId}/quarantine/${missingDocumentId}/file.pdf`;
+const otherCompanyPdfPath = `companies/${otherCompanyId}/quarantine/doc-1-other-company/file.pdf`;
 
 async function seedStorageAcl() {
   await seedCompany({
@@ -117,6 +134,7 @@ describe('Cloud Storage security rules', () => {
   });
 
   it('rejects uploads outside the canonical document path or without a backing document', async () => {
+    await assertDenied(storageUpload(`companies/${companyId}/documents/${documentId}/bypass.pdf`, owner, { customMetadata: { companyId, documentId } }), 'direct documents upload bypass');
     await assertDenied(
       storageUpload(`companies/${companyId}/documents/file.pdf`, owner),
       'upload missing documentId path segment',
@@ -136,12 +154,12 @@ describe('Cloud Storage security rules', () => {
   });
 
   it('rejects invalid MIME types and files larger than 15 MB', async () => {
-    await assertDenied(storageUpload(`companies/${companyId}/documents/${documentId}/file.exe`, owner, {
+    await assertDenied(storageUpload(`companies/${companyId}/quarantine/${documentId}/file.exe`, owner, {
       contentType: 'application/octet-stream',
       body: 'not a PDF or XML',
     }), 'invalid MIME upload');
 
-    await assertDenied(storageUpload(`companies/${companyId}/documents/${documentId}/oversized.pdf`, owner, {
+    await assertDenied(storageUpload(`companies/${companyId}/quarantine/${documentId}/oversized.pdf`, owner, {
       contentType: 'application/pdf',
       body: Buffer.alloc((15 * 1024 * 1024) + 1, 0x61),
     }), 'oversized PDF upload');
@@ -169,7 +187,7 @@ describe('Cloud Storage security rules', () => {
     );
 
     await assertDenied(
-      storageUpload(`companies/${companyId}/documents/doc-1-other-company/file.pdf`, owner, {
+      storageUpload(`companies/${companyId}/quarantine/doc-1-other-company/file.pdf`, owner, {
         customMetadata: { companyId: otherCompanyId, documentId: 'doc-1-other-company' },
       }),
       'upload path company differs from Storage custom metadata',
@@ -184,18 +202,41 @@ describe('Cloud Storage security rules', () => {
     );
   });
 
-  it('allows reads only with valid company permissions', async () => {
+  it('keeps quarantine unreadable to every client role', async () => {
     await assertAllowed(storageUpload(validPdfPath, owner, {
       contentType: 'application/pdf',
       body: '%PDF-1.7 fixture',
       customMetadata: { companyId, documentId },
     }), 'owner fixture upload');
 
-    await assertAllowed(storageRead(validPdfPath, owner), 'owner read');
-    await assertAllowed(storageRead(validPdfPath, director), 'active director read');
-    await assertAllowed(storageRead(validPdfPath, viewer), 'active viewer read');
+    await assertDenied(storageRead(validPdfPath, owner), 'owner quarantine read');
+    await assertDenied(storageRead(validPdfPath, director), 'director quarantine read');
+    await assertDenied(storageRead(validPdfPath, viewer), 'viewer quarantine read');
     await assertDenied(storageRead(validPdfPath, inactiveOwner), 'inactive owner read');
     await assertDenied(storageRead(validPdfPath, outsider), 'outsider read');
+  });
+
+  it('keeps a clean promoted object readable across document workflow statuses', async () => {
+    const promotedPath = `companies/${companyId}/documents/${documentId}/clean.pdf`;
+    await seedPromotedObject(promotedPath);
+
+    for (const status of ['uploaded', 'processing', 'analyzed', 'ai_disabled', 'error', 'archived']) {
+      await assertAllowed(firestoreSet(`documents/${documentId}`, {
+        companyId,
+        status,
+        scanStatus: 'clean',
+        storagePath: promotedPath,
+      }), `admin seed clean ${status} document`);
+      await assertAllowed(storageRead(promotedPath, owner), `owner read clean ${status} document`);
+    }
+
+    await assertAllowed(firestoreSet(`documents/${documentId}`, {
+      companyId,
+      status: 'quarantined',
+      scanStatus: 'rejected',
+      storagePath: promotedPath,
+    }), 'admin seed rejected document');
+    await assertDenied(storageRead(promotedPath, owner), 'rejected document read');
   });
 
   it('blocks client updates and physical deletes even for permitted company users', async () => {
@@ -220,7 +261,7 @@ describe('Cloud Storage security rules', () => {
     );
 
     await assertDenied(
-      storageUpload(`companies/${otherCompanyId}/documents/doc-2/file.pdf`, owner, {
+      storageUpload(`companies/${otherCompanyId}/quarantine/doc-2/file.pdf`, owner, {
         customMetadata: { companyId: otherCompanyId, documentId: 'doc-2' },
       }),
       'owner upload to another company',

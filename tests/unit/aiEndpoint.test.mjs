@@ -194,7 +194,7 @@ async function loadAiEndpoint({
     if (request === './firebaseAdmin' || request === '../firebaseAdmin') return firebaseAdmin;
     if (request === 'firebase-functions/v2/https') return { onRequest: (_options, handler) => handler };
     if (request === 'firebase-functions/v2/scheduler') return { onSchedule: (_options, handler) => handler };
-    if (request === 'firebase-functions/v2/firestore') return { onDocumentWritten: (_path, handler) => handler };
+    if (request === 'firebase-functions/v2/firestore') return { onDocumentCreated: (_path, handler) => handler, onDocumentUpdated: (_path, handler) => handler, onDocumentWritten: (_path, handler) => handler };
     if (request === './geminiVertexAdapter' || request === './handlers/geminiVertexAdapter') {
       return { callGeminiVertexAdapter: geminiImpl };
     }

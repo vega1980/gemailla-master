@@ -162,19 +162,11 @@ export function SubscriptionProvider({ children }) {
       limit: predictionLimit,
     })) return false;
     const requestSessionId = user?.uid || user?.id || user?.email || '';
-    const requestUserEmail = user?.email || '';
     if (!requestSessionId || sessionIdRef.current !== requestSessionId) return false;
     const operationToken = Symbol('prediction-write');
     predictionWriteInFlightRef.current = operationToken;
     try {
-      await firebase.entities.PredictionLog.create({
-        companyId: companyId,
-        userEmail: requestUserEmail,
-        fecha_generacion: new Date().toISOString(),
-        tipo_prediccion: tipo,
-        resultado_ia: resultado.slice(0, 500),
-        plan_al_momento: plan,
-      });
+      await firebase.functions.invoke('recordPrediction', { companyId, type: tipo, result: resultado.slice(0, 500) });
       if (!mountedRef.current || sessionIdRef.current !== requestSessionId) return false;
       predictionCountRef.current += 1;
       setPredictionCount(predictionCountRef.current);
@@ -187,7 +179,7 @@ export function SubscriptionProvider({ children }) {
         predictionWriteInFlightRef.current = null;
       }
     }
-  }, [plan, planCfg.predictionLimit, user]);
+  }, [planCfg.predictionLimit, user]);
 
   const value = useMemo(() => ({
     subscription,
