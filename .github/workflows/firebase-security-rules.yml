@@ -11,28 +11,14 @@ on:
       - package.json
       - package-lock.json
       - .github/workflows/firebase-security-rules.yml
-  push:
-    branches: [main, master]
-    paths:
-      - firestore.rules
-      - storage.rules
-      - firebase.json
-      - firestore.indexes.json
-      - tests/rules/**
-      - package.json
-      - package-lock.json
-      - .github/workflows/firebase-security-rules.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  validate-and-deploy-rules:
+  validate-rules:
     runs-on: ubuntu-latest
-    env:
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,18 +42,31 @@ jobs:
         run: npx firebase-tools setup:emulators:firestore
       - name: Run Firebase rules emulator tests
         run: npm run test:rules:emulators
-      - name: Skip deployment for pull requests
-        if: ${{ github.event_name == 'pull_request' }}
-        run: echo "Pull request validation completed; Firebase rules are not deployed from pull requests."
+
+  deploy-rules:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    needs: validate-rules
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Authenticate Firebase service account
-        if: ${{ github.event_name != 'pull_request' && env.FIREBASE_PROJECT_ID != '' && env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
+        if: ${{ env.FIREBASE_PROJECT_ID != '' && env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
         run: |
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-service-account.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
       - name: Deploy Firestore and Storage rules
-        if: ${{ github.event_name != 'pull_request' && env.FIREBASE_PROJECT_ID != '' && env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
+        if: ${{ env.FIREBASE_PROJECT_ID != '' && env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
         run: npx firebase-tools deploy --only firestore:rules,storage --project "$FIREBASE_PROJECT_ID" --non-interactive
       - name: Skip deployment (Firebase secrets not configured)
-        if: ${{ github.event_name != 'pull_request' && (env.FIREBASE_PROJECT_ID == '' || env.FIREBASE_SERVICE_ACCOUNT_JSON == '') }}
+        if: ${{ env.FIREBASE_PROJECT_ID == '' || env.FIREBASE_SERVICE_ACCOUNT_JSON == '' }}
         run: |
           echo "::warning::FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT are not configured; skipping Firebase rules deployment."

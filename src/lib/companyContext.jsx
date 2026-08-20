@@ -5,6 +5,7 @@ import { loadCompanyContextData } from '@/features/companies/services/companyMem
 import { CorrelationScope, getScopedCorrelationId } from '@/lib/correlationScopes';
 import { ensureCorrelationId, logFrontendEvent } from '@/lib/observability';
 import { printTraceTree, registerTrace } from '@/lib/traceDebugger';
+import { createLatestRequestGuard } from '@/lib/latestRequestGuard';
 
 const CompanyContext = createContext(null);
 const isDevelopment = Boolean(import.meta.env?.DEV || import.meta.env?.MODE === 'development');
@@ -34,6 +35,7 @@ export function CompanyProvider({ children }) {
   const userContextRef = useRef({});
   const sessionIdRef = useRef(user?.uid || user?.id || '');
   const activeRequestRef = useRef(null);
+  const requestGuardRef = useRef(createLatestRequestGuard());
 
   const flushProviderSessionMetrics = useCallback(() => {
     const durationMs = Math.round(getNowMs() - providerStartTimeRef.current);
@@ -50,6 +52,7 @@ export function CompanyProvider({ children }) {
     const sessionId = user?.uid || user?.id || '';
     if (sessionIdRef.current !== sessionId) {
       activeRequestRef.current?.abort();
+      requestGuardRef.current.invalidate();
       flushProviderSessionMetrics();
       sessionIdRef.current = sessionId;
       pageCorrelationIdRef.current = getScopedCorrelationId(CorrelationScope.PAGE);
@@ -89,6 +92,7 @@ export function CompanyProvider({ children }) {
   }, [companies.length, userContext]);
 
   const loadCompanies = useCallback(async (options = {}) => {
+    const requestToken = requestGuardRef.current.begin();
     if (!user) {
       setCompanies([]);
       setActiveCompany(null);
@@ -117,7 +121,8 @@ export function CompanyProvider({ children }) {
         parentCorrelationId,
       });
 
-      if (!mountedRef.current || signal?.aborted || sessionIdRef.current !== requestSessionId) return;
+      if (!mountedRef.current || signal?.aborted || sessionIdRef.current !== requestSessionId
+        || !requestGuardRef.current.isCurrent(requestToken)) return;
       setMemberships(members);
       setCompanies(validCompanies);
 
@@ -126,12 +131,14 @@ export function CompanyProvider({ children }) {
       setActiveCompany(saved || validCompanies[0] || null);
     } catch (error) {
       console.error('Error loading companies:', error);
-      if (!mountedRef.current || signal?.aborted || sessionIdRef.current !== requestSessionId) return;
+      if (!mountedRef.current || signal?.aborted || sessionIdRef.current !== requestSessionId
+        || !requestGuardRef.current.isCurrent(requestToken)) return;
       setCompanies([]);
       setActiveCompany(null);
       setMemberships([]);
     } finally {
-      if (mountedRef.current && !signal?.aborted && sessionIdRef.current === requestSessionId) setLoading(false);
+      if (mountedRef.current && !signal?.aborted && sessionIdRef.current === requestSessionId
+        && requestGuardRef.current.isCurrent(requestToken)) setLoading(false);
     }
   }, [user]);
 
