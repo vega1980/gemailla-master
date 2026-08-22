@@ -2,8 +2,8 @@
 
 - **Fecha UTC:**
 - **Responsable:**
-- **Proyecto Firebase:** `gemailla-enterprise-staging`
-- **URL staging:** `https://gemailla-enterprise-staging.web.app`
+- **Proyecto Firebase:** `gemailla-enterprise`
+- **URL desplegada:**
 - **APP_VERSION:**
 - **BUILD_ID:**
 - **GIT_SHA:**
@@ -11,8 +11,8 @@
 
 ## Comando de deploy
 
-```bash
-STAGING_BASE_URL=https://gemailla-enterprise-staging.web.app npm run deploy:staging
+```text
+Registrar aquí el comando de despliegue aprobado y realmente ejecutado.
 ```
 
 ## Resultados
@@ -22,8 +22,8 @@ STAGING_BASE_URL=https://gemailla-enterprise-staging.web.app npm run deploy:stag
 | Entorno | `npm run validate:env` | Pendiente | |
 | Unit tests | `npm run test:unit` | Pendiente | |
 | Build | `npm run build` | Pendiente | |
-| Deploy Firebase | `npx firebase-tools deploy --project gemailla-enterprise-staging --only hosting,functions,firestore:rules,storage --non-interactive` | Pendiente | |
-| Smoke staging | `npm run smoke:staging` | Pendiente | |
+| Deploy Firebase | `Comando de despliegue aprobado` | Pendiente | |
+| Validación post-deploy | `Procedimiento de validación aprobado` | Pendiente | |
 
 ## Rollback
 
