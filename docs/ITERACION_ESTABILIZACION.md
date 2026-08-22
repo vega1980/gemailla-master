@@ -23,6 +23,20 @@ Durante esta iteración solo se trabajará en:
 
 Ningún módulo nuevo entra al roadmap hasta que los flujos de Auth, Multiempresa, Documentos e IA tengan cobertura E2E y validación en staging.
 
+## Bloqueadores activos (22 de agosto de 2026)
+
+Una aprobación de GitHub expresa conformidad de revisión, pero **no autoriza por sí sola un despliegue**. Hasta cerrar y documentar los siguientes puntos, el estado de release es `NO-GO`:
+
+1. El E2E con emuladores debe completar ejecuciones repetibles; una ejecución aislada en verde no demuestra estabilidad.
+2. Las pruebas de Firebase Rules deben volver a estar en verde después de los fallos observados el 20–21 de agosto.
+3. Los problemas estructurales heredados de PR #230 deben tener corrección o aceptación de riesgo explícita.
+4. El comportamiento seguro de cuotas y su cobertura obligatoria de CI, asociado a PR #233, debe quedar demostrado: ante error de reserva/contabilización se falla cerrado y no se llama al proveedor.
+5. CI debe instalar los lockfiles raíz y `functions/` con Node 22 y npm 11.4.2; cualquier cambio de dependencias debe actualizar y validar ambos contextos.
+6. Cada ejecución debe registrar comando, commit, fecha, entorno, resultado y artefactos en la evidencia de release.
+7. El despliegue requiere todos los checks obligatorios en verde, evidencia revisada, autorización manual del environment de producción y confirmación explícita del operador.
+
+Un check omitido, cancelado, inestable o bloqueado no equivale a aprobado. Las excepciones deben seguir la política documentada abajo y nunca convertir un fallo de seguridad, reglas o cuotas en una advertencia no bloqueante.
+
 ## Flujos críticos requeridos
 
 ### 1. Auth y Multiempresa
@@ -87,6 +101,7 @@ Este documento es el checklist formal de release para la iteración de estabiliz
 | [ ] | Costos operativos | Límites definidos para IA, Firestore, Storage, Functions y Hosting. |
 | [ ] | Línea base de arquitectura | `npm run measure:architecture` ejecutado y artefactos guardados antes de refactorizar. |
 | [ ] | Evidencia consolidada | `docs/VERIFICACION.md` actualizado con resultados, bloqueos y siguientes acciones. |
+| [ ] | Autorización de release | Checks obligatorios verdes, evidencia revisada, aprobación del environment y confirmación manual registradas. |
 
 ## Criterios de salida
 

@@ -10,6 +10,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       # Public Firebase client configuration. Repository variables may override
       # these CI-safe defaults without granting access to protected secrets.
@@ -37,6 +38,12 @@ jobs:
         with:
           node-version: '22'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Pin npm used by root and Functions
+        run: npm install --global npm@11.4.2
 
       - name: Set up Java 21 for Firebase emulators
         uses: actions/setup-java@v4
@@ -54,7 +61,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/firebase/emulators
-          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('package-lock.json', 'functions/package-lock.json', 'firebase.json') }}
           restore-keys: |
             firebase-emulators-${{ runner.os }}-
 
