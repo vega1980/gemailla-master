@@ -102,6 +102,7 @@ export const db = initializeFirestore(app, {
 export const storage = getStorage(app);
 
 export async function getAppCheckHeaders() {
+  if (useFirebaseEmulators) return { 'X-Firebase-AppCheck': 'firebase-emulator-app-check' };
   if (!appCheck) return {};
 
   try {

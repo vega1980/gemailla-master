@@ -3,10 +3,8 @@ const { onRequest } = require('firebase-functions/v2/https');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { onObjectFinalized } = require('firebase-functions/v2/storage');
-const { defineSecret } = require('firebase-functions/params');
 
 firebaseAdmin.initializeAdminApp();
-const malwareScannerApiKey = defineSecret('MALWARE_SCANNER_API_KEY');
 
 function configuredStorageBucket() {
   try { return JSON.parse(process.env.FIREBASE_CONFIG || '{}').storageBucket; } catch { return null; }
@@ -20,10 +18,10 @@ const { revokeMembershipUserRefreshTokens } = require('./handlers/companyMembers
 const { acceptCompanyInvitationHandler, inviteCompanyMemberHandler } = require('./handlers/companyInviteHandler');
 const { aggregateCompanyMetricsOnWrite } = require('./handlers/companyMetricsAggregationHandler');
 const { handleCorsPolicy } = require('./policies/httpPolicy');
-const { quarantineScannerHandler } = require('./handlers/quarantineScanner');
+const { CLEAN_BUCKET, INFECTED_BUCKET, cleanScannerResultHandler, infectedScannerResultHandler, quarantineScannerHandler } = require('./handlers/quarantineScanner');
 const { recordAuthoritativeEvent, recordDocumentAnalyzed } = require('./handlers/domainAuditTriggers');
 const { assignManagedExpiry } = require('./handlers/logExpiry');
-const { cleanupRejectedQuarantine, retryQuarantineScanErrors } = require('./handlers/quarantineRetention');
+const { cleanupRejectedQuarantine, retryPromotedCleanup } = require('./handlers/quarantineRetention');
 
 exports.ai = onRequest({ cors: false, timeoutSeconds: 120, memory: '512MiB' }, aiExports.aiHandler);
 exports.syncCompanyClaims = onRequest({ cors: false }, (req, res) => {
@@ -36,9 +34,11 @@ exports.revokeMembershipClaimsOnWrite = onDocumentWritten('companyMembers/{membe
 exports.aggregateMetricsOnTransactionWrite = onDocumentWritten('transactions/{transactionId}', aggregateCompanyMetricsOnWrite);
 exports.aggregateMetricsOnDocumentWrite = onDocumentWritten('documents/{documentId}', aggregateCompanyMetricsOnWrite);
 exports.aggregateMetricsOnKpiWrite = onDocumentWritten('kpis/{kpiId}', aggregateCompanyMetricsOnWrite);
-exports.scanQuarantinedDocument = onObjectFinalized({ bucket: configuredStorageBucket() || `${process.env.GCLOUD_PROJECT || 'demo-gemailla-test'}.appspot.com`, secrets: [malwareScannerApiKey], timeoutSeconds: 60, memory: '512MiB' }, quarantineScannerHandler);
+exports.scanQuarantinedDocument = onObjectFinalized({ bucket: configuredStorageBucket() || `${process.env.GCLOUD_PROJECT || 'demo-gemailla-test'}.appspot.com`, timeoutSeconds: 60, memory: '512MiB', retry: true }, quarantineScannerHandler);
+exports.finalizeCleanDocument = onObjectFinalized({ bucket: CLEAN_BUCKET, timeoutSeconds: 120, memory: '512MiB', retry: true }, cleanScannerResultHandler);
+exports.finalizeRejectedDocument = onObjectFinalized({ bucket: INFECTED_BUCKET, timeoutSeconds: 60, memory: '512MiB', retry: true }, infectedScannerResultHandler);
 exports.cleanupRejectedQuarantine = onSchedule({ schedule: 'every day 04:00', timeZone: 'Etc/UTC' }, cleanupRejectedQuarantine);
-exports.retryQuarantineScanErrors = onSchedule({ schedule: 'every 15 minutes', timeZone: 'Etc/UTC' }, event => retryQuarantineScanErrors(event, { scanner: quarantineScannerHandler }));
+exports.retryPromotedCleanup = onSchedule({ schedule: 'every 15 minutes', timeZone: 'Etc/UTC' }, retryPromotedCleanup);
 exports.auditCompanyCreated = onDocumentCreated('companies/{documentId}', event => recordAuthoritativeEvent(event, 'companies'));
 exports.auditMemberCreated = onDocumentCreated('companyMembers/{documentId}', event => recordAuthoritativeEvent(event, 'companyMembers'));
 exports.auditTransactionCreated = onDocumentCreated('transactions/{documentId}', event => recordAuthoritativeEvent(event, 'transactions'));

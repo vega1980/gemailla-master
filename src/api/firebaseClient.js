@@ -213,7 +213,6 @@ async function invokeFunction(name, payload = {}) {
       ...payload,
       correlationId,
       ...(parentCorrelationId ? { parentCorrelationId } : {}),
-      release: payload.release || getReleaseMetadata(),
     }),
   });
 

@@ -4,6 +4,15 @@ const DEFAULT_ALLOWED_ORIGINS = Object.freeze([
   'https://gemailla-enterprise.firebaseapp.com',
   'https://gemailla-enterprise.web.app',
 ]);
+const EMULATOR_ALLOWED_ORIGINS = Object.freeze([
+  'http://127.0.0.1:5000',
+  'http://localhost:5000',
+]);
+
+function isDemoFunctionsEmulator() {
+  const projectId = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || '';
+  return process.env.FUNCTIONS_EMULATOR === 'true' && projectId.startsWith('demo-');
+}
 
 function fail(status, message) {
   const error = new Error(message);
@@ -17,7 +26,10 @@ function getAllowedOrigins() {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  return configuredOrigins.length > 0 ? configuredOrigins : [...DEFAULT_ALLOWED_ORIGINS];
+  if (configuredOrigins.length > 0) return configuredOrigins;
+  return isDemoFunctionsEmulator()
+    ? [...DEFAULT_ALLOWED_ORIGINS, ...EMULATOR_ALLOWED_ORIGINS]
+    : [...DEFAULT_ALLOWED_ORIGINS];
 }
 
 function applyCors(req, res) {
@@ -29,7 +41,7 @@ function applyCors(req, res) {
   }
 
   res.set('Vary', 'Origin');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Correlation-Id, X-Firebase-AppCheck');
   res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
 }
 
@@ -74,9 +86,11 @@ function enforceAllowedOrigin(req) {
 
 module.exports = {
   DEFAULT_ALLOWED_ORIGINS,
+  EMULATOR_ALLOWED_ORIGINS,
   applyCors,
   enforceAllowedOrigin,
   fail,
   getAllowedOrigins,
   handleCorsPolicy,
+  isDemoFunctionsEmulator,
 };

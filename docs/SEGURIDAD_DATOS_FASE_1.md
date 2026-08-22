@@ -13,8 +13,8 @@ Los enums y límites canónicos viven en `src/shared/validation/domainSchemas.js
 | Nómina | 5 años | pendiente de aprobación legal | México | Finanzas/RR. HH. | Legal/DPO |
 | Logs de IA y observabilidad | 90 días | implementado en `expiresAt`; TTL real pendiente | Global/México | Plataforma | Seguridad |
 | Auditoría lógica | 7 años | propuesto; sin WORM | Global/México | Seguridad | Legal/DPO |
-| Cuarentena infectada | 30 días | implementado en código; despliegue/verificación pendientes | Global | Seguridad | Seguridad |
-| Cuarentena con error transitorio | 7 días | implementado en código; despliegue/verificación pendientes | Global | Plataforma | Seguridad |
+| Cuarentena infectada | 30 días | implementado en código; aprobación legal, despliegue y verificación pendientes | Global | Seguridad | Legal/DPO |
+| Cuarentena con error transitorio | 7 días | implementado en código; aprobación legal, despliegue y verificación pendientes | Global | Plataforma | Legal/DPO |
 
 `legalHold=true` implica `expiresAt=null` o ausente. **TTL pendiente:** el script `configure:ttl` requiere confirmación explícita y el estado no se considera verificado hasta ejecutar `gcloud firestore fields ttls list` en el proyecto real.
 
@@ -22,7 +22,7 @@ Los backfills `backfill:log-expiry` (dry-run) y `backfill:log-expiry:apply` son 
 
 ## Cuarentena de archivos
 
-El cliente solo puede subir PDF/XML a `companies/{companyId}/quarantine/{documentId}/{file}`; las reglas bloquean el alta directa en `documents`. `scanQuarantinedDocument` valida tenant, tamaño y magic bytes y consulta, en modo fail-closed, el antivirus configurado en `MALWARE_SCANNER_URL`; `MALWARE_SCANNER_API_KEY` se inyecta desde Secret Manager. El escáner simulado valida únicamente el flujo local. **Antivirus de producción pendiente** hasta desplegar y comprobar el servicio real.
+El cliente solo puede subir PDF/XML a `companies/{companyId}/quarantine/{documentId}/{file}`; las reglas bloquean el alta directa en `documents`. En el código local, `scanQuarantinedDocument` valida tenant, tamaño, magic bytes y hash, reclama la generación en Firestore y la copia de forma idempotente a `unscanned-gemailla-enterprise`. Los consumidores de `clean-gemailla-enterprise` y `quarantined-gemailla-enterprise` están implementados y se prueban localmente con emuladores; su despliegue, triggers, IAM y activación en producción permanecen pendientes del proceso autorizado. El servicio antivirus productivo y su Eventarc existente no se consideran verificados por estas pruebas locales. La integración no usa una API HTTP ni secretos de antivirus. El simulador local reproduce eventos y movimientos entre buckets, usando EICAR únicamente como archivo seguro de prueba.
 
 ## IAM y cuentas de servicio
 

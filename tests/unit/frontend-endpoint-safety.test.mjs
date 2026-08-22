@@ -28,4 +28,9 @@ describe('fachada pública firebaseClient', () => {
     assert.match(source, /import \{ auth, db, getAppCheckHeaders \} from '@\/firebase';/);
     assert.equal((source.match(/\.\.\.\(await getAppCheckHeaders\(\)\)/g) || []).length, 2);
   });
+
+  it('no envía release no contratado a los handlers internos', () => {
+    const invokeFunction = source.slice(source.indexOf('async function invokeFunction'), source.indexOf('const connectors'));
+    assert.equal(invokeFunction.includes('release: payload.release || getReleaseMetadata()'), false);
+  });
 });

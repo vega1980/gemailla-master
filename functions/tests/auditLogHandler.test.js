@@ -18,10 +18,35 @@ test('appendAuditLog exige App Check y autenticación', async t => {
   mockAdmin(t); const res = response(); await appendAuditLog(request({}), res); assert.equal(res.statusCode, 401);
   const res2 = response(); await appendAuditLog(request({}, { 'x-firebase-appcheck': 'app-ok' }), res2); assert.equal(res2.statusCode, 401);
 });
+test('acepta token de App Check de prueba sólo dentro del Functions Emulator demo', async t => {
+  const previous = { emulator: process.env.FUNCTIONS_EMULATOR, project: process.env.GCLOUD_PROJECT };
+  process.env.FUNCTIONS_EMULATOR = 'true'; process.env.GCLOUD_PROJECT = 'demo-gemailla-e2e';
+  const writes = mockAdmin(t);
+  t.after(() => {
+    if (previous.emulator === undefined) delete process.env.FUNCTIONS_EMULATOR; else process.env.FUNCTIONS_EMULATOR = previous.emulator;
+    if (previous.project === undefined) delete process.env.GCLOUD_PROJECT; else process.env.GCLOUD_PROJECT = previous.project;
+  });
+  const res = response();
+  await appendAuditLog(request({ companyId: 'acme', action: 'client_activity', correlationId: 'c-emulator' }, { 'x-firebase-appcheck': 'firebase-emulator-app-check', authorization: 'Bearer auth-ok' }), res);
+  assert.equal(res.statusCode, 201); assert.equal(writes.length, 1);
+});
+test('token de emulador no omite App Check fuera de un proyecto demo', async t => {
+  const previous = { emulator: process.env.FUNCTIONS_EMULATOR, project: process.env.GCLOUD_PROJECT };
+  process.env.FUNCTIONS_EMULATOR = 'true'; process.env.GCLOUD_PROJECT = 'gemailla-enterprise';
+  mockAdmin(t);
+  t.after(() => {
+    if (previous.emulator === undefined) delete process.env.FUNCTIONS_EMULATOR; else process.env.FUNCTIONS_EMULATOR = previous.emulator;
+    if (previous.project === undefined) delete process.env.GCLOUD_PROJECT; else process.env.GCLOUD_PROJECT = previous.project;
+  });
+  const res = response();
+  await appendAuditLog(request({ companyId: 'acme', action: 'client_activity', correlationId: 'c-production' }, { 'x-firebase-appcheck': 'firebase-emulator-app-check', authorization: 'Bearer auth-ok' }), res);
+  assert.equal(res.statusCode, 401);
+});
 test('rechaza acciones críticas/inventadas y limita detalles', async t => {
   mockAdmin(t); const headers = { 'x-firebase-appcheck': 'app-ok', authorization: 'Bearer auth-ok' };
   const critical = response(); await appendAuditLog(request({ companyId: 'acme', action: 'permission_escalated' }, headers), critical); assert.equal(critical.statusCode, 400);
   const oversized = response(); await appendAuditLog(request({ companyId: 'acme', action: 'client_activity', details: 'x'.repeat(1001) }, headers), oversized); assert.equal(oversized.statusCode, 400);
+  const unknown = response(); await appendAuditLog(request({ companyId: 'acme', action: 'client_activity', correlationId: 'c1', release: { gitSha: 'client' } }, headers), unknown); assert.equal(unknown.statusCode, 400);
 });
 test('actividad cliente permitida queda marcada no autoritativa y con id determinista', async t => {
   const writes = mockAdmin(t); const res = response();
