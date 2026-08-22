@@ -16,9 +16,6 @@ describe('Firebase project and deploy configuration invariants', () => {
     const config = await readJson(FIREBASERC);
 
     assert.equal(config.projects.default, 'gemailla-enterprise');
-    if (config.projects.staging !== undefined) {
-      assert.equal(config.projects.staging, 'gemailla-enterprise-staging');
-    }
   });
 
   it('publishes Hosting from dist and routes API rewrites to the expected functions', async () => {

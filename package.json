@@ -34,8 +34,6 @@
     "validate:secrets": "node scripts/check-no-hardcoded-secrets.js",
     "validate:architecture": "node scripts/validate-architecture.js",
     "budget:bundle": "node scripts/check-bundle-budgets.js",
-    "deploy:staging": "bash scripts/deploy-staging.sh",
-    "smoke:staging": "node scripts/smoke-staging.mjs",
     "measure:architecture": "node scripts/measure-architecture.js",
     "migrate:archived": "node scripts/migrate-deleted-to-archived.mjs",
     "pretest:rules:emulators": "node scripts/ensure-firestore-emulator-cache.mjs",

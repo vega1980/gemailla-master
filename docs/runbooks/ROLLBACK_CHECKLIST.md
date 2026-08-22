@@ -1,6 +1,6 @@
 # Checklist de rollback
 
-Checklist vivo para cada release. Debe revisarse antes de desplegar staging y producción, y enlazarse desde la evidencia en `docs/evidencia/`.
+Checklist vivo para cada release. Debe revisarse antes de cualquier despliegue autorizado, y enlazarse desde la evidencia en `docs/evidencia/`.
 
 ## Antes de revertir
 
@@ -31,10 +31,7 @@ Checklist vivo para cada release. Debe revisarse antes de desplegar staging y pr
 
 ## Comandos de referencia
 
-```bash
-# Staging: redeploy reproducible del commit sano
-STAGING_BASE_URL=https://gemailla-enterprise-staging.web.app npm run deploy:staging
-
-# Validación post-rollback contra staging ya desplegado
-STAGING_BASE_URL=https://gemailla-enterprise-staging.web.app npm run smoke:staging
+```text
+Antes de ejecutar un rollback, confirmar el proyecto Firebase afectado,
+el commit sano y el procedimiento de despliegue aprobado.
 ```
