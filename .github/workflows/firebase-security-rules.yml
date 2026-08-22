@@ -10,8 +10,15 @@ on:
       - tests/rules/**
       - package.json
       - package-lock.json
+      - functions/package.json
+      - functions/package-lock.json
       - .github/workflows/firebase-security-rules.yml
   workflow_dispatch:
+    inputs:
+      confirm_production_deploy:
+        description: 'Escriba DEPLOY_PRODUCTION_RULES para autorizar el despliegue'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -19,12 +26,17 @@ permissions:
 jobs:
   validate-rules:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+      - run: npm install --global npm@11.4.2
       - name: Set up Java 21 for Firebase emulators
         uses: actions/setup-java@v4
         with:
@@ -37,7 +49,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/firebase/emulators
-          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          key: firebase-emulators-${{ runner.os }}-${{ hashFiles('package-lock.json', 'functions/package-lock.json', 'firebase.json') }}
           restore-keys: |
             firebase-emulators-${{ runner.os }}-
       - name: Pre-download Firestore emulator
@@ -46,10 +58,11 @@ jobs:
         run: npm run test:rules:emulators
 
   deploy-rules:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_production_deploy == 'DEPLOY_PRODUCTION_RULES' }}
     needs: validate-rules
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     env:
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
       FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
@@ -59,7 +72,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: npm install --global npm@11.4.2
       - run: npm ci
+      - name: Require production credentials
+        run: |
+          test -n "$FIREBASE_PROJECT_ID" || { echo "::error::FIREBASE_PROJECT_ID is required"; exit 1; }
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON" || { echo "::error::FIREBASE_SERVICE_ACCOUNT is required"; exit 1; }
       - name: Authenticate Firebase service account
         if: ${{ env.FIREBASE_PROJECT_ID != '' && env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
         run: |
@@ -68,7 +86,3 @@ jobs:
       - name: Deploy Firestore and Storage rules
         if: ${{ env.FIREBASE_PROJECT_ID != '' && env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
         run: npx firebase-tools deploy --only firestore:rules,storage --project "$FIREBASE_PROJECT_ID" --non-interactive
-      - name: Skip deployment (Firebase secrets not configured)
-        if: ${{ env.FIREBASE_PROJECT_ID == '' || env.FIREBASE_SERVICE_ACCOUNT_JSON == '' }}
-        run: |
-          echo "::warning::FIREBASE_PROJECT_ID and FIREBASE_SERVICE_ACCOUNT are not configured; skipping Firebase rules deployment."
