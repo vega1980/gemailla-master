@@ -71,12 +71,31 @@ jobs:
       - name: Validate environment before build and deploy
         run: npm run validate:env:all
 
-      - name: Security Scan
+      - name: Install Security Scan dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get install --yes ripgrep
+          command -v rg
+          rg --version
+
+      - name: Security Scan
+        shell: bash
+        run: |
+          set -euo pipefail
           # Bloquear VITE_* sensibles que contengan ENDPOINT, URL o KEY en el cliente.
           # Las claves públicas de Firebase y App Check se permiten explícitamente.
-          matches=$(rg -n --glob '*.{js,jsx}' 'VITE_.*(ENDPOINT|URL|KEY)' src || true)
-          sensitive_matches=$(printf '%s\n' "$matches" | rg -v 'VITE_FIREBASE_(API_KEY|APPCHECK_SITE_KEY)' || true)
+          scan_output="$RUNNER_TEMP/vite-sensitive-scan.txt"
+          if rg -n --glob '*.{js,jsx}' 'VITE_.*(ENDPOINT|URL|KEY)' src > "$scan_output"; then
+            : # Se encontraron candidatos; se filtran las claves públicas permitidas.
+          else
+            scan_status=$?
+            if [ "$scan_status" -ne 1 ]; then
+              echo "::error::ripgrep no pudo ejecutar el escaneo de seguridad (exit $scan_status)"
+              exit "$scan_status"
+            fi
+          fi
+
+          sensitive_matches=$(awk '!/VITE_FIREBASE_(API_KEY|APPCHECK_SITE_KEY)/' "$scan_output")
           if [ -n "$sensitive_matches" ]; then
             printf '%s\n' "$sensitive_matches"
             echo "ERROR: Variables VITE_* sensibles detectadas en cliente"
