@@ -1,6 +1,7 @@
 const firebaseAdmin = require('../firebaseAdmin');
 const crypto = require('node:crypto');
 const { fail } = require('../policies/httpPolicy');
+const { verifyAppCheckRequest } = require('../policies/appCheckPolicy');
 
 const ACTIVE_STATUSES = new Set(['active', 'activo']);
 const ALLOWED_INVITE_ROLES = new Set(['director', 'admin', 'editor', 'viewer', 'invitado']);
@@ -123,6 +124,7 @@ async function inviteCompanyMemberHandler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
 
   try {
+    await verifyAppCheckRequest(req);
     const user = await verifyFirebaseUser(req);
     const db = firebaseAdmin.getAdminFirestore();
     const companyId = String(req.body?.companyId || '').trim();
@@ -182,6 +184,7 @@ async function acceptCompanyInvitationHandler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido.' });
 
   try {
+    await verifyAppCheckRequest(req);
     const user = await verifyFirebaseUser(req);
     const db = firebaseAdmin.getAdminFirestore();
     const invitationId = String(req.body?.invitationId || '').trim();

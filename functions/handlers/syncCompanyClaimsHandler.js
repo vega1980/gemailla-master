@@ -1,4 +1,5 @@
 const firebaseAdmin = require('../firebaseAdmin');
+const { verifyAppCheckRequest } = require('../policies/appCheckPolicy');
 const { requireCompanyId, validateCompanyMembershipAccess } = require('./aiHandler');
 
 
@@ -31,6 +32,7 @@ async function syncCompanyClaimsHandler(req, res) {
   }
 
   try {
+    await verifyAppCheckRequest(req);
     const user = await verifyFirebaseUser(req);
     const companyId = requireCompanyId(req.body || {});
     const access = await validateCompanyMembershipAccess({ user, companyId });

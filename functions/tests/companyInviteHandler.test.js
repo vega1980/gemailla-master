@@ -20,12 +20,21 @@ class Snap {
   }
 }
 
-function req({ body, uid = 'admin-uid', email = 'admin@gemailla.test', emailVerified = true }) {
+function req({
+  body,
+  uid = 'admin-uid',
+  email = 'admin@gemailla.test',
+  emailVerified = true,
+  appCheckToken = 'valid-app-check',
+}) {
   return {
     method: 'POST',
     body,
     get(name) {
-      return String(name).toLowerCase() === 'authorization' ? `Bearer ${uid}:${email}:${emailVerified}` : '';
+      const header = String(name).toLowerCase();
+      if (header === 'authorization') return `Bearer ${uid}:${email}:${emailVerified}`;
+      if (header === 'x-firebase-appcheck') return appCheckToken;
+      return '';
     },
   };
 }
@@ -83,6 +92,7 @@ function mockAdmin(t, initial = {}, options = {}) {
 
   const originalGetAdminFirestore = firebaseAdmin.getAdminFirestore;
   const originalGetAdminAuth = firebaseAdmin.getAdminAuth;
+  const originalGetAdminAppCheck = firebaseAdmin.getAdminAppCheck;
   firebaseAdmin.getAdminFirestore = () => firestore;
   firebaseAdmin.getAdminAuth = () => ({
       verifyIdToken: async (token) => {
@@ -91,13 +101,67 @@ function mockAdmin(t, initial = {}, options = {}) {
       },
       generateSignInWithEmailLink: async (email, settings) => `https://mail.gemailla.test/?email=${encodeURIComponent(email)}&continue=${encodeURIComponent(settings.url)}`,
     });
+  firebaseAdmin.getAdminAppCheck = () => ({
+    verifyToken: async (token) => {
+      if (token !== 'valid-app-check') throw new Error('invalid app check');
+      return { appId: 'test-app' };
+    },
+  });
   t.after(() => {
     firebaseAdmin.getAdminFirestore = originalGetAdminFirestore;
     firebaseAdmin.getAdminAuth = originalGetAdminAuth;
+    firebaseAdmin.getAdminAppCheck = originalGetAdminAppCheck;
   });
 
   return store;
 }
+
+test('inviteCompanyMember requires valid App Check', async (t) => {
+  const store = mockAdmin(t, {
+    'companies/company-a': { ownerUid: 'admin-uid', status: 'active' },
+  });
+
+  for (const appCheckToken of ['', 'invalid-app-check']) {
+    const response = res();
+    await inviteCompanyMemberHandler(req({
+      appCheckToken,
+      body: { companyId: 'company-a', userEmail: 'member@gemailla.test', role: 'viewer' },
+    }), response);
+    assert.equal(response.statusCode, 401);
+  }
+
+  assert.equal([...store.keys()].some((key) => key.startsWith('companyInvitations/')), false);
+});
+
+test('acceptCompanyInvitation requires valid App Check', async (t) => {
+  const token = 'accept-app-check-token';
+  const invitationKey = 'companyInvitations/invite-app-check';
+  const store = mockAdmin(t, {
+    [invitationKey]: {
+      companyId: 'company-a',
+      userEmail: 'member@gemailla.test',
+      role: 'viewer',
+      status: 'pending',
+      tokenHash: hashInviteToken(token),
+      expiresAt: '2999-01-01T00:00:00.000Z',
+      invitedByUid: 'admin-uid',
+    },
+  });
+
+  for (const appCheckToken of ['', 'invalid-app-check']) {
+    const response = res();
+    await acceptCompanyInvitationHandler(req({
+      uid: 'member-uid',
+      email: 'member@gemailla.test',
+      appCheckToken,
+      body: { invitationId: 'invite-app-check', token },
+    }), response);
+    assert.equal(response.statusCode, 401);
+  }
+
+  assert.equal(store.has('companyMembers/company-a_member-uid'), false);
+  assert.equal(store.get(invitationKey).status, 'pending');
+});
 
 test('inviteCompanyMember always creates a pending invitation, emails it and does not expose token or link', async (t) => {
   const store = mockAdmin(t, {
