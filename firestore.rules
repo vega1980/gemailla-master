@@ -101,6 +101,41 @@ service cloud.firestore {
           || hasCompanyRole(companyId, ['owner', 'director', 'admin']));
     }
 
+    function canAccessSensitiveWorkforceData(companyId) {
+      return canManageCompany(companyId);
+    }
+
+    function canReadSensitiveWorkforceRecord() {
+      return signedIn()
+        && hasCompanyId(resource.data)
+        && canAccessSensitiveWorkforceData(resource.data.companyId);
+    }
+
+    function validSensitiveWorkforceCreate(coreValid) {
+      return signedIn()
+        && auditCreateFieldsAreSafe(request.resource.data)
+        && validDomainEnvelope(request.resource.data)
+        && ownerUidIsSelfOrMissing(request.resource.data)
+        && canAccessSensitiveWorkforceData(request.resource.data.companyId)
+        && hasServerCreateTimestamps(request.resource.data)
+        && request.resource.data.createdBy == currentUid()
+        && request.resource.data.updatedBy == currentUid()
+        && coreValid;
+    }
+
+    function validSensitiveWorkforceUpdate(coreValid) {
+      return signedIn()
+        && auditUpdateFieldsAreSafe()
+        && companyIdUnchanged()
+        && ownerUidUnchanged()
+        && canAccessSensitiveWorkforceData(resource.data.companyId)
+        && validDomainEnvelope(request.resource.data)
+        && domainImmutableFieldsUnchanged()
+        && hasServerUpdateTimestamp(request.resource.data)
+        && request.resource.data.updatedBy == currentUid()
+        && coreValid;
+    }
+
     function canCreateCompanyDocument(companyId) {
       return isNonEmptyString(companyId) && canWriteCompany(companyId);
     }
@@ -568,23 +603,23 @@ service cloud.firestore {
     }
 
     match /employees/{id} {
-      allow create: if validDomainCreate(validEmployee(request.resource.data));
-      allow read: if canReadCompanyRecord();
-      allow update: if validDomainUpdate(validEmployee(request.resource.data));
+      allow create: if validSensitiveWorkforceCreate(validEmployee(request.resource.data));
+      allow read: if canReadSensitiveWorkforceRecord();
+      allow update: if validSensitiveWorkforceUpdate(validEmployee(request.resource.data));
       allow delete: if false;
     }
 
     match /payroll/{id} {
-      allow create: if validDomainCreate(validPayroll(request.resource.data));
-      allow read: if canReadCompanyRecord();
-      allow update: if validDomainUpdate(validPayroll(request.resource.data));
+      allow create: if validSensitiveWorkforceCreate(validPayroll(request.resource.data));
+      allow read: if canReadSensitiveWorkforceRecord();
+      allow update: if validSensitiveWorkforceUpdate(validPayroll(request.resource.data));
       allow delete: if false;
     }
 
     match /performanceReviews/{id} {
-      allow create: if validDomainCreate(validReview(request.resource.data));
-      allow read: if canReadCompanyRecord();
-      allow update: if validDomainUpdate(validReview(request.resource.data));
+      allow create: if validSensitiveWorkforceCreate(validReview(request.resource.data));
+      allow read: if canReadSensitiveWorkforceRecord();
+      allow update: if validSensitiveWorkforceUpdate(validReview(request.resource.data));
       allow delete: if false;
     }
 

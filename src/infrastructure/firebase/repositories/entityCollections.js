@@ -17,6 +17,7 @@ export const ENTITY_COLLECTIONS = Object.freeze({
   PerformanceReview: 'performanceReviews',
   KPI: 'kpis',
   Subscription: 'subscriptions',
+  CompanyEntitlement: 'companyEntitlements',
   PredictionLog: 'predictionLogs',
   AIConversation: 'aiConversations',
   Project: 'projects',

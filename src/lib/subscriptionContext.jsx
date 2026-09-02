@@ -1,8 +1,15 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect, useLayoutEffect } from 'react';
 import firebase from '@/api/firebaseClient';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { useCompany } from '@/lib/companyContext';
 import { createLatestRequestGuard } from '@/lib/latestRequestGuard';
-import { canStartPrediction, loadActiveSubscriptions, loadMonthlyPredictionCount } from '@/lib/subscriptionData';
+import {
+  canCompanyEntitlementAccessAI,
+  canStartPrediction,
+  isCompanyEntitlementActive,
+  loadCompanyEntitlement,
+  loadMonthlyPredictionCount,
+} from '@/lib/subscriptionData';
 
 const SubscriptionContext = createContext(null);
 
@@ -38,32 +45,34 @@ export const PLAN_CONFIG = {
 
 export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
+  const { activeCompany } = useCompany();
+  const companyId = activeCompany?.id || '';
   const [subscription, setSubscription] = useState(null);
   const [predictionCount, setPredictionCount] = useState(0);
   const [predictionCountAvailable, setPredictionCountAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
-  const sessionIdRef = useRef(user?.uid || user?.id || user?.email || '');
+  const tenantSessionId = `${user?.uid || user?.id || user?.email || ''}:${companyId}`;
+  const sessionIdRef = useRef(tenantSessionId);
   const requestGuardRef = useRef(createLatestRequestGuard());
   const predictionCountRef = useRef(0);
   const predictionCountAvailableRef = useRef(false);
   const predictionWriteInFlightRef = useRef(null);
 
-  // Purge plan entitlements before paint whenever the authenticated identity changes.
+  // Purge plan entitlements before paint whenever the identity or active tenant changes.
   useLayoutEffect(() => {
-    const sessionId = user?.uid || user?.id || user?.email || '';
-    if (sessionIdRef.current !== sessionId) {
+    if (sessionIdRef.current !== tenantSessionId) {
       requestGuardRef.current.invalidate();
-      sessionIdRef.current = sessionId;
+      sessionIdRef.current = tenantSessionId;
       setSubscription(null);
       setPredictionCount(0);
       setPredictionCountAvailable(false);
       predictionCountRef.current = 0;
       predictionCountAvailableRef.current = false;
       predictionWriteInFlightRef.current = null;
-      setLoading(Boolean(sessionId));
+      setLoading(Boolean(companyId));
     }
-  }, [user]);
+  }, [companyId, tenantSessionId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -75,27 +84,26 @@ export function SubscriptionProvider({ children }) {
 
   const loadSubscription = useCallback(async () => {
     const requestToken = requestGuardRef.current.begin();
-    const requestSessionId = user?.uid || user?.id || user?.email || '';
+    const requestSessionId = tenantSessionId;
     setLoading(true);
     setPredictionCountAvailable(false);
     predictionCountAvailableRef.current = false;
     try {
-      const userUid = user?.uid || user?.id;
-      const subs = await loadActiveSubscriptions(firebase.entities, {
-        userUid,
-        userEmail: user?.email,
+      const entitlement = await loadCompanyEntitlement(firebase.entities, {
+        companyId,
       });
       if (!mountedRef.current || sessionIdRef.current !== requestSessionId
         || !requestGuardRef.current.isCurrent(requestToken)) return;
-      setSubscription(subs[0] || null);
+      setSubscription(entitlement);
 
       // Prediction history is operational data, not the source of plan
       // entitlements. A failure here must not discard a valid subscription.
       try {
         const thisMonth = new Date().toISOString().slice(0, 7);
         const monthlyPredictionCount = await loadMonthlyPredictionCount(firebase.entities, {
-          userEmail: user?.email,
-          month: thisMonth,
+          companyId,
+          userUid: user?.uid || user?.id,
+          monthKey: thisMonth,
         });
         if (!mountedRef.current || sessionIdRef.current !== requestSessionId
           || !requestGuardRef.current.isCurrent(requestToken)) return;
@@ -127,12 +135,11 @@ export function SubscriptionProvider({ children }) {
       if (mountedRef.current && sessionIdRef.current === requestSessionId
         && requestGuardRef.current.isCurrent(requestToken)) setLoading(false);
     }
-  }, [user]);
+  }, [companyId, tenantSessionId, user]);
 
 
   useEffect(() => {
-    const userUid = user?.uid || user?.id;
-    if (!userUid && !user?.email) {
+    if (!companyId) {
       setSubscription(null);
       setPredictionCount(0);
       setPredictionCountAvailable(false);
@@ -142,18 +149,21 @@ export function SubscriptionProvider({ children }) {
       return;
     }
     loadSubscription();
-  }, [loadSubscription, user?.email, user?.id, user?.uid]);
+  }, [companyId, loadSubscription]);
 
-  const plan = subscription?.plan || 'basic';
+  const entitlementActive = isCompanyEntitlementActive(subscription);
+  const normalizedPlan = String(subscription?.plan || '').trim().toLowerCase();
+  const plan = entitlementActive && PLAN_CONFIG[normalizedPlan] ? normalizedPlan : 'basic';
   const planCfg = PLAN_CONFIG[plan] || PLAN_CONFIG.basic;
 
   const canUsePredictions = predictionCountAvailable
     && (planCfg.predictionLimit === Infinity || predictionCount < planCfg.predictionLimit);
-  const canAccessAI = planCfg.aiAccess;
+  const canAccessAI = canCompanyEntitlementAccessAI(subscription);
   const predictionsRemaining = planCfg.predictionLimit === Infinity ? '∞' : Math.max(0, planCfg.predictionLimit - predictionCount);
   const isAtLimit = planCfg.predictionLimit !== Infinity && predictionCount >= planCfg.predictionLimit;
 
   const logPrediction = useCallback(async (companyId, tipo = 'general', resultado = '') => {
+    if (!companyId || companyId !== activeCompany?.id) return false;
     const predictionLimit = planCfg.predictionLimit;
     if (!canStartPrediction({
       countAvailable: predictionCountAvailableRef.current,
@@ -161,7 +171,7 @@ export function SubscriptionProvider({ children }) {
       count: predictionCountRef.current,
       limit: predictionLimit,
     })) return false;
-    const requestSessionId = user?.uid || user?.id || user?.email || '';
+    const requestSessionId = tenantSessionId;
     if (!requestSessionId || sessionIdRef.current !== requestSessionId) return false;
     const operationToken = Symbol('prediction-write');
     predictionWriteInFlightRef.current = operationToken;
@@ -179,7 +189,7 @@ export function SubscriptionProvider({ children }) {
         predictionWriteInFlightRef.current = null;
       }
     }
-  }, [planCfg.predictionLimit, user]);
+  }, [activeCompany?.id, planCfg.predictionLimit, tenantSessionId]);
 
   const value = useMemo(() => ({
     subscription,

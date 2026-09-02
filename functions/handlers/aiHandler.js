@@ -3,6 +3,11 @@ const { FieldValue, Timestamp } = require('firebase-admin/firestore');
 require('../contracts/aiContracts');
 const { enforceAllowedOrigin, fail, getAllowedOrigins, handleCorsPolicy } = require('../policies/httpPolicy');
 const {
+  evaluateCompanyEntitlement,
+  isActiveCompanyEntitlement,
+  isFutureDate,
+} = require('../policies/companyEntitlementPolicy');
+const {
   DEFAULT_AI_REQUEST_TIMEOUT_MS,
   DEFAULT_VERTEX_API_VERSION,
   DEFAULT_VERTEX_GEMINI_MODEL,
@@ -22,7 +27,6 @@ const RELEASE_METADATA = Object.freeze({
 const ACTIVE_STATUSES = new Set(['active', 'activo']);
 const COMPANY_ADMIN_ROLES = new Set(['owner', 'director', 'admin']);
 const AI_ALLOWED_ROLES = new Set(['owner', 'director', 'admin', 'editor']);
-const AI_ENABLED_PLANS = new Set(['pro', 'enterprise']);
 const COMPANY_ID_PATTERN = /^[A-Za-z0-9_-]{1,160}$/;
 const MAX_REQUESTED_DOCUMENTS = 25;
 const MAX_CORRELATION_ID_LENGTH = 160;
@@ -738,30 +742,6 @@ async function validateCompanyAccess({ user, companyId }) {
   return access;
 }
 
-function isFutureDate(value, now = new Date()) {
-  if (!value) return false;
-  let date;
-  if (typeof value?.toDate === 'function') {
-    date = value.toDate();
-  } else if (value instanceof Date) {
-    date = value;
-  } else if (typeof value === 'number') {
-    date = new Date(value);
-  } else if (typeof value === 'string') {
-    date = new Date(value);
-  } else {
-    return false;
-  }
-  return !Number.isNaN(date.getTime()) && date.getTime() > now.getTime();
-}
-
-function isActiveCompanyEntitlement(entitlement, now = new Date()) {
-  const status = String(entitlement?.status || '').trim().toLowerCase();
-  if (!['active', 'trialing', 'activo'].includes(status)) return false;
-  if (isFutureDate(entitlement.currentPeriodEnd, now)) return true;
-  return isFutureDate(entitlement.graceUntil, now);
-}
-
 async function getCompanyEntitlement(companyId) {
   const snap = await firebaseAdmin.getAdminFirestore().collection('companyEntitlements').doc(companyId).get();
   if (!snap.exists) return null;
@@ -770,14 +750,16 @@ async function getCompanyEntitlement(companyId) {
 
 async function validateAiPlanAccess({ companyId }) {
   const entitlement = await getCompanyEntitlement(companyId);
-  if (!entitlement || entitlement.companyId !== companyId || !isActiveCompanyEntitlement(entitlement)) {
+  const evaluation = evaluateCompanyEntitlement(entitlement, companyId);
+  if (!evaluation.active) {
     fail(403, 'IA requiere un entitlement activo de empresa validado en backend.');
   }
 
-  const plan = String(entitlement.plan || '').trim().toLowerCase();
-  if (!AI_ENABLED_PLANS.has(plan) || entitlement.aiAccess !== true) {
+  if (!evaluation.canAccessAI) {
     fail(403, 'El plan actual no habilita IA en backend.');
   }
+
+  return evaluation;
 }
 
 async function validateRequestedDocuments({ companyId, documentIds, storagePaths }) {

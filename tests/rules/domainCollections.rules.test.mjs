@@ -3,6 +3,8 @@ import { assertAllowed, assertDenied, clearFirestore, firestoreDelete, firestore
 
 const companyId = 'domain-company';
 const editor = { uid: 'domain-editor', claims: {} };
+const admin = { uid: 'domain-admin', claims: {} };
+const sensitiveCollections = new Set(['employees', 'payroll', 'performanceReviews']);
 const fixtures = {
   crmClients: { companyId, name: 'Cliente', status: 'activo' },
   crmDeals: { companyId, title: 'Venta', stage: 'contactado', probability: 25 },
@@ -24,32 +26,33 @@ const boundaries = {
 };
 
 describe('contratos reales de las diez colecciones', () => {
-  beforeEach(async () => { await clearFirestore(); await seedCompany({ companyId, ownerUid: 'owner', memberships: [{ userUid: editor.uid, role: 'editor', status: 'active' }] }); });
+  beforeEach(async () => { await clearFirestore(); await seedCompany({ companyId, ownerUid: 'owner', memberships: [{ userUid: editor.uid, role: 'editor', status: 'active' }, { userUid: admin.uid, role: 'admin', status: 'active' }] }); });
   for (const [collection, fixture] of Object.entries(fixtures)) {
     it(`${collection} permite contrato y rechaza faltantes, tipos y campos desconocidos`, async () => {
-      await assertAllowed(firestoreDomainSet(`${collection}/ok`, fixture, editor), `${collection} válido`);
+      const actor = sensitiveCollections.has(collection) ? admin : editor;
+      await assertAllowed(firestoreDomainSet(`${collection}/ok`, fixture, actor), `${collection} válido`);
       const required = Object.keys(fixture).find(key => key !== 'companyId'); const missing = { ...fixture }; delete missing[required];
-      await assertDenied(firestoreDomainSet(`${collection}/missing`, missing, editor), `${collection} requerido`);
-      await assertDenied(firestoreDomainSet(`${collection}/type`, { ...fixture, [required]: 42 }, editor), `${collection} tipo`);
-      await assertDenied(firestoreDomainSet(`${collection}/unknown`, { ...fixture, injected: true }, editor), `${collection} desconocido`);
-      await assertDenied(firestoreDomainSet(`${collection}/tenant`, { ...fixture, companyId: 'foreign' }, editor), `${collection} tenant`);
+      await assertDenied(firestoreDomainSet(`${collection}/missing`, missing, actor), `${collection} requerido`);
+      await assertDenied(firestoreDomainSet(`${collection}/type`, { ...fixture, [required]: 42 }, actor), `${collection} tipo`);
+      await assertDenied(firestoreDomainSet(`${collection}/unknown`, { ...fixture, injected: true }, actor), `${collection} desconocido`);
+      await assertDenied(firestoreDomainSet(`${collection}/tenant`, { ...fixture, companyId: 'foreign' }, actor), `${collection} tenant`);
       const boundary = boundaries[collection];
-      await assertAllowed(firestoreDomainSet(`${collection}/text-min`, { ...fixture, [boundary.text]: 'x' }, editor), `${collection} texto mínimo`);
-      await assertAllowed(firestoreDomainSet(`${collection}/text-max`, { ...fixture, [boundary.text]: 'x'.repeat(180) }, editor), `${collection} texto máximo`);
-      await assertDenied(firestoreDomainSet(`${collection}/text-over`, { ...fixture, [boundary.text]: 'x'.repeat(181) }, editor), `${collection} texto sobre máximo`);
-      await assertDenied(firestoreDomainSet(`${collection}/enum`, { ...fixture, [boundary.enum]: 'inventado' }, editor), `${collection} enum inválido`);
+      await assertAllowed(firestoreDomainSet(`${collection}/text-min`, { ...fixture, [boundary.text]: 'x' }, actor), `${collection} texto mínimo`);
+      await assertAllowed(firestoreDomainSet(`${collection}/text-max`, { ...fixture, [boundary.text]: 'x'.repeat(180) }, actor), `${collection} texto máximo`);
+      await assertDenied(firestoreDomainSet(`${collection}/text-over`, { ...fixture, [boundary.text]: 'x'.repeat(181) }, actor), `${collection} texto sobre máximo`);
+      await assertDenied(firestoreDomainSet(`${collection}/enum`, { ...fixture, [boundary.enum]: 'inventado' }, actor), `${collection} enum inválido`);
       if (boundary.number) {
         const [field, min, max] = boundary.number;
-        await assertAllowed(firestoreDomainSet(`${collection}/number-min`, { ...fixture, [field]: min }, editor), `${collection} número mínimo`);
-        await assertAllowed(firestoreDomainSet(`${collection}/number-max`, { ...fixture, [field]: max }, editor), `${collection} número máximo`);
-        await assertDenied(firestoreDomainSet(`${collection}/number-over`, { ...fixture, [field]: max + 1 }, editor), `${collection} número sobre máximo`);
-        await assertDenied(firestoreDomainSet(`${collection}/number-string`, { ...fixture, [field]: String(min) }, editor), `${collection} string numérico`);
+        await assertAllowed(firestoreDomainSet(`${collection}/number-min`, { ...fixture, [field]: min }, actor), `${collection} número mínimo`);
+        await assertAllowed(firestoreDomainSet(`${collection}/number-max`, { ...fixture, [field]: max }, actor), `${collection} número máximo`);
+        await assertDenied(firestoreDomainSet(`${collection}/number-over`, { ...fixture, [field]: max + 1 }, actor), `${collection} número sobre máximo`);
+        await assertDenied(firestoreDomainSet(`${collection}/number-string`, { ...fixture, [field]: String(min) }, actor), `${collection} string numérico`);
       }
-      if (boundary.date) await assertDenied(firestoreDomainSet(`${collection}/date`, { ...fixture, [boundary.date]: '2026-99-99x' }, editor), `${collection} fecha inválida`);
-      await assertAllowed(firestoreDomainPatch(`${collection}/ok`, businessUpdates[collection], editor), `${collection} update de negocio válido`);
-      await assertDenied(firestoreDomainPatch(`${collection}/ok`, { companyId: 'foreign' }, editor), `${collection} companyId inmutable`);
-      await assertDenied(firestoreDomainPatch(`${collection}/ok`, { ownerUid: 'attacker' }, editor), `${collection} ownerUid inmutable`);
-      await assertDenied(firestoreDomainPatch(`${collection}/ok`, { createdBy: 'attacker' }, editor), `${collection} createdBy inmutable`);
+      if (boundary.date) await assertDenied(firestoreDomainSet(`${collection}/date`, { ...fixture, [boundary.date]: '2026-99-99x' }, actor), `${collection} fecha inválida`);
+      await assertAllowed(firestoreDomainPatch(`${collection}/ok`, businessUpdates[collection], actor), `${collection} update de negocio válido`);
+      await assertDenied(firestoreDomainPatch(`${collection}/ok`, { companyId: 'foreign' }, actor), `${collection} companyId inmutable`);
+      await assertDenied(firestoreDomainPatch(`${collection}/ok`, { ownerUid: 'attacker' }, actor), `${collection} ownerUid inmutable`);
+      await assertDenied(firestoreDomainPatch(`${collection}/ok`, { createdBy: 'attacker' }, actor), `${collection} createdBy inmutable`);
     });
   }
 });

@@ -24,10 +24,10 @@ export default function ProtectedRoute() {
   }
 
   return (
-    <SubscriptionProvider>
-      <CompanyProvider>
+    <CompanyProvider>
+      <SubscriptionProvider>
         <Outlet />
-      </CompanyProvider>
-    </SubscriptionProvider>
+      </SubscriptionProvider>
+    </CompanyProvider>
   );
 }

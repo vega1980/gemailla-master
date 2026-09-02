@@ -20,3 +20,24 @@ test('changing users invalidates the previous session request', () => {
 
   assert.equal(guard.isCurrent(oldSessionRequest), false);
 });
+
+test('a late tenant A response cannot replace the committed tenant B response', async () => {
+  const guard = createLatestRequestGuard();
+  const committed = [];
+  let resolveTenantA;
+  const tenantAResponse = new Promise((resolve) => { resolveTenantA = resolve; });
+
+  const tenantARequest = guard.begin();
+  const tenantACommit = tenantAResponse.then((value) => {
+    if (guard.isCurrent(tenantARequest)) committed.push(value);
+  });
+
+  guard.invalidate();
+  const tenantBRequest = guard.begin();
+  if (guard.isCurrent(tenantBRequest)) committed.push('tenant-b');
+
+  resolveTenantA('tenant-a');
+  await tenantACommit;
+
+  assert.deepEqual(committed, ['tenant-b']);
+});

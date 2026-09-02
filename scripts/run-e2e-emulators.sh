@@ -11,5 +11,5 @@ cleanup() {
   rm -f .firebase.staging.generated.json
 }
 trap cleanup EXIT
-firebase emulators:exec --config .firebase.staging.generated.json --only auth,firestore,storage,functions,hosting --project demo-gemailla-e2e \
+firebase emulators:exec --config .firebase.staging.generated.json --only auth,firestore,storage,functions,hosting,pubsub --project demo-gemailla-e2e \
   "wait-on http://127.0.0.1:5000 http://127.0.0.1:5001 http://127.0.0.1:8080 http://127.0.0.1:9099 http://127.0.0.1:9199 && PLAYWRIGHT_SKIP_WEBSERVER=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:5000 VITE_FIREBASE_PROJECT_ID=demo-gemailla-e2e GCLOUD_PROJECT=demo-gemailla-e2e GOOGLE_CLOUD_PROJECT=demo-gemailla-e2e VERTEX_GEMINI_PROJECT=demo-gemailla-e2e $e2e_test_command"

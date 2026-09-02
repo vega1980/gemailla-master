@@ -25,7 +25,7 @@ export const DOMAIN_COVERAGE = Object.freeze({
   }),
   finance: Object.freeze({
     label: 'Finanzas y suscripciones',
-    entities: Object.freeze(['Transaction', 'Subscription', 'PredictionLog']),
+    entities: Object.freeze(['Transaction', 'Subscription', 'CompanyEntitlement', 'PredictionLog']),
     companyQueries: Object.freeze(['transactions', 'subscriptions']),
   }),
   crm: Object.freeze({

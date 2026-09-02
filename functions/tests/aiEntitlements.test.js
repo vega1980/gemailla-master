@@ -3,10 +3,13 @@ const test = require('node:test');
 const firebaseAdmin = require('../firebaseAdmin');
 
 const {
-  isActiveCompanyEntitlement,
-  isFutureDate,
   validateAiPlanAccess,
 } = require('../handlers/aiHandler');
+const {
+  evaluateCompanyEntitlement,
+  isActiveCompanyEntitlement,
+  isFutureDate,
+} = require('../policies/companyEntitlementPolicy');
 
 const fixedNow = new Date('2026-07-11T12:00:00.000Z');
 
@@ -43,6 +46,71 @@ test('active company entitlement requires active status and current or grace per
     status: 'cancelled',
     currentPeriodEnd: '2026-07-12T00:00:00.000Z',
   }, fixedNow), false);
+});
+
+test('shared entitlement policy normalizes plan and fails closed across tenants', () => {
+  const active = {
+    companyId: 'company-a',
+    status: ' trialing ',
+    currentPeriodEnd: '2026-07-12T00:00:00.000Z',
+    plan: ' Pro ',
+    aiAccess: true,
+  };
+
+  assert.deepEqual(evaluateCompanyEntitlement(active, 'company-a', fixedNow), {
+    active: true,
+    canAccessAI: true,
+    canRecordPredictions: true,
+    plan: 'pro',
+    tenantMatches: true,
+  });
+  assert.deepEqual(evaluateCompanyEntitlement(active, 'company-b', fixedNow), {
+    active: false,
+    canAccessAI: false,
+    canRecordPredictions: false,
+    plan: 'basic',
+    tenantMatches: false,
+  });
+});
+
+test('shared entitlement policy covers canonical plan and validity matrix', () => {
+  const entitlement = (overrides = {}) => ({
+    companyId: 'company-a',
+    status: 'active',
+    currentPeriodEnd: '2026-07-12T00:00:00.000Z',
+    plan: 'pro',
+    aiAccess: true,
+    ...overrides,
+  });
+
+  assert.equal(evaluateCompanyEntitlement(null, 'company-a', fixedNow).canAccessAI, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ plan: 'basic' }), 'company-a', fixedNow).canAccessAI, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ plan: 'pro' }), 'company-a', fixedNow).canAccessAI, true);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ plan: 'enterprise' }), 'company-a', fixedNow).canAccessAI, true);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ currentPeriodEnd: '2026-07-10T00:00:00.000Z' }), 'company-a', fixedNow).canAccessAI, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ currentPeriodEnd: '2026-07-10T00:00:00.000Z', graceUntil: '2026-07-12T00:00:00.000Z' }), 'company-a', fixedNow).canAccessAI, true);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ currentPeriodEnd: '2026-07-10T00:00:00.000Z', graceUntil: '2026-07-10T00:00:00.000Z' }), 'company-a', fixedNow).canAccessAI, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ status: 'cancelled' }), 'company-a', fixedNow).canAccessAI, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ aiAccess: false }), 'company-a', fixedNow).canAccessAI, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ companyId: 'company-b' }), 'company-a', fixedNow).canAccessAI, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ plan: 'unknown' }), 'company-a', fixedNow).canAccessAI, false);
+});
+
+test('prediction entitlement capability is independent from AI access', () => {
+  const entitlement = (overrides = {}) => ({
+    companyId: 'company-a',
+    status: 'active',
+    currentPeriodEnd: '2026-07-12T00:00:00.000Z',
+    plan: 'basic',
+    aiAccess: false,
+    ...overrides,
+  });
+
+  assert.equal(evaluateCompanyEntitlement(entitlement(), 'company-a', fixedNow).canRecordPredictions, true);
+  assert.equal(evaluateCompanyEntitlement(null, 'company-a', fixedNow).canRecordPredictions, true);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ plan: 'unknown' }), 'company-a', fixedNow).canRecordPredictions, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ status: 'cancelled' }), 'company-a', fixedNow).canRecordPredictions, false);
+  assert.equal(evaluateCompanyEntitlement(entitlement({ companyId: 'company-b' }), 'company-a', fixedNow).canRecordPredictions, false);
 });
 
 function mockEntitlement(t, entitlementByCompanyId) {
