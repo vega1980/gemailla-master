@@ -6,8 +6,41 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
+  require-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Require successful CI for the release SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          candidate_sha=$(git rev-parse HEAD)
+          successful_runs=$(gh api \
+            --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+            -f head_sha="$candidate_sha" \
+            -f status=completed \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")] | length')
+
+          if [ "$successful_runs" -lt 1 ]; then
+            echo "::error::No successful complete CI run exists for release SHA $candidate_sha"
+            exit 1
+          fi
+
+          echo "Verified successful complete CI run for release SHA $candidate_sha"
+
   build:
+    needs: require-ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

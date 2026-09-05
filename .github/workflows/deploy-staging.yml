@@ -1,0 +1,140 @@
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit SHA or candidate tag to deploy
+        required: true
+        type: string
+  push:
+    tags:
+      - 'v*-rc*'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_STAGING_PROJECT_ID }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_STAGING_SERVICE_ACCOUNT }}
+      EXPECTED_CLIENT_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
+      CONFIGURED_STAGING_URL: ${{ vars.FIREBASE_STAGING_URL }}
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Resolve candidate SHA
+        id: candidate
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Require staging configuration
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_PROJECT_ID" || { echo "::error::FIREBASE_STAGING_PROJECT_ID is required"; exit 1; }
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON" || { echo "::error::FIREBASE_STAGING_SERVICE_ACCOUNT is required"; exit 1; }
+          test -n "$EXPECTED_CLIENT_PROJECT_ID" || { echo "::error::VITE_FIREBASE_PROJECT_ID repository variable is required"; exit 1; }
+          test "$EXPECTED_CLIENT_PROJECT_ID" = "$FIREBASE_PROJECT_ID" || {
+            echo "::error::Validated client build targets $EXPECTED_CLIENT_PROJECT_ID, not staging project $FIREBASE_PROJECT_ID"
+            exit 1
+          }
+
+      - name: Locate successful CI run for candidate SHA
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh api \
+            --method GET \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+            -f head_sha="$CANDIDATE_SHA" \
+            -f status=completed \
+            --jq '[.workflow_runs[] | select(.conclusion == "success")][0].id // empty')
+
+          test -n "$run_id" || {
+            echo "::error::No successful complete CI run exists for candidate SHA $CANDIDATE_SHA"
+            exit 1
+          }
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download validated build artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          CI_RUN_ID: ${{ steps.ci.outputs.run_id }}
+        run: gh run download "$CI_RUN_ID" --name "web-build-$CANDIDATE_SHA" --dir dist
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Pin npm used by root and Functions
+        run: npm install --global npm@11.4.2
+
+      - name: Install deployment dependencies
+        run: |
+          npm ci
+          npm --prefix functions ci
+
+      - name: Authenticate Firebase staging service account
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-staging-service-account.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-staging-service-account.json" >> "$GITHUB_ENV"
+
+      - name: Deploy validated artifact to Firebase staging
+        run: npx firebase-tools deploy --project "$FIREBASE_PROJECT_ID" --non-interactive
+
+      - name: Resolve staging URL
+        id: staging
+        run: |
+          staging_url="$CONFIGURED_STAGING_URL"
+          if [ -z "$staging_url" ]; then
+            staging_url="https://${FIREBASE_PROJECT_ID}.web.app"
+          fi
+          echo "url=${staging_url%/}" >> "$GITHUB_OUTPUT"
+
+      - name: Run staging smoke tests
+        env:
+          STAGING_URL: ${{ steps.staging.outputs.url }}
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent --retry 6 --retry-all-errors --retry-delay 10 "$STAGING_URL/" > /dev/null
+          curl --fail --show-error --silent --retry 6 --retry-all-errors --retry-delay 10 "$STAGING_URL/dashboard" > /dev/null
+
+          api_status=$(curl --show-error --silent --output /dev/null --write-out '%{http_code}' \
+            --request POST --header 'Content-Type: application/json' --data '{}' "$STAGING_URL/api/ai")
+          case "$api_status" in
+            401|403) ;;
+            *) echo "::error::Expected unauthenticated /api/ai to return 401 or 403, got $api_status"; exit 1 ;;
+          esac
+
+      - name: Record staging deployment result
+        if: always()
+        env:
+          CANDIDATE_SHA: ${{ steps.candidate.outputs.sha }}
+          CI_RUN_ID: ${{ steps.ci.outputs.run_id }}
+          STAGING_URL: ${{ steps.staging.outputs.url }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "## Staging deployment"
+            echo "- Commit SHA: $CANDIDATE_SHA"
+            echo "- Validating CI run: $CI_RUN_ID"
+            echo "- Staging URL: $STAGING_URL"
+            echo "- Result: $JOB_STATUS"
+          } >> "$GITHUB_STEP_SUMMARY"
