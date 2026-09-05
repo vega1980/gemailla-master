@@ -9,10 +9,10 @@ test('producción no impone CSP y permite popups de autenticación', async () =>
   assert.equal(headers.some(header => header.key.startsWith('Content-Security-Policy')), false);
   assert.equal(headers.find(header => header.key === 'Cross-Origin-Opener-Policy')?.value, 'same-origin-allow-popups');
 });
-test('staging genera CSP report-only compatible con Auth y App Check', async () => {
-  const result = spawnSync(process.execPath, ['scripts/prepare-staging-firebase-config.mjs'], { cwd: new URL('../..', import.meta.url), encoding: 'utf8' });
+test('emulador genera CSP report-only compatible con Auth y App Check', async () => {
+  const result = spawnSync(process.execPath, ['scripts/prepare-emulator-firebase-config.mjs'], { cwd: new URL('../..', import.meta.url), encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  const generatedUrl = new URL('../../.firebase.staging.generated.json', import.meta.url);
+  const generatedUrl = new URL('../../.firebase.emulator.generated.json', import.meta.url);
   const config = JSON.parse(await readFile(generatedUrl)); await rm(generatedUrl);
   const csp = config.hosting.headers.flatMap(entry => entry.headers || []).find(header => header.key === 'Content-Security-Policy-Report-Only')?.value || '';
   assert.match(csp, /accounts\.google\.com/); assert.match(csp, /recaptcha/); assert.match(csp, /firebaseapp\.com/); assert.match(csp, /googleapis\.com/);
