@@ -14,7 +14,7 @@ const FRONTEND_REQUIRED = [
 ];
 
 const BLOCKED_LOCAL_FUNCTIONS_VARIABLES = ['OPENAI_API_KEY', 'OPENAI_MODEL', 'VITE_OPENAI_API_KEY'];
-const PLACEHOLDER_PATTERN = /^(TU_|YOUR_|CHANGEME|REPLACE_ME|xxx$|unknown$|local$)/i;
+const PLACEHOLDER_PATTERN = /^(TU_|YOUR[_-]|CHANGEME|REPLACE_ME|xxx$|unknown$|local$|placeholder$)/i;
 
 function parseArgs(argv) {
   const options = { target: process.env.GEMAILLA_VALIDATE_ENV_TARGET || 'frontend' };

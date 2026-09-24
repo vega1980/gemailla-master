@@ -1,0 +1,44 @@
+import {test,expect} from '@playwright/test';
+import {createRequire} from 'node:module';
+import {readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {createAndLoginUser,createCompany,setActiveCompanyClaims,uniqueId} from './support/firebaseHarness.js';
+const require=createRequire(new URL('../../functions/package.json',import.meta.url));
+const {initializeApp,deleteApp}=require('firebase-admin/app');
+const {getFirestore}=require('firebase-admin/firestore');
+const {getStorage}=require('firebase-admin/storage');
+const {publishPage}=require('./services/regulatoryPublisher');
+const {fixture}=require('./tests/fixtures/regulatoryPage');
+test('Next publication opens in Master with evidence, verified capture and company isolation',async({page})=>{
+ const id=uniqueId('regulatory'),companyId=id+'-a',secondId=id+'-b',email=id+'@gemailla-e2e.test';
+ await page.goto('/');
+ const user=await createAndLoginUser(page,{email,password:'Gemailla-e2e-12345'});
+ await createCompany(page,{companyId,ownerUid:user.uid,ownerEmail:email,name:'Empresa regulatoria A'});
+ await createCompany(page,{companyId:secondId,ownerUid:user.uid,ownerEmail:email,name:'Empresa regulatoria B'});
+ await setActiveCompanyClaims(page,{userUid:user.uid,companyId});
+ const projectId=process.env.VITE_FIREBASE_PROJECT_ID||'demo-gemailla-e2e';
+ const app=initializeApp({projectId,storageBucket:`${projectId}.appspot.com`},id);
+ const bundle=process.env.GEMAILLA_REAL_EXPORT?JSON.parse(await readFile(process.env.GEMAILLA_REAL_EXPORT,'utf8')):fixture();
+ try{
+  await publishPage({db:getFirestore(app),bucket:getStorage(app).bucket(),companyId,streamId:'next-test',page:bundle,databasePath:'/test.sqlite'});
+  await page.goto('/regulatory');
+  await expect(page.getByRole('heading',{name:'Avisos oficiales',exact:true})).toBeVisible();
+  const article=page.locator('article').filter({has:page.getByRole('heading',{name:bundle.records[0].notice.title,exact:true})});
+  await expect(article).toBeVisible();
+  await expect(article.getByRole('link',{name:'Publicación oficial'})).toHaveAttribute('href',bundle.records[0].notice.url);
+  await article.getByRole('button',{name:'Ver evidencia'}).click();
+  const evidence=page.getByRole('region',{name:'Evidencia del aviso'});
+  await expect(evidence).toContainText(bundle.records[0].capture.artifactId);
+  const downloadPromise=page.waitForEvent('download');
+  await evidence.getByRole('button',{name:'Descargar captura verificada'}).click();
+  const download=await downloadPromise;
+  const bytes=await readFile(await download.path());
+  expect(createHash('sha256').update(bytes).digest('hex')).toBe(bundle.records[0].capture.artifactId);
+  await page.screenshot({path:'/tmp/gemailla-fusion-avisos.png',fullPage:true});
+  await page.getByRole('button',{name:/Empresa activa:/}).click();
+  await page.getByRole('menuitem',{name:'Empresa regulatoria B'}).click();
+  await expect(page.getByText('No hay avisos sincronizados en esta página.',{exact:false})).toBeVisible();
+  await expect(evidence).toHaveCount(0);
+  await expect(page.locator('article')).toHaveCount(0);
+ }finally{await deleteApp(app);}
+});

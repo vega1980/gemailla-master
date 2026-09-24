@@ -1,3 +1,5 @@
+// Genera una copia de firebase.json con CSP en modo informe.
+// Usada por pruebas locales con emuladores; no ejecuta despliegues.
 import { readFile, writeFile } from 'node:fs/promises';
 
 const config = JSON.parse(await readFile('firebase.json', 'utf8'));

@@ -106,7 +106,7 @@ jobs:
         run: npm run lint
 
       - name: Typecheck core
-        run: npm run typecheck:core
+        run: npm run typecheck:core && npm run typecheck
 
       - name: Firebase rules emulator tests
         run: npm run test:rules:emulators

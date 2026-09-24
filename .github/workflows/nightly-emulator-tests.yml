@@ -71,6 +71,6 @@ jobs:
       - name: Pre-download Firestore emulator
         run: npx firebase-tools setup:emulators:firestore
       - name: Install Playwright browser
-        run: npm run test:e2e:install
+        run: npx playwright install --with-deps chromium
       - name: Run E2E tests with emulators
         run: npm run test:e2e:emulators

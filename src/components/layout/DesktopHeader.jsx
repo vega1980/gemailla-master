@@ -19,6 +19,7 @@ const pageTitles = {
   '/operations': ['Estrategia y Operaciones', 'Eficiencia empresarial'],
   '/crm': ['CRM', 'Relaciones y oportunidades comerciales'],
   '/hr': ['Recursos Humanos', 'Gestión del talento'],
+  '/regulatory': ['Avisos oficiales', 'Publicaciones con fuente y evidencia'],
   '/activity': ['Actividad', 'Historial de acciones'],
   '/activity-log': ['Actividad', 'Historial de acciones'],
   '/subscriptions': ['Suscripciones', 'Planes y capacidad empresarial'],
