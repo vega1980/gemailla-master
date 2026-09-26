@@ -6,6 +6,7 @@
   "description": "Repositorio maestro unificado de GEMAILLA AI con React, Vite y Firebase puro.",
   "scripts": {
     "dev": "vite",
+    "hooks:install": "git config --local core.hooksPath .githooks",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --quiet",

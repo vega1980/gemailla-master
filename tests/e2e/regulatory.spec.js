@@ -7,7 +7,7 @@ const require=createRequire(new URL('../../functions/package.json',import.meta.u
 const {initializeApp,deleteApp}=require('firebase-admin/app');
 const {getFirestore}=require('firebase-admin/firestore');
 const {getStorage}=require('firebase-admin/storage');
-const {publishPage}=require('./services/regulatoryPublisher');
+const {publishPage,historyIdentity}=require('./services/regulatoryPublisher');
 const {fixture}=require('./tests/fixtures/regulatoryPage');
 test('Next publication opens in Master with evidence, verified capture and company isolation',async({page})=>{
  const id=uniqueId('regulatory'),companyId=id+'-a',secondId=id+'-b',email=id+'@gemailla-e2e.test';
@@ -20,7 +20,7 @@ test('Next publication opens in Master with evidence, verified capture and compa
  const app=initializeApp({projectId,storageBucket:`${projectId}.appspot.com`},id);
  const bundle=process.env.GEMAILLA_REAL_EXPORT?JSON.parse(await readFile(process.env.GEMAILLA_REAL_EXPORT,'utf8')):fixture();
  try{
-  await publishPage({db:getFirestore(app),bucket:getStorage(app).bucket(),companyId,streamId:'next-test',page:bundle,databasePath:'/test.sqlite'});
+  await publishPage({db:getFirestore(app),bucket:getStorage(app).bucket(),companyId,streamId:'next-test',page:bundle,databaseId:historyIdentity(bundle)});
   await page.goto('/regulatory');
   await expect(page.getByRole('heading',{name:'Avisos oficiales',exact:true})).toBeVisible();
   const article=page.locator('article').filter({has:page.getByRole('heading',{name:bundle.records[0].notice.title,exact:true})});

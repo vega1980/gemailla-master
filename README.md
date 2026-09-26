@@ -28,7 +28,10 @@ A fecha del 26 de julio de 2026, el repositorio tiene **0 issues abiertos** y **
 
 ```bash
 npm ci
+npm run hooks:install
 ```
+
+El segundo comando activa `.githooks/pre-commit` para este clon: comprueba el diff preparado y ejecuta lint antes de cada commit. Debe repetirse en cada clon nuevo.
 
 Instala de forma explícita las dependencias aisladas de Cloud Functions
 (incluido `@google/genai`):
@@ -161,6 +164,15 @@ Configuración de Vertex para Functions:
 Las funciones HTTP validan CORS antes de procesar la solicitud, pero CORS no es un control de autenticación: clientes no-navegador como `curl`, scripts o server-to-server pueden omitir el header `Origin` y no reciben `Access-Control-Allow-Origin`. La barrera primaria sigue siendo exigir token Firebase Auth `Bearer`, validar acceso a `companyId`/rol/documentos y registrar límites en Firestore por usuario/empresa (`aiRateLimits`) y por empresa/día (`aiUsage`).
 
 Las rutas de backend no se configuran con variables `VITE_*`: deben permanecer relativas y bajo el mismo origen (`/api/ai` y `/api/functions`). Si necesitas integrar otro proveedor, publícalo detrás de Firebase Hosting/Cloud Functions/Cloud Run y conserva el acceso desde el frontend mediante esas rutas internas.
+
+## Sincronización de avisos regulatorios
+
+`npm run sync:regulatory -- --next-root <ruta-next> --db <archivo.sqlite> --company <empresa> --stream <flujo> --project <proyecto> --bucket <bucket>` publica mediante un operador autorizado.
+
+- La identidad del historial es SHA-256 del primer aviso exportado y validado. No depende de la ruta local. Una copia del mismo historial conserva la identidad; una base diferente debe usar otro flujo.
+- Cada continuación comprueba además el hash del último aviso publicado. Los estados antiguos que guardaban `databasePath` se convierten a `schema: 2` únicamente al publicar con cursor y hash coincidentes, comprobados nuevamente dentro de la transacción. No se cambian los avisos ya publicados.
+- Antes de subir capturas, se limita a 4 MiB el conjunto JSON de documentos y estado que se escribirá, reservando margen para Firestore. Si excede ese tamaño, el proceso se detiene sin avanzar el cursor. Repite con `--page-size 5` (predeterminado: 25; permitido: 1–100), reduciéndolo más si hace falta.
+- Una base sin publicaciones termina con estado `empty` sin escribir en Firebase. Esta sincronización no incorpora IA ni inicia un despliegue.
 
 ## Reglas de seguridad
 
