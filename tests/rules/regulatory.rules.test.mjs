@@ -7,7 +7,7 @@ const require=createRequire(new URL('../../functions/package.json',import.meta.u
 const {initializeApp,deleteApp}=require('firebase-admin/app');
 const {getFirestore}=require('firebase-admin/firestore');
 const {getStorage}=require('firebase-admin/storage');
-const {publishPage}=require('./services/regulatoryPublisher');
+const {publishPage,historyIdentity}=require('./services/regulatoryPublisher');
 const {fixture}=require('./tests/fixtures/regulatoryPage');
 test('published evidence is idempotent and readable only inside its company',async()=>{
  const companyId='regulatory-rule-company',streamId='next-test';
@@ -15,7 +15,7 @@ test('published evidence is idempotent and readable only inside its company',asy
  const app=initializeApp({projectId:PROJECT_ID,storageBucket:STORAGE_BUCKET},'regulatory-rules');
  try{
   const db=getFirestore(app),bucket=getStorage(app).bucket(),page=fixture();
-  const args={db,bucket,companyId,streamId,page,databasePath:'/test.sqlite'};
+  const args={db,bucket,companyId,streamId,page,databaseId:historyIdentity(page)};
   const first=await publishPage(args);assert.equal(first.published,1);
   await assert.rejects(publishPage(args),/Cursor conflict/);
   const again=await publishPage({...args,page:{...page,after:1,previousNoticeHash:createHash('sha256').update(JSON.stringify(page.records[0].notice)).digest('hex'),nextCursor:1,records:[],captures:{}}});assert.equal(again.published,0);
