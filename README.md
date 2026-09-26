@@ -88,7 +88,7 @@ npm run rules:deploy
 
 ## Estructura incremental
 
-La app mantiene las fachadas públicas existentes (`@/api/firebaseClient`, `@/lib/AuthContext`, `@/lib/companyContext` y rutas actuales), pero la lógica nueva se organiza por capas para permitir refactors sin romper imports:
+La app mantiene las fachadas públicas existentes (`@/api/firebaseClient`, `@/app/providers/AuthProvider`, `@/lib/companyContext` y rutas actuales), pero la lógica nueva se organiza por capas para permitir refactors sin romper imports:
 
 ```text
 src/app/                         # rutas y composición de providers
@@ -103,24 +103,32 @@ src/api/firebaseClient.js         # fachada pública de compatibilidad
 
 Las pantallas enrutables viven en `src/modules/<dominio>/pages`; `src/pages` ya no existe. Los imports hacia módulos deben usar el alias canónico `@modules/<dominio>/...` y no se aceptan shims que reexporten implementaciones desde ubicaciones heredadas, `src/lib` o la raíz de un módulo.
 
+### Alias de Vite
+
+Los alias definidos en `vite.config.ts` son:
+
+- `@/`: apunta a `src/`.
+- `@modules/`: apunta a `src/modules/`.
+
 ## Arquitectura de documentos
 
-El flujo documental está diseñado para evitar archivos huérfanos y URLs públicas persistidas:
+El acceso del cliente está definido en `firestore.rules` y `storage.rules`:
 
-1. La app crea primero la metadata en `documents/{documentId}` con estado `uploading`.
-2. La app sube el archivo bajo `companies/{companyId}/documents/{documentId}/{fileName}` y Storage exige usuario autenticado, claim de empresa activo, permisos/rol válidos, MIME/tamaño permitido y metadata `companyId`/`documentId` coincidente con la ruta.
-3. El archivo se sube a Firebase Storage con límite de 15 MB y solo MIME PDF/XML.
-4. La metadata se actualiza a `pending` con `storagePath`, `contentType`, `fileSize` y `uploadCompletedAt`.
-5. Los archivos en Storage son inmutables desde cliente: se permite `create`, pero no `update` ni `delete`.
-6. La app no persiste `fileUrl`, `downloadUrl`, `downloadURL` ni `publicUrl`; solo guarda `storagePath`.
+1. La app crea la metadata en `documents/{documentId}` con estado `uploading`.
+2. La ruta de subida del cliente es `companies/{companyId}/quarantine/{documentId}/{fileName}`. Requiere una membresía activa con rol `owner`, `director`, `admin` o `editor`, un documento de la misma empresa en Firestore y metadata `companyId`/`documentId` coincidente con la ruta.
+3. Storage exige un archivo no vacío y de tamaño estrictamente menor que `15 * 1024 * 1024` bytes (15 MiB). Solo acepta PDF/XML con extensión y MIME coincidentes.
+4. El cliente puede pasar de `uploading` a `quarantined` o `error`, y de `quarantined` a `error`. No puede asignar `storagePath`, `scanStatus` ni los demás campos reservados del escáner. El escaneo y la promoción corresponden al backend.
+5. La ruta final es `companies/{companyId}/documents/{documentId}/{fileName}`. Su lectura exige membresía activa, `scanStatus: "clean"` y un `storagePath` en Firestore que coincida exactamente con el objeto.
+6. El cliente no puede leer, modificar ni borrar objetos en cuarentena. En la ruta final tampoco puede crear, modificar ni borrar archivos.
+7. Las reglas de Firestore bloquean los campos `fileUrl`, `file_url`, `downloadUrl`, `downloadURL` y `publicUrl` en documentos. La referencia al archivo promovido es `storagePath`.
 
-### ERP Zero-Knowledge
+### Privacidad documental
 
 La propuesta de privacidad de GEMAILLA se basa en que el cliente conserva el control operativo del documento: la interfaz y las reglas no tratan el PDF/XML como un enlace público reutilizable, sino como un recurso privado referenciado por `storagePath`. El frontend solicita acceso solo cuando el usuario autorizado lo necesita y el análisis de IA se enruta por `/api/ai`, un endpoint same-origin protegido por Firebase Auth, validación de empresa/documentos, límites de uso y secretos cargados únicamente en backend.
 
 Las descargas privadas con `getBlob()` requieren aplicar `storage.cors.json` al bucket de producción. La lista coincide con los orígenes oficiales permitidos por Functions y no contiene comodines. Un operador autorizado puede aplicarla explícitamente con `npm run configure:storage-cors -- <bucket-name>`; este paso modifica configuración cloud y no forma parte del build ni se ejecuta automáticamente.
 
-Este posicionamiento permite comunicar el módulo documental como un ERP "Zero-Knowledge" para empresas que no quieren exponer facturas, contratos o finanzas en URLs públicas ni en variables de navegador. La implementación reduce superficie de fuga al evitar URLs públicas persistidas, exigir Storage privado por empresa y mantener la llamada a modelos detrás de Functions/Hosting.
+Los documentos tienen acceso restringido por empresa. El backend puede procesarlos y enviarlos al proveedor de IA para su análisis; por tanto, esta implementación no ofrece una garantía Zero-Knowledge.
 
 ## IA
 
@@ -156,10 +164,48 @@ Las rutas de backend no se configuran con variables `VITE_*`: deben permanecer r
 
 ## Reglas de seguridad
 
-- Firestore controla acceso por `ownerUid`, membresía activa y rol.
-- Storage valida usuario autenticado, empresa activa por claims, membresía activa en Firestore, permisos/rol válidos, metadata `companyId`/`documentId` coincidente, tamaño y tipo de archivo.
-- Los cambios de membresía revocan refresh tokens desde Cloud Functions y el cliente fuerza `getIdToken(true)` tras sincronizar claims; además Storage consulta `companyMembers` para cerrar la ventana de hasta 1 hora de claims antiguos.
-- El borrado funcional debe hacerse como borrado lógico con `status: "archived"`.
+- Fuentes de verdad: `firestore.rules` y `storage.rules`. Los siguientes fragmentos son extractos; sus funciones auxiliares están en esos archivos.
+- Firestore permite la lectura general de la empresa a su propietario o a miembros activos. Las escrituras empresariales generales corresponden al propietario o a miembros activos con rol `owner`, `director`, `admin` o `editor`, sujetas al contrato de cada colección. Administración, datos sensibles de personal y datos financieros de IA tienen restricciones adicionales.
+- La membresía se consulta en `companyMembers/{companyId}_{uid}` y debe coincidir en `companyId`, `userUid` y estado `active`. Estas reglas no exigen claims `companyId` ni `companyRole` en el token.
+- Storage exige membresía activa también al propietario. Para subir exige además uno de los roles de escritura indicados arriba; para leer archivos promovidos exige que estén limpios y que su ruta coincida.
+- Los campos del escáner y la promoción de archivos quedan fuera de las escrituras permitidas al cliente. Los avisos regulatorios permiten lectura autorizada, pero no escritura desde el cliente.
+- El archivado documental usa `status: "archived"`. No borra el archivo ni impide por sí solo leer un archivo limpio con ruta coincidente y membresía activa.
+
+Fragmentos reales de Firestore:
+
+```text
+function isActiveMember(companyId) {
+      return membershipExists(companyId)
+        && membershipData(companyId).get('companyId', null) == companyId
+        && membershipData(companyId).get('userUid', null) == currentUid()
+        && membershipData(companyId).get('status', null) == 'active';
+    }
+
+function canReadCompany(companyId) {
+      return isNonEmptyString(companyId)
+        && (isCompanyOwner(companyId) || isActiveMember(companyId));
+    }
+```
+
+Entrada de documentos en Storage:
+
+```text
+match /companies/{companyId}/quarantine/{documentId}/{fileName} {
+      allow read, update, delete: if false;
+      allow create: if request.resource.size > 0
+                    && request.resource.size < 15 * 1024 * 1024
+                    && contentTypeMatchesExtension(fileName)
+                    && canWriteCompanyDocuments(companyId)
+                    && documentExists(companyId, documentId)
+                    && isValidMetadata(companyId, documentId);
+    }
+```
+
+Validación local de las reglas:
+
+```bash
+npm run test:rules:emulators
+```
 
 ## Regla de estabilización
 
@@ -182,6 +228,19 @@ const clientesActivos = filtrarActivos(resumenFinanciero);
 ```
 
 En análisis o reportes, usa nombres como `ventasMensuales`, `clientesActivos`, `predicciones`, `transaccionesFiltradas` o `resumenPorCategoria`. El linter emite advertencias cuando detecta identificadores ambiguos comunes para reforzar esta convención sin bloquear correcciones heredadas.
+
+## Ubicación y ejecución de pruebas
+
+| Pruebas | Ubicación | Comando desde la raíz |
+| --- | --- | --- |
+| Unitarias | `tests/unit/*.test.mjs` | `npm run test:unit` |
+| Backend | `functions/tests/*.test.js` | `npm run test:functions` |
+| Reglas Firebase | `tests/rules/*.test.mjs` | `npm run test:rules:emulators` |
+| Flujos completos con Playwright | `tests/e2e/` | `npm run test:e2e:emulators` |
+
+`npm run test:functions` también ejecuta el lint del backend.
+
+Para ejecutar las cuatro suites en orden: `npm run test:emulators`. Si alguna falla, el comando se detiene.
 
 ## Pruebas E2E críticas
 

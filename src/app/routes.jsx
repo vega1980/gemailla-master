@@ -31,6 +31,7 @@ const FinancialHub = lazy(() => import('@modules/finance/pages/FinancialHubPage'
 const ClientPanel = lazy(() => import('@modules/client/pages/ClientPanelPage'));
 const Operations = lazy(() => import('@modules/operations/pages/OperationsPage'));
 const CRM = lazy(() => import('@modules/crm/pages/CRMPage'));
+const Regulatory = lazy(() => import('@modules/regulatory/pages/RegulatoryPage'));
 const HumanResources = lazy(() => import('@modules/hr/pages/HumanResourcesPage'));
 
 // Definición de Rutas Públicas
@@ -48,6 +49,7 @@ export const publicRoutes = [
 // Definición de Rutas Protegidas (Módulos de negocio)
 export const appRoutes = [
   { path: '/dashboard', element: ModuleLoader(Dashboard) },
+  { path: '/regulatory', element: ModuleLoader(Regulatory) },
   { path: '/documents', element: ModuleLoader(Documents) },
   { path: '/erp', element: ModuleLoader(ERP) },
   { path: '/audit', element: ModuleLoader(Audit) },

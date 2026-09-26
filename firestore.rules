@@ -403,6 +403,15 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Only the trusted Next publisher can create or modify confirmed evidence.
+    match /companies/{companyId}/regulatoryNotices/{noticeId} {
+      allow read: if signedIn() && canReadCompany(companyId);
+      allow write: if false;
+    }
+    match /companies/{companyId}/regulatorySync/{streamId} {
+      allow read, write: if false;
+    }
+
     match /companies/{companyId} {
       allow create: if validCompanyCreate();
       allow read: if canReadCompany(companyId);

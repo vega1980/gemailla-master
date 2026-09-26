@@ -157,11 +157,13 @@ describe('Cloud Storage security rules', () => {
     await assertDenied(storageUpload(`companies/${companyId}/quarantine/${documentId}/file.exe`, owner, {
       contentType: 'application/octet-stream',
       body: 'not a PDF or XML',
+      customMetadata: { companyId, documentId },
     }), 'invalid MIME upload');
 
     await assertDenied(storageUpload(`companies/${companyId}/quarantine/${documentId}/oversized.pdf`, owner, {
       contentType: 'application/pdf',
       body: Buffer.alloc((15 * 1024 * 1024) + 1, 0x61),
+      customMetadata: { companyId, documentId },
     }), 'oversized PDF upload');
   });
 

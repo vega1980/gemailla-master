@@ -55,19 +55,35 @@ describe('Firebase project and deploy configuration invariants', () => {
 
   it('keeps manual and E2E emulator workflows demo-only and complete', async () => {
     const packageJson = await readJson(new URL('../../package.json', import.meta.url));
+    const readScript = (name) => readFile(new URL(`../../scripts/${name}`, import.meta.url), 'utf8');
+    const manualRunner = await readScript('start-emulators.sh');
+    const e2eRunner = await readScript('run-e2e-emulators.sh');
+    const buildRunner = await readScript('build-emulators.sh');
+    const e2eEnv = await readScript('e2e-env.sh');
     const expectedOnly = /--only auth,firestore,storage,functions,hosting/;
+    const sharedEnv = 'source "$(dirname "${BASH_SOURCE[0]}")/e2e-env.sh"';
 
-    assert.match(packageJson.scripts['emulators:start'], expectedOnly);
-    assert.match(packageJson.scripts['emulators:start'], /--project demo-gemailla-local/);
-    const e2eRunner = await readFile(new URL('../../scripts/run-e2e-emulators.sh', import.meta.url), 'utf8');
+    assert.equal(packageJson.scripts['emulators:start'], 'bash scripts/start-emulators.sh');
+    assert.equal(packageJson.scripts['test:e2e:emulators'], 'bash scripts/run-e2e-emulators.sh');
+    assert.equal(packageJson.scripts['build:emulators'], 'bash scripts/build-emulators.sh');
+
+    assert.match(manualRunner, expectedOnly);
+    assert.match(manualRunner, /--project demo-gemailla-local/);
+    assert.match(manualRunner, /CLOUDSDK_CONFIG=\/tmp\/gemailla-emulator-cloudsdk/);
+    assert.match(manualRunner, /VERTEX_GEMINI_PROJECT=demo-gemailla-local/);
+
+    assert.ok(e2eRunner.includes(sharedEnv));
+    assert.ok(buildRunner.includes(sharedEnv));
+    assert.match(buildRunner, /exec npm run build/);
     assert.match(e2eRunner, expectedOnly);
-    assert.match(e2eRunner, /--project demo-gemailla-e2e/);
+    assert.ok(e2eRunner.includes('--project "$VITE_FIREBASE_PROJECT_ID"'));
     assert.match(e2eRunner, /PLAYWRIGHT_BASE_URL=http:\/\/127\.0\.0\.1:5000/);
-    assert.match(packageJson.scripts['build:emulators'], /VITE_FIREBASE_PROJECT_ID=demo-gemailla-e2e/);
-    assert.match(packageJson.scripts['emulators:start'], /CLOUDSDK_CONFIG=\/tmp\/gemailla-emulator-cloudsdk/);
-    assert.match(e2eRunner, /CLOUDSDK_CONFIG=\/tmp\/gemailla-emulator-cloudsdk/);
-    assert.match(packageJson.scripts['emulators:start'], /VERTEX_GEMINI_PROJECT=demo-gemailla-local/);
-    assert.match(e2eRunner, /VERTEX_GEMINI_PROJECT=demo-gemailla-e2e/);
+
+    assert.match(e2eEnv, /^export VITE_FIREBASE_PROJECT_ID=demo-gemailla-e2e$/m);
+    assert.match(e2eEnv, /^export CLOUDSDK_CONFIG=\/tmp\/gemailla-emulator-cloudsdk$/m);
+    for (const variable of ['GCLOUD_PROJECT', 'GOOGLE_CLOUD_PROJECT', 'VERTEX_GEMINI_PROJECT']) {
+      assert.ok(e2eEnv.includes(`export ${variable}="$VITE_FIREBASE_PROJECT_ID"`));
+    }
   });
 
   it('provides App Check configuration to CI and treats its site key as public', async () => {

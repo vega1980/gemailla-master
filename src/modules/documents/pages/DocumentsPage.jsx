@@ -85,7 +85,9 @@ export default function Documents() {
   const { data: documents = [], isLoading } = useCompanyDocuments(activeCompany, {
     query: {
       refetchInterval: (query) => (
-        (query.state.data || []).some(shouldPollDocumentScan) ? 1_000 : false
+        uploading || (query.state.data || []).some(shouldPollDocumentScan)
+          ? 1_000
+          : false
       ),
     },
   });

@@ -12,6 +12,7 @@ import {
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/companies', label: 'Empresas', icon: Building2 },
+  { path: '/regulatory', label: 'Avisos oficiales', icon: Shield },
   { path: '/documents', label: 'Documentos', icon: FileText },
   { path: '/erp', label: 'ERP', icon: ArrowUpDown },
   { path: '/audit', label: 'Auditoría', icon: Shield },

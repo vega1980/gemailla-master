@@ -77,3 +77,21 @@ describe('validate-env', () => {
     assert.equal(result.source, 'env');
   });
 });
+
+
+it('rechaza placeholders literales y YOUR con guion', () => {
+  const base = Object.fromEntries(
+    FRONTEND_REQUIRED.map(name => [name, 'configured-value'])
+  );
+  assert.equal(validateEnvironment({ target: 'frontend', env: base }).ok, true);
+
+  for (const value of ['TU_CLAVE', 'YOUR_KEY', 'CHANGEME', 'REPLACE_ME', 'xxx', 'placeholder', 'your-project-id', ' PLACEHOLDER ']) {
+    const result = validateEnvironment({
+      target: 'frontend',
+      env: { ...base, VITE_FIREBASE_API_KEY: value },
+    });
+    assert.equal(result.ok, false, value);
+    assert.equal(result.reason, 'missing');
+    assert.deepEqual(result.missing, ['VITE_FIREBASE_API_KEY']);
+  }
+});

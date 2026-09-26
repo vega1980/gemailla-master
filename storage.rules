@@ -87,6 +87,12 @@ service firebase.storage {
         || (fileName.matches('(?i)^.+\\.xml$') && (request.resource.contentType == 'text/xml' || request.resource.contentType == 'application/xml'));
     }
 
+    // Captures are downloaded as inert attachments; clients never write evidence.
+    match /companies/{companyId}/regulatoryCaptures/{artifactId} {
+      allow read: if activeCompanyAccess(companyId);
+      allow write: if false;
+    }
+
     match /companies/{companyId}/documents/{documentId}/{fileName} {
 
       allow read: if activeCompanyAccess(companyId)
