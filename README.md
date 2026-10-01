@@ -62,8 +62,10 @@ npm run dev
 La configuración habitual para desarrollo local es `.env.local`. Como alternativa para una compilación estática ya generada, la aplicación intenta cargar `/app-config.js` al arrancar. El archivo real está ignorado por Git; créalo desde el ejemplo solo si necesitas configurar el despliegue en tiempo de ejecución:
 
 ```bash
-cp public/app-config.example.js public/app-config.js
+cp public/app-config.example.js dist/app-config.js
 ```
+
+Edita `dist/app-config.js` antes de desplegar; Firebase Hosting publica `dist/`. Vite copia los archivos de `public/` a `dist/` durante el build, por lo que, si vuelves a generar la compilación, debes repetir este paso.
 
 Sustituye todos los valores `TU_*` y ajusta `GEMAILLA_USE_FIREBASE_EMULATORS`. Este archivo no se ejecuta como JavaScript arbitrario: el cargador solo acepta las asignaciones literales permitidas. Si no existe, responde `404` o está vacío, la aplicación continúa con los valores `VITE_FIREBASE_*` incorporados por Vite. No mantengas `.env.local` y `app-config.js` con valores contradictorios: para cada valor de Firebase, la variable `VITE_FIREBASE_*` incorporada durante el build tiene precedencia y `app-config.js` actúa como respaldo.
 
