@@ -20,7 +20,9 @@ Repositorio maestro unificado de GEMAILLA AI: aplicación web estática React/Vi
 
 ## Estado del repositorio
 
-A fecha del 26 de julio de 2026, el repositorio tiene **0 issues abiertos** y **29 pull requests abiertos**. Los pull requests no se contabilizan como issues del proyecto.
+El código mantiene una iteración de estabilización: antes de incorporar módulos nuevos deben completarse las validaciones de reglas, staging, E2E, rendimiento, observabilidad y costos descritas en `docs/ITERACION_ESTABILIZACION.md`.
+
+El número de issues y pull requests cambia continuamente y no se conserva como una instantánea en este README. Consulta las pestañas **Issues** y **Pull requests** del repositorio remoto para conocer su estado actual; recuerda que GitHub muestra ambos tipos de elemento en algunos contadores de su API, aunque sean categorías distintas en la interfaz.
 
 ## Configuración local
 
@@ -40,13 +42,32 @@ Instala de forma explícita las dependencias aisladas de Cloud Functions
 npm --prefix functions ci
 ```
 
-2. Crea la configuración local a partir del ejemplo:
+2. Crea la configuración local de Vite a partir del ejemplo:
 
 ```bash
 cp .env.example .env.local
 ```
 
-3. Edita `.env.local` con los valores `VITE_FIREBASE_*` del proyecto Firebase de desarrollo. El archivo `public/app-config.js` no forma parte del repositorio ni es necesario para la configuración local.
+3. Edita `.env.local` con los siete valores `VITE_FIREBASE_*` del proyecto Firebase de desarrollo, incluida la clave pública de App Check. No agregues endpoints de IA ni secretos: el frontend siempre usa las rutas same-origin `/api/ai` y `/api/functions`.
+
+4. Valida la configuración e inicia Vite:
+
+```bash
+npm run validate:env
+npm run dev
+```
+
+### Configuración en tiempo de ejecución (opcional)
+
+La configuración habitual para desarrollo local es `.env.local`. Como alternativa para una compilación estática ya generada, la aplicación intenta cargar `/app-config.js` al arrancar. El archivo real está ignorado por Git; créalo desde el ejemplo solo si necesitas configurar el despliegue en tiempo de ejecución:
+
+```bash
+cp public/app-config.example.js dist/app-config.js
+```
+
+Edita `dist/app-config.js` antes de desplegar; Firebase Hosting publica `dist/`. Vite copia los archivos de `public/` a `dist/` durante el build, por lo que, si vuelves a generar la compilación, debes repetir este paso.
+
+Sustituye todos los valores `TU_*` y ajusta `GEMAILLA_USE_FIREBASE_EMULATORS`. Este archivo no se ejecuta como JavaScript arbitrario: el cargador solo acepta las asignaciones literales permitidas. Si no existe, responde `404` o está vacío, la aplicación continúa con los valores `VITE_FIREBASE_*` incorporados por Vite. No mantengas `.env.local` y `app-config.js` con valores contradictorios: para cada valor de Firebase, la variable `VITE_FIREBASE_*` incorporada durante el build tiene precedencia y `app-config.js` actúa como respaldo.
 
 ### Validación automática de variables
 
