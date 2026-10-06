@@ -42,6 +42,14 @@ create index company_members_active_user_idx
 create unique index company_members_one_active_owner_idx
   on public.company_members (company_id) where role = 'owner' and status = 'active';
 
+-- Índices completos para las referencias a usuarios, incluidas membresías revocadas.
+create index companies_owner_uid_idx on public.companies (owner_uid);
+create index companies_created_by_idx on public.companies (created_by);
+create index companies_updated_by_idx on public.companies (updated_by);
+create index company_members_user_uid_idx on public.company_members (user_uid);
+create index company_members_created_by_idx on public.company_members (created_by);
+create index company_members_updated_by_idx on public.company_members (updated_by);
+
 alter table public.companies enable row level security;
 alter table public.company_members enable row level security;
 
@@ -83,7 +91,7 @@ for select to authenticated using (
 
 -- Creación transaccional e idempotente: el cliente conserva p_company_id al reintentar.
 -- No se permite crear roles ajenos ni cambiar la propiedad mediante datos del cliente.
-create function public.create_company(p_company_id text, p_company jsonb)
+create function gemailla_private.create_company(p_company_id text, p_company jsonb)
 returns public.companies
 language plpgsql security definer set search_path = ''
 as $$
@@ -147,7 +155,27 @@ begin
   return company_row;
 end;
 $$;
-revoke all on function public.create_company(text, jsonb) from public, anon;
+revoke all on function gemailla_private.create_company(text, jsonb) from public, anon;
+grant execute on function gemailla_private.create_company(text, jsonb) to authenticated;
+
+-- La API pública no eleva privilegios; delega en la operación privada validada.
+create function public.create_company(p_company_id text, p_company jsonb)
+returns public.companies
+language sql security invoker set search_path = ''
+as $$
+  select * from gemailla_private.create_company(p_company_id, p_company);
+$$;
+revoke all on function public.create_company(text, jsonb) from public, anon, authenticated;
 grant execute on function public.create_company(text, jsonb) to authenticated;
+
+-- El trigger automático creado por Studio no debe ser un endpoint de la API.
+-- Esto no desactiva el trigger ni cambia su definición.
+do $$
+begin
+  if to_regprocedure('public.rls_auto_enable()') is not null then
+    revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+  end if;
+end;
+$$;
 
 commit;

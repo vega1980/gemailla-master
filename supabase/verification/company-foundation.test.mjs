@@ -40,11 +40,13 @@ before(async () => {
     -- Reproduce proyectos Supabase con permisos por defecto amplios.
     alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
     alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+    create function public.rls_auto_enable() returns event_trigger
+      language plpgsql security definer set search_path = '' as $$ begin null; end $$;
   `);
   for (const uid of [ownerA, ownerB, viewerA, adminA]) {
     await db.query('insert into auth.users(id) values ($1)', [uid]);
   }
-  const migration = await readFile(new URL('../migrations/20261006092000_company_foundation.sql', import.meta.url), 'utf8');
+  const migration = await readFile(new URL('../migrations/20261006120110_company_foundation.sql', import.meta.url), 'utf8');
   await db.exec(migration);
   await asUser(ownerA, () => createCompany('company-A'));
   await asUser(ownerB, () => createCompany('company-B', { name: 'Empresa B' }));
@@ -55,6 +57,20 @@ before(async () => {
 });
 
 after(async () => { await db.close(); });
+
+test('API pública sin elevación de privilegios y trigger automático sin acceso de clientes', async () => {
+  const definitions = await db.query(`select n.nspname, p.prosecdef
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where p.proname = 'create_company' order by n.nspname`);
+  assert.deepEqual(definitions.rows, [
+    { nspname: 'gemailla_private', prosecdef: true },
+    { nspname: 'public', prosecdef: false },
+  ]);
+  for (const role of ['anon', 'authenticated']) {
+    const privilege = await db.query("select has_function_privilege($1, 'public.rls_auto_enable()', 'execute') as allowed", [role]);
+    assert.equal(privilege.rows[0].allowed, false);
+  }
+});
 
 test('empresa y propietario se crean juntos; reintento conserva una sola membresía', async () => {
   await asUser(ownerA, async () => {

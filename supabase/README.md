@@ -17,7 +17,8 @@ Base de origen revisada: `vega1980/gemailla-master`, commit
   directa para clientes, incluso propietarios o administradores.
 
 La aplicación todavía usa Firebase. Esta fase no importa datos, no crea proyectos,
-no publica la aplicación ni apaga servicios. No se ha aplicado a Supabase remoto.
+no publica la aplicación ni apaga servicios. La base se aplicó el 6 de octubre de 2026 al proyecto `Gemailla`
+(`zdzsdzhmpzbfhozcpquq`, `us-west-2`).
 
 ## Verificación reproducible
 
@@ -28,24 +29,38 @@ npm ci --prefix supabase/verification --ignore-scripts
 npm test --prefix supabase/verification
 ```
 
-Resultado local: **10/10 pruebas aprobadas**, Node `22.23.3`, PGlite `0.5.8`.
+Resultado local: **11/11 pruebas aprobadas**, Node `22.23.3`, PGlite `0.5.8`.
 Las pruebas ejecutan SQL y políticas en PostgreSQL compilado a WASM. Solo
 simulan el contrato `auth.users` / `auth.uid()` para separar las sesiones.
 Comprueban lecturas entre empresas, permisos, revocación, datos inválidos,
 rollback e idempotencia secuencial. No comprueban autenticación real, PostgREST,
-Storage, múltiples conexiones concurrentes ni el proyecto remoto.
+Storage ni múltiples conexiones concurrentes.
+
+La comprobación adicional `verification/remote-company-foundation.sql` pasó en
+el PostgreSQL real del proyecto. Usa roles SQL y claims simulados para verificar
+creación, reintento, aislamiento, viewer, escrituras denegadas, revocación,
+archivo, usuario anónimo y sesión sin UID. Toda la prueba se revierte: quedaron
+0 empresas, 0 membresías y 0 usuarios. Tampoco sustituye la prueba de login
+real ni de la API HTTP.
+
+El asesor de seguridad devolvió 0 alertas. El asesor de rendimiento solo
+reportó 5 índices aún sin uso en tablas recién creadas; se conservan porque
+respaldan claves foráneas. Véase
+[índices sin uso](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index).
 
 ## Aplicación al destino
 
-La migración está en `migrations/20261006092000_company_foundation.sql`.
-Necesita un proyecto Supabase de desarrollo identificado y conectado, con su
-esquema de Auth y sus roles estándar. Antes de aplicarla se deben revisar las
-tablas existentes: la migración falla si `public.companies` o
-`public.company_members` ya existen, para evitar reemplazarlas.
+La migración está en `migrations/20261006120110_company_foundation.sql`.
+Su versión coincide con el historial remoto: `20261006120110`, nombre
+`company_foundation`. No volver a ejecutarla manualmente: las tablas ya existen.
+Se aplicó mediante la herramienta de migraciones después de verificar que
+el destino no contenía tablas de la aplicación.
 
-Después de aplicarla se debe comprobar el acceso mediante sesiones reales de
-dos usuarios de empresas diferentes. El cambio de proveedor de la aplicación
-requiere completar las siguientes fases.
+Ambas tablas tienen RLS activo, permisos explícitos y claves foráneas indexadas.
+La operación privilegiada está en `gemailla_private`; la función pública
+`create_company` es SECURITY INVOKER. Se retiró el permiso de ejecución de
+clientes sobre el trigger automático `public.rls_auto_enable()`, sin desactivar
+el trigger de RLS.
 
 Ejemplo de llamada con un cliente Supabase autenticado (SDK pendiente de
 integración en la aplicación):
@@ -61,8 +76,8 @@ if (error) throw error;
 
 ## Trabajo pendiente para completar la migración
 
-1. Conectar e identificar el proyecto Supabase de destino y verificar esta base
-   con su autenticación real.
+1. Verificar esta base con sesiones reales de Supabase Auth y llamadas a
+   la API desde dos usuarios de empresas diferentes.
 2. Integrar Supabase Auth y crear el mapa entre UIDs Firebase y UUIDs Supabase
    si se trasladan usuarios existentes. Los IDs de empresa permanecen como texto.
 3. Implementar los adaptadores de empresas, perfiles, invitaciones y cambios de
