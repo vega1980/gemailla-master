@@ -1,0 +1,8 @@
+{
+  "name": "gemailla-supabase-verification",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test *.test.mjs" },
+  "engines": { "node": ">=22 <23" },
+  "devDependencies": { "@electric-sql/pglite": "0.5.8" }
+}
