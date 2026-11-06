@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Download, Loader2, TrendingUp, TrendingDown } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { transactionsInPeriod, summarizeTransactions, summarizeByMonth } from '@/domain/finance/financialReport';
 
 const categoryLabels = {
   ventas: 'Ventas', servicios: 'Servicios', inversiones: 'Inversiones', otros_ingresos: 'Otros Ingresos',
@@ -46,7 +47,7 @@ export default function FinancialStatements({ transactions, company }) {
     else if (period === 'ytd') { start = `${now.getFullYear()}-01-01`; end = format(now, 'yyyy-MM-dd'); }
     else { start = `${now.getFullYear() - 1}-01-01`; end = `${now.getFullYear() - 1}-12-31`; }
 
-    const filtered = transactions.filter(t => t.date >= start && t.date <= end);
+    const filtered = transactionsInPeriod(transactions, start, end);
     const labels = {
       current: `${format(now, 'MMMM yyyy', { locale: es })}`,
       last: `${format(subMonths(now, 1), 'MMMM yyyy', { locale: es })}`,
@@ -57,45 +58,8 @@ export default function FinancialStatements({ transactions, company }) {
     return { filteredTx: filtered, periodLabel: labels[period] };
   }, [transactions, period]);
 
-  // Estado de Resultados
-  const resultsData = useMemo(() => {
-    const ingresos = filteredTx.filter(t => t.type === 'ingreso');
-    const gastos = filteredTx.filter(t => t.type === 'gasto');
-    const totalIngresos = ingresos.reduce((s, t) => s + (t.amount || 0), 0);
-    const totalGastos = gastos.reduce((s, t) => s + (t.amount || 0), 0);
-    const utilidadBruta = totalIngresos - totalGastos;
-    const margen = totalIngresos > 0 ? (utilidadBruta / totalIngresos) * 100 : 0;
-
-    const byCategory = {};
-    gastos.forEach(t => { byCategory[t.category] = (byCategory[t.category] || 0) + (t.amount || 0); });
-    const incByCategory = {};
-    ingresos.forEach(t => { incByCategory[t.category] = (incByCategory[t.category] || 0) + (t.amount || 0); });
-
-    return { totalIngresos, totalGastos, utilidadBruta, margen, byCategory, incByCategory };
-  }, [filteredTx]);
-
-  // Balance General (simplificado)
-  const balanceData = useMemo(() => {
-    const allIngresos = transactions.filter(t => t.type === 'ingreso').reduce((s, t) => s + (t.amount || 0), 0);
-    const allGastos = transactions.filter(t => t.type === 'gasto').reduce((s, t) => s + (t.amount || 0), 0);
-    const efectivo = allIngresos - allGastos;
-    const totalActivos = efectivo > 0 ? efectivo : 0;
-    const patrimonio = efectivo;
-    return { efectivo, totalActivos, patrimonio };
-  }, [transactions]);
-
-  // Flujo de caja
-  const cashFlowData = useMemo(() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const ms = format(startOfMonth(subMonths(new Date(), i)), 'yyyy-MM');
-      const ml = format(startOfMonth(subMonths(new Date(), i)), 'MMM yy', { locale: es });
-      const inc = filteredTx.filter(t => t.type === 'ingreso' && t.date?.startsWith(ms)).reduce((s, t) => s + (t.amount || 0), 0);
-      const exp = filteredTx.filter(t => t.type === 'gasto' && t.date?.startsWith(ms)).reduce((s, t) => s + (t.amount || 0), 0);
-      months.push({ month: ml, ingresos: inc, gastos: exp, neto: inc - exp });
-    }
-    return months;
-  }, [filteredTx]);
+  const resultsData = useMemo(() => summarizeTransactions(filteredTx), [filteredTx]);
+  const cashFlowData = useMemo(() => summarizeByMonth(filteredTx), [filteredTx]);
 
   const exportPDF = async () => {
     setExporting(true);
@@ -103,7 +67,7 @@ export default function FinancialStatements({ transactions, company }) {
     const { jsPDF } = await import('jspdf');
     const doc = new jsPDF({ format: 'a4' });
     doc.setFontSize(18);
-    doc.text(`GEMAILLA AI — ${reportType === 'results' ? 'Estado de Resultados' : reportType === 'balance' ? 'Balance General' : 'Flujo de Caja'}`, 20, 20);
+    doc.text('GEMAILLA AI — Resumen de ingresos y gastos', 20, 20);
     doc.setFontSize(12);
     doc.text(`${company?.name || ''} · ${periodLabel}`, 20, 32);
     doc.setFontSize(10);
@@ -123,7 +87,7 @@ export default function FinancialStatements({ transactions, company }) {
       });
       doc.line(20, y, 190, y); y += 6;
       doc.setFontSize(11); doc.text('Total Gastos', 20, y); doc.text(fmt(resultsData.totalGastos), 150, y, { align: 'right' }); y += 12;
-      doc.setFontSize(13); doc.text('UTILIDAD NETA', 20, y); doc.text(fmt(resultsData.utilidadBruta), 150, y, { align: 'right' });
+      doc.setFontSize(13); doc.text('RESULTADO DE MOVIMIENTOS', 20, y); doc.text(fmt(resultsData.resultado), 150, y, { align: 'right' });
     }
 
     doc.save(`estado_${reportType}_${periodLabel.replace(/\s/g, '_')}.pdf`);
@@ -139,9 +103,9 @@ export default function FinancialStatements({ transactions, company }) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="results">📊 Estado de Resultados</SelectItem>
-            <SelectItem value="balance">⚖️ Balance General</SelectItem>
-            <SelectItem value="cashflow">💧 Flujo de Caja</SelectItem>
+            <SelectItem value="results">📊 Resumen de ingresos y gastos</SelectItem>
+            <SelectItem value="balance">⚖️ Balance General (pendiente)</SelectItem>
+            <SelectItem value="cashflow">💧 Movimientos por mes</SelectItem>
           </SelectContent>
         </Select>
 
@@ -161,7 +125,7 @@ export default function FinancialStatements({ transactions, company }) {
         </Select>
 
         <div className="ml-auto">
-          <Button onClick={exportPDF} disabled={exporting} variant="outline" className="border-border gap-2">
+          <Button onClick={exportPDF} disabled={exporting || reportType !== 'results'} variant="outline" className="border-border gap-2">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Exportar PDF
           </Button>
@@ -176,7 +140,7 @@ export default function FinancialStatements({ transactions, company }) {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-1">GEMAILLA AI</p>
               <h2 className="text-xl font-display font-bold text-foreground">
-                {reportType === 'results' ? 'Estado de Resultados' : reportType === 'balance' ? 'Balance General' : 'Estado de Flujo de Caja'}
+                {reportType === 'results' ? 'Resumen de ingresos y gastos' : reportType === 'balance' ? 'Balance General no disponible' : 'Movimientos por mes'}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">{company?.name} · {periodLabel}</p>
             </div>
@@ -187,6 +151,7 @@ export default function FinancialStatements({ transactions, company }) {
         </div>
 
         <div className="p-6">
+          <p className="text-sm text-muted-foreground mb-5">Resumen operativo de transacciones confirmadas. No sustituye estados financieros contables.</p>
           {/* Estado de Resultados */}
           {reportType === 'results' && (
             <div className="space-y-1">
@@ -206,13 +171,13 @@ export default function FinancialStatements({ transactions, company }) {
 
               <div className="mt-6 pt-4 border-t-2 border-primary/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-bold text-foreground">UTILIDAD NETA</span>
+                  <span className="text-base font-bold text-foreground">RESULTADO DE MOVIMIENTOS</span>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-muted-foreground">Margen: {resultsData.margen.toFixed(1)}%</span>
-                    <span className={`text-xl font-bold font-mono ${resultsData.utilidadBruta >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {fmt(resultsData.utilidadBruta)}
+                    <span className={`text-xl font-bold font-mono ${resultsData.resultado >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {fmt(resultsData.resultado)}
                     </span>
-                    {resultsData.utilidadBruta >= 0 ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
+                    {resultsData.resultado >= 0 ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
                   </div>
                 </div>
               </div>
@@ -221,28 +186,9 @@ export default function FinancialStatements({ transactions, company }) {
 
           {/* Balance General */}
           {reportType === 'balance' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-widest text-emerald-400 mb-3">Activos</div>
-                <Row label="Efectivo y equivalentes" value={balanceData.efectivo > 0 ? balanceData.efectivo : 0} indent positive={balanceData.efectivo > 0} />
-                <Row label="Cuentas por cobrar" value={0} indent />
-                <Row label="Inventario" value={0} indent />
-                <Row label="Total Activos" value={balanceData.totalActivos} bold sub positive />
-              </div>
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-widest text-red-400 mb-3">Pasivos y Patrimonio</div>
-                <Row label="Cuentas por pagar" value={balanceData.efectivo < 0 ? Math.abs(balanceData.efectivo) : 0} indent negative={balanceData.efectivo < 0} />
-                <Row label="Total Pasivos" value={balanceData.efectivo < 0 ? Math.abs(balanceData.efectivo) : 0} bold sub />
-                <div className="mt-4">
-                  <div className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Patrimonio</div>
-                  <Row label="Capital / Resultado del ejercicio" value={balanceData.patrimonio} indent positive={balanceData.patrimonio >= 0} negative={balanceData.patrimonio < 0} />
-                  <Row label="Total Patrimonio" value={balanceData.patrimonio} bold sub positive={balanceData.patrimonio >= 0} />
-                </div>
-              </div>
-              <div className="md:col-span-2 pt-4 border-t-2 border-primary/30 flex justify-between items-center">
-                <span className="font-bold text-foreground">TOTAL PASIVOS + PATRIMONIO</span>
-                <span className="font-bold font-mono text-xl text-primary">{fmt(balanceData.totalActivos)}</span>
-              </div>
+            <div className="rounded-lg border border-amber-500/30 p-5 text-sm text-foreground">
+              No hay datos suficientes de cuentas contables, activos, pasivos y patrimonio para generar un Balance General verificable.
+              Se ha desactivado el cálculo anterior, que confundía ingresos menos gastos con saldos contables.
             </div>
           )}
 
@@ -255,13 +201,13 @@ export default function FinancialStatements({ transactions, company }) {
                     <th className="text-left py-2 text-muted-foreground font-medium">Período</th>
                     <th className="text-right py-2 text-emerald-400 font-medium">Entradas</th>
                     <th className="text-right py-2 text-red-400 font-medium">Salidas</th>
-                    <th className="text-right py-2 text-foreground font-medium">Flujo Neto</th>
+                    <th className="text-right py-2 text-foreground font-medium">Diferencia</th>
                   </tr>
                 </thead>
                 <tbody>
                   {cashFlowData.map((m, i) => (
                     <tr key={i} className="border-b border-border/50 hover:bg-secondary/30">
-                      <td className="py-3 text-foreground font-medium">{m.month}</td>
+                      <td className="py-3 text-foreground font-medium">{format(new Date(`${m.month}-01T12:00:00`), 'MMM yy', { locale: es })}</td>
                       <td className="py-3 text-right font-mono text-emerald-400">{fmt(m.ingresos)}</td>
                       <td className="py-3 text-right font-mono text-red-400">{fmt(m.gastos)}</td>
                       <td className={`py-3 text-right font-mono font-bold ${m.neto >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
