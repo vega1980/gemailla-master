@@ -1,0 +1,741 @@
+{
+  "baseCommit": "cb81c19d580f922b152b5447272bd31b50c7480b",
+  "scope": "Tracked JS/TS import lines referencing firebase; not a runtime or data audit.",
+  "references": [
+    {
+      "file": "functions/config.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('./firebaseAdmin');"
+    },
+    {
+      "file": "functions/firebaseAdmin.js",
+      "line": 1,
+      "import": "const { getApps, initializeApp } = require('firebase-admin/app');"
+    },
+    {
+      "file": "functions/firebaseAdmin.js",
+      "line": 2,
+      "import": "const { getAuth } = require('firebase-admin/auth');"
+    },
+    {
+      "file": "functions/firebaseAdmin.js",
+      "line": 3,
+      "import": "const { getFirestore } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/firebaseAdmin.js",
+      "line": 4,
+      "import": "const { getStorage } = require('firebase-admin/storage');"
+    },
+    {
+      "file": "functions/firebaseAdmin.js",
+      "line": 5,
+      "import": "const { getAppCheck } = require('firebase-admin/app-check');"
+    },
+    {
+      "file": "functions/handlers/aiHandler.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/aiHandler.js",
+      "line": 2,
+      "import": "const { FieldValue, Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/auditLogHandler.js",
+      "line": 1,
+      "import": "const { FieldValue, Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/auditLogHandler.js",
+      "line": 2,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/companyInviteHandler.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/companyMembershipClaimsHandler.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/companyMetricsAggregationHandler.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/companyMetricsAggregationHandler.js",
+      "line": 2,
+      "import": "const { FieldValue: FirestoreFieldValue } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/documentContextBuilder.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/domainAuditTriggers.js",
+      "line": 1,
+      "import": "const { FieldValue, Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/domainAuditTriggers.js",
+      "line": 2,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/logExpiry.js",
+      "line": 1,
+      "import": "const { FieldValue, Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/orphanDocumentStorageCleanup.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/predictionLogHandler.js",
+      "line": 1,
+      "import": "const { FieldValue, Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/predictionLogHandler.js",
+      "line": 2,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/quarantineRetention.js",
+      "line": 1,
+      "import": "const { FieldValue, Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/quarantineRetention.js",
+      "line": 2,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/quarantineScanner.js",
+      "line": 2,
+      "import": "const { FieldValue, Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/handlers/quarantineScanner.js",
+      "line": 3,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/handlers/syncCompanyClaimsHandler.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/index.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('./firebaseAdmin');"
+    },
+    {
+      "file": "functions/index.js",
+      "line": 2,
+      "import": "const { onRequest } = require('firebase-functions/v2/https');"
+    },
+    {
+      "file": "functions/index.js",
+      "line": 3,
+      "import": "const { onSchedule } = require('firebase-functions/v2/scheduler');"
+    },
+    {
+      "file": "functions/index.js",
+      "line": 4,
+      "import": "const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require('firebase-functions/v2/firestore');"
+    },
+    {
+      "file": "functions/index.js",
+      "line": 5,
+      "import": "const { onObjectFinalized } = require('firebase-functions/v2/storage');"
+    },
+    {
+      "file": "functions/policies/appCheckPolicy.js",
+      "line": 1,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/aiEntitlements.test.js",
+      "line": 3,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/auditLogHandler.test.js",
+      "line": 3,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/companyInviteHandler.test.js",
+      "line": 3,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/companyMetricsAggregationHandler.test.js",
+      "line": 3,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/documentContextBuilder.test.js",
+      "line": 3,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/domainAuditTriggers.test.js",
+      "line": 1,
+      "import": "const assert = require('node:assert/strict'); const test = require('node:test'); const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/orphanDocumentStorageCleanup.test.js",
+      "line": 3,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "functions/tests/predictionLogHandler.test.js",
+      "line": 1,
+      "import": "const assert = require('node:assert/strict'); const test = require('node:test'); const firebaseAdmin = require('../firebaseAdmin'); const { predictionLogHandler } = require('../handlers/predictionLogHandler');"
+    },
+    {
+      "file": "functions/tests/quarantineRetention.test.js",
+      "line": 3,
+      "import": "const { Timestamp } = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "functions/tests/syncCompanyClaimsHandler.test.js",
+      "line": 4,
+      "import": "const firebaseAdmin = require('../firebaseAdmin');"
+    },
+    {
+      "file": "scripts/audit-phase-one-domain.mjs",
+      "line": 2,
+      "import": "import admin from '../functions/node_modules/firebase-admin/lib/index.js';"
+    },
+    {
+      "file": "scripts/backfill-company-entitlements.mjs",
+      "line": 15,
+      "import": "import admin from '../functions/node_modules/firebase-admin/lib/index.js';"
+    },
+    {
+      "file": "scripts/backfill-log-expiry.mjs",
+      "line": 2,
+      "import": "import admin from '../functions/node_modules/firebase-admin/lib/index.js';"
+    },
+    {
+      "file": "scripts/migrate-deleted-to-archived.mjs",
+      "line": 2,
+      "import": "import { ENTITY_COLLECTIONS } from '../src/infrastructure/firebase/repositories/entityCollections.js';"
+    },
+    {
+      "file": "scripts/migrate-deleted-to-archived.mjs",
+      "line": 5,
+      "import": "const admin = require('../functions/node_modules/firebase-admin');"
+    },
+    {
+      "file": "scripts/sync-regulatory.mjs",
+      "line": 8,
+      "import": "const {initializeApp} = require('firebase-admin/app');"
+    },
+    {
+      "file": "scripts/sync-regulatory.mjs",
+      "line": 9,
+      "import": "const {getFirestore} = require('firebase-admin/firestore');"
+    },
+    {
+      "file": "scripts/sync-regulatory.mjs",
+      "line": 10,
+      "import": "const {getStorage} = require('firebase-admin/storage');"
+    },
+    {
+      "file": "src/api/agentClient.js",
+      "line": 120,
+      "import": "const { firebase } = await import('@/api/firebaseClient');"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 1,
+      "import": "import { auth, db, getAppCheckHeaders } from '@/firebase';"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 2,
+      "import": "export { default as app, appCheck, auth, db, storage } from '@/firebase';"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 4,
+      "import": "import { ENTITY_COLLECTIONS } from '@/infrastructure/firebase/repositories/entityCollections';"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 5,
+      "import": "import { normalizeData } from '@/infrastructure/firebase/repositories/normalization';"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 6,
+      "import": "import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 7,
+      "import": "import { createRepository } from '@/infrastructure/firebase/repositories/createRepository';"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 8,
+      "import": "import { getDocumentAccessUrl, uploadFile } from '@/infrastructure/firebase/storage/documentStorage';"
+    },
+    {
+      "file": "src/api/firebaseClient.js",
+      "line": 18,
+      "import": "} from 'firebase/firestore';"
+    },
+    {
+      "file": "src/app/providers/AuthProvider.jsx",
+      "line": 2,
+      "import": "import { authService } from '@/shared/infrastructure/auth/firebaseAuth';"
+    },
+    {
+      "file": "src/app/useCases/financeUseCases.js",
+      "line": 2,
+      "import": "import { createFirebaseFinanceRepositories } from '@/infrastructure/firebase/adapters/financeRepositories';"
+    },
+    {
+      "file": "src/components/layout/Sidebar.jsx",
+      "line": 13,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/e2e/firebaseTestHarness.js",
+      "line": 1,
+      "import": "import { auth, db } from '@/firebase';"
+    },
+    {
+      "file": "src/e2e/firebaseTestHarness.js",
+      "line": 6,
+      "import": "} from 'firebase/auth';"
+    },
+    {
+      "file": "src/e2e/firebaseTestHarness.js",
+      "line": 13,
+      "import": "} from 'firebase/firestore';"
+    },
+    {
+      "file": "src/features/companies/services/companyMembershipService.js",
+      "line": 3,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/crm/components/ClientDirectory.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/crm/components/ClientImporter.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/crm/components/ClientList.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/crm/components/DealPipeline.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/crm/components/InteractionHistory.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/dashboard/components/AlertNotifications.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/dashboard/components/ConsultorVirtual.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/documents/services/analyzeDocumentFlow.js",
+      "line": 3,
+      "import": "import firebase, { isAiDisabledResponse } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/documents/services/uploadDocumentFlow.js",
+      "line": 3,
+      "import": "import firebase from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/finance/components/GoogleSheetsExporter.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/hr/components/EmployeeDirectory.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/hr/components/PayrollManager.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/hr/components/PerformanceManager.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/operations/components/ProjectImporter.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/operations/components/ProjectTracker.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/operations/components/StrategicKPIs.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/features/support/components/SupportChatbot.jsx",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/firebase.js",
+      "line": 1,
+      "import": "import { initializeApp } from 'firebase/app';"
+    },
+    {
+      "file": "src/firebase.js",
+      "line": 2,
+      "import": "import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';"
+    },
+    {
+      "file": "src/firebase.js",
+      "line": 3,
+      "import": "import { connectAuthEmulator, getAuth } from 'firebase/auth';"
+    },
+    {
+      "file": "src/firebase.js",
+      "line": 9,
+      "import": "} from 'firebase/firestore';"
+    },
+    {
+      "file": "src/firebase.js",
+      "line": 10,
+      "import": "import { connectStorageEmulator, getStorage } from 'firebase/storage';"
+    },
+    {
+      "file": "src/infrastructure/firebase/adapters/financeRepositories.js",
+      "line": 1,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/infrastructure/firebase/auth.js",
+      "line": 1,
+      "import": "import { auth } from '@/firebase';"
+    },
+    {
+      "file": "src/infrastructure/firebase/auth.js",
+      "line": 2,
+      "import": "import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';"
+    },
+    {
+      "file": "src/infrastructure/firebase/client.js",
+      "line": 1,
+      "import": "export { default, app, auth, db, storage } from '@/firebase';"
+    },
+    {
+      "file": "src/infrastructure/firebase/firestore.js",
+      "line": 1,
+      "import": "export { db } from '@/firebase';"
+    },
+    {
+      "file": "src/infrastructure/firebase/firestore.js",
+      "line": 2,
+      "import": "export { addDoc, collection, serverTimestamp } from 'firebase/firestore';"
+    },
+    {
+      "file": "src/infrastructure/firebase/firestore.js",
+      "line": 3,
+      "import": "export { createRepository } from '@/infrastructure/firebase/repositories/createRepository';"
+    },
+    {
+      "file": "src/infrastructure/firebase/functions.js",
+      "line": 1,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/infrastructure/firebase/mutations/auditMutationMiddleware.js",
+      "line": 3,
+      "import": "import { addDoc, setDoc, updateDoc } from 'firebase/firestore';"
+    },
+    {
+      "file": "src/infrastructure/firebase/mutations/auditMutationMiddleware.js",
+      "line": 5,
+      "import": "/** @typedef {string | import('firebase/firestore').FieldValue} AuditTimestamp */"
+    },
+    {
+      "file": "src/infrastructure/firebase/regulatory.js",
+      "line": 1,
+      "import": "import { collection, query, orderBy, limit, startAfter, getDocsFromServer } from 'firebase/firestore';"
+    },
+    {
+      "file": "src/infrastructure/firebase/regulatory.js",
+      "line": 2,
+      "import": "import { ref, getBytes } from 'firebase/storage';"
+    },
+    {
+      "file": "src/infrastructure/firebase/regulatory.js",
+      "line": 3,
+      "import": "import { db, storage } from '@/firebase';"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/createRepository.js",
+      "line": 18,
+      "import": "} from 'firebase/firestore';"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/createRepository.js",
+      "line": 19,
+      "import": "import { auth, db } from '@/firebase';"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/createRepository.js",
+      "line": 20,
+      "import": "import { createAuditMutationMiddleware } from '@/infrastructure/firebase/mutations/auditMutationMiddleware';"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/createRepository.js",
+      "line": 21,
+      "import": "import { normalizeObjectFilters } from '@/infrastructure/firebase/repositories/filterValidation';"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/createRepository.js",
+      "line": 22,
+      "import": "import { serializeRepositoryData, stripRepositoryDocumentId } from '@/infrastructure/firebase/repositories/repositoryData';"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/createRepository.js",
+      "line": 133,
+      "import": "/** @type {import('firebase/firestore').QueryConstraint[]} */"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/createRepository.js",
+      "line": 384,
+      "import": "/** @type {import('firebase/firestore').QueryConstraint[]} */"
+    },
+    {
+      "file": "src/infrastructure/firebase/repositories/repositoryData.js",
+      "line": 3,
+      "import": "import { Timestamp } from 'firebase/firestore';"
+    },
+    {
+      "file": "src/infrastructure/firebase/storage.js",
+      "line": 1,
+      "import": "export { storage } from '@/firebase';"
+    },
+    {
+      "file": "src/infrastructure/firebase/storage.js",
+      "line": 2,
+      "import": "export { getDocumentAccessUrl, uploadFile } from '@/infrastructure/firebase/storage/documentStorage';"
+    },
+    {
+      "file": "src/infrastructure/firebase/storage/documentStorage.js",
+      "line": 3,
+      "import": "import { auth, storage } from '@/firebase';"
+    },
+    {
+      "file": "src/infrastructure/firebase/storage/documentStorage.js",
+      "line": 4,
+      "import": "import { getBlob, ref, uploadBytes } from 'firebase/storage';"
+    },
+    {
+      "file": "src/lib/auditLogger.js",
+      "line": 1,
+      "import": "import firebase from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/lib/companyEntityQueries.js",
+      "line": 2,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/lib/observability.js",
+      "line": 1,
+      "import": "import { auth } from '@/infrastructure/firebase/auth';"
+    },
+    {
+      "file": "src/lib/observability.js",
+      "line": 2,
+      "import": "import { addDoc, collection, db, serverTimestamp } from '@/infrastructure/firebase/firestore';"
+    },
+    {
+      "file": "src/lib/subscriptionContext.jsx",
+      "line": 2,
+      "import": "import firebase from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/main.jsx",
+      "line": 33,
+      "import": "window.__gemaillaE2E = await import('@/e2e/firebaseTestHarness.js');"
+    },
+    {
+      "file": "src/modules/ai/pages/AIAssistantPage.jsx",
+      "line": 2,
+      "import": "import { firebase, isAiDisabledResponse } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/modules/ai/services/aiService.js",
+      "line": 1,
+      "import": "import { firebase, invokeLLM } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/modules/companies/services/companyService.js",
+      "line": 1,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/modules/documents/pages/DocumentsPage.jsx",
+      "line": 2,
+      "import": "import { DOCUMENT_STATUSES, firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/modules/documents/services/documentService.js",
+      "line": 1,
+      "import": "import { firebase } from '@/api/firebaseClient';"
+    },
+    {
+      "file": "src/modules/regulatory/pages/RegulatoryPage.jsx",
+      "line": 4,
+      "import": "import { listRegulatoryNotices, downloadRegulatoryCapture } from '@/infrastructure/firebase/regulatory';"
+    },
+    {
+      "file": "src/shared/constants/collections.js",
+      "line": 1,
+      "import": "export { ENTITY_COLLECTIONS as COLLECTIONS } from '@/infrastructure/firebase/repositories/entityCollections';"
+    },
+    {
+      "file": "src/shared/infrastructure/auth/firebaseAuth.js",
+      "line": 1,
+      "import": "import { auth, login as loginWithEmailAndPassword, onAuthStateChanged, signOut } from '@/infrastructure/firebase/auth';"
+    },
+    {
+      "file": "tests/e2e/critical-flows.spec.js",
+      "line": 3,
+      "import": "import { clearFirebaseEmulators } from './support/emulatorCleanup.js';"
+    },
+    {
+      "file": "tests/e2e/critical-flows.spec.js",
+      "line": 15,
+      "import": "} from './support/firebaseHarness.js';"
+    },
+    {
+      "file": "tests/e2e/regulatory.spec.js",
+      "line": 5,
+      "import": "import {createAndLoginUser,createCompany,setActiveCompanyClaims,uniqueId} from './support/firebaseHarness.js';"
+    },
+    {
+      "file": "tests/e2e/regulatory.spec.js",
+      "line": 7,
+      "import": "const {initializeApp,deleteApp}=require('firebase-admin/app');"
+    },
+    {
+      "file": "tests/e2e/regulatory.spec.js",
+      "line": 8,
+      "import": "const {getFirestore}=require('firebase-admin/firestore');"
+    },
+    {
+      "file": "tests/e2e/regulatory.spec.js",
+      "line": 9,
+      "import": "const {getStorage}=require('firebase-admin/storage');"
+    },
+    {
+      "file": "tests/e2e/routing.security.spec.js",
+      "line": 2,
+      "import": "import { clearFirebaseEmulators } from './support/emulatorCleanup.js';"
+    },
+    {
+      "file": "tests/e2e/routing.security.spec.js",
+      "line": 11,
+      "import": "} from './support/firebaseHarness.js';"
+    },
+    {
+      "file": "tests/rules/regulatory.rules.test.mjs",
+      "line": 7,
+      "import": "const {initializeApp,deleteApp}=require('firebase-admin/app');"
+    },
+    {
+      "file": "tests/rules/regulatory.rules.test.mjs",
+      "line": 8,
+      "import": "const {getFirestore}=require('firebase-admin/firestore');"
+    },
+    {
+      "file": "tests/rules/regulatory.rules.test.mjs",
+      "line": 9,
+      "import": "const {getStorage}=require('firebase-admin/storage');"
+    },
+    {
+      "file": "tests/rules/rules-test-utils.mjs",
+      "line": 2,
+      "import": "import { deleteApp, initializeApp } from 'firebase/app';"
+    },
+    {
+      "file": "tests/rules/rules-test-utils.mjs",
+      "line": 3,
+      "import": "import { connectStorageEmulator, getStorage, ref, uploadBytes } from 'firebase/storage';"
+    },
+    {
+      "file": "tests/unit/domainCoverage.test.mjs",
+      "line": 10,
+      "import": "import { ENTITY_COLLECTIONS } from '../../src/infrastructure/firebase/repositories/entityCollections.js';"
+    },
+    {
+      "file": "tests/unit/domainCoverage.test.mjs",
+      "line": 31,
+      "import": "it('covers every Firebase entity from an explicit business domain', () => {"
+    },
+    {
+      "file": "tests/unit/filterValidation.test.mjs",
+      "line": 4,
+      "import": "import { normalizeObjectFilters } from '../../src/infrastructure/firebase/repositories/filterValidation.js';"
+    },
+    {
+      "file": "tests/unit/firebaseHarnessUniqueId.test.mjs",
+      "line": 5,
+      "import": "import { uniqueId } from '../e2e/support/firebaseHarness.js';"
+    },
+    {
+      "file": "tests/unit/frontend-endpoint-safety.test.mjs",
+      "line": 28,
+      "import": "assert.match(source, /import \\{ auth, db, getAppCheckHeaders \\} from '@\\/firebase';/);"
+    },
+    {
+      "file": "tests/unit/repositoryData.test.mjs",
+      "line": 3,
+      "import": "import { Timestamp } from 'firebase/firestore';"
+    },
+    {
+      "file": "tests/unit/repositoryData.test.mjs",
+      "line": 4,
+      "import": "import { serializeRepositoryData, stripRepositoryDocumentId } from '../../src/infrastructure/firebase/repositories/repositoryData.js';"
+    }
+  ]
+}
