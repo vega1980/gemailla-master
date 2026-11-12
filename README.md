@@ -417,3 +417,7 @@ Para desplegar reglas:
 npm run rules:deploy
 ```
 # LEGION-
+
+## Arquitectura destino sin Firebase
+
+El [PR 0 de reestructuración](docs/architecture/README.md) define las cinco piezas del producto, el inventario actual, el contrato OpenAPI y la migración incremental. Es una propuesta de implementación; el runtime actual continúa usando Firebase.
