@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-11-15T20:06:21.381Z",
+  "exitCode": 1,
+  "outcomes": [
+    {
+      "sourceId": "dof-sumario",
+      "runId": "dff31d4b-1e2f-4231-83bd-f78a3ec610a9",
+      "status": "failed",
+      "pages": 0,
+      "records": 0,
+      "nextUrl": "https://dof.gob.mx/website/sumario.xml",
+      "error": "connect ECONNREFUSED 187.218.29.164:443"
+    }
+  ]
+}

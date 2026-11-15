@@ -1,0 +1,26 @@
+[
+  {
+    "source": "dof",
+    "requestedUrl": "https://dof.gob.mx/website/sumario.xml",
+    "curlExit": 0,
+    "metadata": "200 https://dof.gob.mx/website/sumario.xml text/xml 9080",
+    "error": "",
+    "seconds": 0.82
+  },
+  {
+    "source": "diputados",
+    "requestedUrl": "https://www.diputados.gob.mx/LeyesBiblio/index.htm",
+    "curlExit": 0,
+    "metadata": "200 https://www.diputados.gob.mx/LeyesBiblio/index.htm text/html; charset=ISO-8859-1 636121",
+    "error": "",
+    "seconds": 0.8
+  },
+  {
+    "source": "sat",
+    "requestedUrl": "https://www.sat.gob.mx/minisitio/NormatividadRMFyRGCE/normatividad_rmf_rgce2026.html",
+    "curlExit": 0,
+    "metadata": "200 https://www.sat.gob.mx/minisitio/NormatividadRMFyRGCE/normatividad_rmf_rgce2026.html text/html 282289",
+    "error": "",
+    "seconds": 0.41
+  }
+]

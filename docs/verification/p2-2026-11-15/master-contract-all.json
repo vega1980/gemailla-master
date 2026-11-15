@@ -1,0 +1,10 @@
+{
+  "status": "pass",
+  "pages": 5,
+  "records": 490,
+  "sources": {
+    "dof-sumario": 17,
+    "diputados-leyes-federales": 320,
+    "sat-normatividad-rmf-rgce": 153
+  }
+}

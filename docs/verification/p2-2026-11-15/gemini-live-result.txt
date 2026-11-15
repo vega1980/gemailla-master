@@ -1,0 +1,6 @@
+not ok 1 - live Vertex Gemini returns validated JSON and real usage metadata
+  error: 'Configure VERTEX_GEMINI_PROJECT, VERTEX_GEMINI_LOCATION and VERTEX_GEMINI_MODEL; this live check must not skip or use mocks.'
+# tests 1
+# pass 0
+# fail 1
+# skipped 0

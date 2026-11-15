@@ -1,0 +1,98 @@
+{
+  "nextCommit": "71be549726b20b668d4e191305e8035e3ddf207b",
+  "nextNode": "22.23.1",
+  "masterNode": "22.21.1",
+  "transport": "Actual HTTPS via curl adapter with inherited proxy and CA trust; native Next HTTPS failed independently",
+  "scope": "Three configured sources, one bounded page each. Captures are real, not synthetic fixtures.",
+  "outcomes": [
+    {
+      "sourceId": "dof-sumario",
+      "runId": "2e1ba4ee-0dd2-432f-93c2-92cee36aaefe",
+      "status": "success",
+      "pages": 1,
+      "records": 17,
+      "nextUrl": null
+    },
+    {
+      "sourceId": "diputados-leyes-federales",
+      "runId": "64f6b866-d1ce-4ba6-9d81-2e3395838fb1",
+      "status": "success",
+      "pages": 1,
+      "records": 320,
+      "nextUrl": null
+    },
+    {
+      "sourceId": "sat-normatividad-rmf-rgce",
+      "runId": "994a222c-b21d-4370-94ba-85cf6de1946d",
+      "status": "success",
+      "pages": 1,
+      "records": 153,
+      "nextUrl": null
+    }
+  ],
+  "integrity": {
+    "ok": true,
+    "artifacts": 3,
+    "observations": 3,
+    "versions": 490
+  },
+  "counts": {
+    "artifacts": 3,
+    "observations": 3,
+    "documents": 490,
+    "versions": 490,
+    "publications": 490,
+    "events": 3
+  },
+  "checkpoints": [
+    {
+      "sourceId": "diputados-leyes-federales",
+      "observationId": "64f6b866-d1ce-4ba6-9d81-2e3395838fb1:diputados-leyes-federales:1",
+      "revision": 1,
+      "fingerprint": {
+        "requestedUrl": "https://www.diputados.gob.mx/LeyesBiblio/index.htm",
+        "effectiveUrl": "https://www.diputados.gob.mx/LeyesBiblio/index.htm",
+        "checkedAt": "2026-11-15T20:08:44.840Z",
+        "contentHash": "52eec5c3c267d0652d0516ac289f759e7d41007129acb494270acf27918d6bca",
+        "etag": "\"9b4d9-66032081ccb40\"",
+        "lastModified": "Sat, 14 Nov 2026 00:57:41 GMT"
+      }
+    },
+    {
+      "sourceId": "dof-sumario",
+      "observationId": "2e1ba4ee-0dd2-432f-93c2-92cee36aaefe:dof-sumario:1",
+      "revision": 1,
+      "fingerprint": {
+        "requestedUrl": "https://dof.gob.mx/website/sumario.xml",
+        "effectiveUrl": "https://dof.gob.mx/website/sumario.xml",
+        "checkedAt": "2026-11-15T20:08:43.800Z",
+        "contentHash": "e158b7725d335c3af76e7c13984a86341bf7adf634d273a88cd59e2cf8ac59af",
+        "etag": "\"3c0d4c-2378-660562d2baf74\"",
+        "lastModified": "Sun, 15 Nov 2026 20:05:01 GMT"
+      }
+    },
+    {
+      "sourceId": "sat-normatividad-rmf-rgce",
+      "observationId": "994a222c-b21d-4370-94ba-85cf6de1946d:sat-normatividad-rmf-rgce:1",
+      "revision": 1,
+      "fingerprint": {
+        "requestedUrl": "https://www.sat.gob.mx/minisitio/NormatividadRMFyRGCE/normatividad_rmf_rgce2026.html",
+        "effectiveUrl": "https://www.sat.gob.mx/minisitio/NormatividadRMFyRGCE/normatividad_rmf_rgce2026.html",
+        "checkedAt": "2026-11-15T20:08:45.637Z",
+        "contentHash": "98a88e069be8820314435950b7c68b6b5b22fb8bf0b60341713231aba53070a0",
+        "etag": "\"6af65663-44eb1\"",
+        "lastModified": "Fri, 13 Nov 2026 00:14:27 GMT"
+      }
+    }
+  ],
+  "masterContract": {
+    "status": "pass",
+    "pages": 5,
+    "records": 490,
+    "sources": {
+      "dof-sumario": 17,
+      "diputados-leyes-federales": 320,
+      "sat-normatividad-rmf-rgce": 153
+    }
+  }
+}
