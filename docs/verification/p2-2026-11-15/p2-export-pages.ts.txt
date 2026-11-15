@@ -1,0 +1,14 @@
+import {writeFile} from 'node:fs/promises';
+import {SqliteEvidenceStore} from '../src/engine/sqliteEvidenceStore.js';
+import {exportMasterPage} from '../src/engine/exportMaster.js';
+const store=new SqliteEvidenceStore('/workspace/work/p2/live-adapted.sqlite');
+try {
+ let after=0;const paths:string[]=[];
+ for(let index=0;index<10;index++) {
+  const page=await exportMasterPage(store,after,100);if(!page.records.length)break;
+  const path=`/workspace/work/p2/export-page-${index}.json`;await writeFile(path,JSON.stringify(page));paths.push(path);after=page.nextCursor;
+ }
+ await writeFile('/workspace/work/p2/export-pages.json',JSON.stringify(paths));
+ const first=await exportMasterPage(store,0,1);await writeFile('/workspace/work/p2/master-page-one.json',JSON.stringify(first));
+ console.log(JSON.stringify({pages:paths.length,cursor:after,sampleCount:first.records.length}));
+} finally {store.close();}

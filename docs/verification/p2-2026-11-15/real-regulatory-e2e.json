@@ -1,0 +1,21 @@
+{
+  "stats": {
+    "startTime": "2026-11-15T20:11:07.798Z",
+    "duration": 10717.298,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "usesRealExport": true,
+  "sampleRecords": 1,
+  "source": "dof-sumario",
+  "checks": [
+    "published to Firestore/Storage emulators",
+    "notice visible in UI",
+    "official link preserved",
+    "download hash matches capture",
+    "empty when switching to a second company"
+  ],
+  "fixturesUsedForSource": false
+}

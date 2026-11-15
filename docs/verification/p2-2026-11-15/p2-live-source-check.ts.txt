@@ -1,0 +1,44 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import { promisify } from 'node:util';
+import { execFile } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { loadSourceCatalog } from '../src/regulatory/sourceCatalog.js';
+import { runCycle } from '../src/engine/engine.js';
+import { SqliteEvidenceStore } from '../src/engine/sqliteEvidenceStore.js';
+import { exportMasterPage } from '../src/engine/exportMaster.js';
+const execute=promisify(execFile);
+const output='/workspace/work/p2';
+const ids=['dof-sumario','diputados-leyes-federales','sat-normatividad-rmf-rgce'];
+const catalog=await loadSourceCatalog('config/regulatory/sources.mx.json');
+const sources=catalog.sources.filter(s=>ids.includes(s.id));
+const allowed=new Set(sources.map(s=>s.url.href));
+const requests:unknown[]=[];
+// Actual network adapter for this managed environment. Every request invokes curl
+// with inherited proxy/CA trust. No synthetic response or saved fixture is used.
+const fetchImpl:typeof fetch=async(input,init)=>{
+ const url=String(input);
+ if(!allowed.has(url)|| (init?.method && init.method!=='GET'))throw new Error('P2 adapter permits only the three configured official GET URLs');
+ const id=randomUUID(),bodyPath=`${output}/live-${id}.body`,headersPath=`${output}/live-${id}.headers`;
+ const headers=new Headers(init?.headers);
+ const args=['-sS','--max-time','15','--max-redirs','0','--max-filesize','5242880','-D',headersPath,'-o',bodyPath,'-w','%{http_code}'];
+ for(const [key,value] of headers)args.push('-H',`${key}: ${value}`);
+ args.push(url);
+ const {stdout}=await execute('curl',args,{signal:init?.signal??undefined,maxBuffer:1024*1024});
+ const status=Number(stdout.trim());
+ const blocks=(await readFile(headersPath,'utf8')).split(/\r?\n\r?\n/).filter(block=>block.startsWith('HTTP/'));
+ const block=blocks.at(-1);if(!block)throw new Error('Missing HTTP response headers');
+ const responseHeaders=new Headers();
+ for(const line of block.split(/\r?\n/).slice(1)) {const at=line.indexOf(':');if(at>0)responseHeaders.append(line.slice(0,at),line.slice(at+1).trim());}
+ const body=await readFile(bodyPath);requests.push({url,status,bytes:body.length,bodyPath,headersPath});
+ const response=new Response(status===304?null:body,{status,headers:responseHeaders});
+ Object.defineProperty(response,'url',{value:url});return response;
+};
+const store=new SqliteEvidenceStore(`${output}/live-adapted.sqlite`);
+try {
+ const cycle=await runCycle(store,sources,{maxPages:1,maxBatches:1,maxTimeMs:20000,maxBytes:5242880,fetchOptions:{fetchImpl}});
+ const integrity=store.verify();const status=store.status();
+ await writeFile(`${output}/live-sources-result.json`,JSON.stringify({transport:'live curl adapter preserving inherited proxy; native transport failed separately',cycle,integrity,status,requests},null,2));
+ const page=await exportMasterPage(store,0,100);await writeFile(`${output}/master-page.json`,JSON.stringify(page));
+ console.log(JSON.stringify({cycle,integrity,status,exported:page.records.length},null,2));
+ if(cycle.exitCode!==0||!integrity.ok)process.exitCode=1;
+}finally{store.close();}
