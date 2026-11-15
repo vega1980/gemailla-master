@@ -1,3 +1,4 @@
+import { DOMAIN_FORM_OPTIONS } from '@/shared/constants/domainEnums';
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -21,8 +22,10 @@ const statusConfig = {
 };
 
 const typeConfig = {
-  tiempo_completo: 'TC', medio_tiempo: 'MT', freelance: 'FL', temporal: 'TP',
+  tiempo_completo: 'TC', medio_tiempo: 'MT', contrato: 'Contrato', practicante: 'Practicante',
 };
+
+const employmentLabels = { tiempo_completo: 'Tiempo completo', medio_tiempo: 'Medio tiempo', contrato: 'Contrato', practicante: 'Practicante' };
 
 const fmt = (n) => `$${(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 0 })}`;
 
@@ -169,7 +172,7 @@ export default function EmployeeDirectory({ company }) {
                 <div className="flex items-center justify-between">
                   <Badge className={`text-xs ${st.color}`}>{st.label}</Badge>
                   <div className="flex items-center gap-2 text-xs">
-                    {emp.employmentType && <span className="text-muted-foreground">{typeConfig[emp.employmentType]}</span>}
+                    {emp.employmentType && <span className="text-muted-foreground">{typeConfig[emp.employmentType] || emp.employmentType}</span>}
                     {emp.baseSalary > 0 && <span className="text-amber-400 font-medium">{fmt(emp.baseSalary)}</span>}
                   </div>
                 </div>
@@ -226,10 +229,7 @@ export default function EmployeeDirectory({ company }) {
                   <Select value={form.employmentType} onValueChange={v => f('employmentType', v)}>
                     <SelectTrigger className="mt-1 bg-secondary border-border"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="tiempo_completo">Tiempo completo</SelectItem>
-                      <SelectItem value="medio_tiempo">Medio tiempo</SelectItem>
-                      <SelectItem value="freelance">Freelance</SelectItem>
-                      <SelectItem value="temporal">Temporal</SelectItem>
+                      {DOMAIN_FORM_OPTIONS.employmentType.map(type => <SelectItem key={type} value={type}>{employmentLabels[type]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

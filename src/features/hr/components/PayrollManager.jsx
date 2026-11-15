@@ -1,3 +1,4 @@
+import { DOMAIN_FORM_OPTIONS } from '@/shared/constants/domainEnums';
 import React, { useState, useMemo } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,14 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, DollarSign, Loader2, Pencil, Trash2, CheckCircle, Clock, Sparkles, Zap, Info } from 'lucide-react';
+import { Plus, DollarSign, Loader2, Pencil, Trash2, CheckCircle, XCircle, Clock, Sparkles, Zap, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import ReactMarkdown from 'react-markdown';
 
 import { askLLM } from '@modules/ai/services/aiService';
 const statusConfig = {
   pendiente: { label: 'Pendiente', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', icon: Clock },
-  aprobado:  { label: 'Aprobado',  color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',    icon: CheckCircle },
+  procesando: { label: 'En proceso',  color: 'bg-blue-500/15 text-blue-400 border-blue-500/30',    icon: CheckCircle },
+  cancelado: { label: 'Cancelado', color: 'bg-red-500/15 text-red-400 border-red-500/30', icon: XCircle },
   pagado:    { label: 'Pagado',    color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', icon: CheckCircle },
 };
 
@@ -91,7 +93,7 @@ export default function PayrollManager({ company }) {
   });
 
   const updateStatus = (id, status) =>
-    firebase.entities.Payroll.update(id, { status }).then(() => qc.invalidateQueries({ queryKey: companyEntityQueryKey('payrolls', company) }));
+    firebase.entities.Payroll.update(id, { status }).then(() => qc.invalidateQueries({ queryKey: companyEntityQueryKey('payrolls', company) })).catch(() => toast.error('No se pudo actualizar el estado de la nómina.'));
 
   const openNew = () => { setEditing(null); setForm(EMPTY); setOpen(true); setAutoMode(true); };
   const openEdit = (p) => { setEditing(p); setForm({ ...p }); setOpen(true); setAutoMode(false); };
@@ -269,7 +271,7 @@ Responde en español, tono experto en RRHH y derecho laboral mexicano.`,
       ) : (
         <div className="space-y-3">
           {filteredPayrolls.sort((a, b) => (b.period||'').localeCompare(a.period||'')).map(pay => {
-            const cfg = statusConfig[pay.status] || statusConfig.pendiente;
+            const cfg = statusConfig[pay.status] || { label: pay.status || 'Sin estado', color: 'bg-secondary text-muted-foreground', icon: Clock };
             const Icon = cfg.icon;
             const hasBonus = pay.bonuses > 0;
             return (
@@ -297,9 +299,9 @@ Responde en español, tono experto en RRHH y derecho laboral mexicano.`,
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {pay.status === 'pendiente' && (
-                    <button onClick={() => updateStatus(pay.id, 'aprobado')} className="text-xs px-2 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 transition-colors">Aprobar</button>
+                    <button onClick={() => updateStatus(pay.id, 'procesando')} className="text-xs px-2 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 transition-colors">Procesar</button>
                   )}
-                  {pay.status === 'aprobado' && (
+                  {pay.status === 'procesando' && (
                     <button onClick={() => updateStatus(pay.id, 'pagado')} className="text-xs px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-colors">Pagar</button>
                   )}
                   <button onClick={() => openEdit(pay)} className="p-1.5 hover:text-primary text-muted-foreground"><Pencil className="w-3.5 h-3.5" /></button>
@@ -404,7 +406,7 @@ Responde en español, tono experto en RRHH y derecho laboral mexicano.`,
                 <Label className="text-xs text-muted-foreground">Estado</Label>
                 <Select value={form.status} onValueChange={v => f('status', v)}>
                   <SelectTrigger className="mt-1 bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(statusConfig).map(([k,v])=><SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>{DOMAIN_FORM_OPTIONS.payrollStatus.map(k=><SelectItem key={k} value={k}>{statusConfig[k].label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>

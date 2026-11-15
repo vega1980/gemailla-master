@@ -1,5 +1,7 @@
 # T1 · Causa raíz de los nueve valores rechazados
 
+Snapshot anterior a la corrección. La resolución posterior se documenta en [Reconciliación de catálogos](enum-catalog-reconciliation.md); los datos de esta auditoría se conservan como evidencia histórica.
+
 Estado: **auditoría completada; corrección funcional pendiente**. Base inspeccionada: `8193917`, sobre el PR #244. Alcance: cinco catálogos de UI y sus contratos de creación/actualización en Zod y las reglas Firestore del repositorio. No se consultaron reglas desplegadas ni datos productivos.
 
 ## Conclusión

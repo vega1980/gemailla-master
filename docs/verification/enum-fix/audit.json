@@ -1,0 +1,262 @@
+{
+  "revision": "0eb4510f24e70643d3528fb2c3b011180db94543",
+  "scope": "Five UI catalogs extracted with TypeScript JSX AST; actual Zod safeParse and literal enum clauses of repository Firestore rules. No production database or emulator writes.",
+  "checkedCatalogs": 5,
+  "zodFirestoreParity": true,
+  "rejectedUiValueCount": 0,
+  "catalogs": [
+    {
+      "collection": "crmClients",
+      "field": "status",
+      "uiFile": "src/features/crm/components/ClientList.jsx",
+      "rule": "validCrmClient",
+      "ruleLine": 382,
+      "zodAllowed": [
+        "prospecto",
+        "activo",
+        "inactivo",
+        "archived"
+      ],
+      "firestoreAllowed": [
+        "prospecto",
+        "activo",
+        "inactivo",
+        "archived"
+      ],
+      "zodRuleParity": true,
+      "positiveFixtureAccepted": true,
+      "uiOptions": [
+        {
+          "value": "prospecto",
+          "line": 236,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "activo",
+          "line": 236,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "inactivo",
+          "line": 236,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        }
+      ],
+      "rejectedUiValues": [],
+      "schemaValuesNotOfferedByUi": [
+        "archived"
+      ]
+    },
+    {
+      "collection": "crmInteractions",
+      "field": "type",
+      "uiFile": "src/features/crm/components/ClientList.jsx",
+      "rule": "validCrmInteraction",
+      "ruleLine": 384,
+      "zodAllowed": [
+        "llamada",
+        "email",
+        "reunion",
+        "mensaje",
+        "nota"
+      ],
+      "firestoreAllowed": [
+        "llamada",
+        "email",
+        "reunion",
+        "mensaje",
+        "nota"
+      ],
+      "zodRuleParity": true,
+      "positiveFixtureAccepted": true,
+      "uiOptions": [
+        {
+          "value": "llamada",
+          "line": 275,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "email",
+          "line": 275,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "reunion",
+          "line": 275,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "mensaje",
+          "line": 275,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "nota",
+          "line": 275,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        }
+      ],
+      "rejectedUiValues": [],
+      "schemaValuesNotOfferedByUi": []
+    },
+    {
+      "collection": "employees",
+      "field": "employmentType",
+      "uiFile": "src/features/hr/components/EmployeeDirectory.jsx",
+      "rule": "validEmployee",
+      "ruleLine": 385,
+      "zodAllowed": [
+        "tiempo_completo",
+        "medio_tiempo",
+        "contrato",
+        "practicante"
+      ],
+      "firestoreAllowed": [
+        "tiempo_completo",
+        "medio_tiempo",
+        "contrato",
+        "practicante"
+      ],
+      "zodRuleParity": true,
+      "positiveFixtureAccepted": true,
+      "uiOptions": [
+        {
+          "value": "tiempo_completo",
+          "line": 232,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "medio_tiempo",
+          "line": 232,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "contrato",
+          "line": 232,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "practicante",
+          "line": 232,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        }
+      ],
+      "rejectedUiValues": [],
+      "schemaValuesNotOfferedByUi": []
+    },
+    {
+      "collection": "payroll",
+      "field": "status",
+      "uiFile": "src/features/hr/components/PayrollManager.jsx",
+      "rule": "validPayroll",
+      "ruleLine": 386,
+      "zodAllowed": [
+        "pendiente",
+        "procesando",
+        "pagado",
+        "cancelado",
+        "archived"
+      ],
+      "firestoreAllowed": [
+        "pendiente",
+        "procesando",
+        "pagado",
+        "cancelado",
+        "archived"
+      ],
+      "zodRuleParity": true,
+      "positiveFixtureAccepted": true,
+      "uiOptions": [
+        {
+          "value": "pendiente",
+          "line": 409,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "procesando",
+          "line": 409,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "pagado",
+          "line": 409,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "cancelado",
+          "line": 409,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        }
+      ],
+      "rejectedUiValues": [],
+      "schemaValuesNotOfferedByUi": [
+        "archived"
+      ]
+    },
+    {
+      "collection": "kpis",
+      "field": "frequency",
+      "uiFile": "src/features/operations/components/StrategicKPIs.jsx",
+      "rule": "validKpi",
+      "ruleLine": 388,
+      "zodAllowed": [
+        "semanal",
+        "mensual",
+        "trimestral",
+        "anual"
+      ],
+      "firestoreAllowed": [
+        "semanal",
+        "mensual",
+        "trimestral",
+        "anual"
+      ],
+      "zodRuleParity": true,
+      "positiveFixtureAccepted": true,
+      "uiOptions": [
+        {
+          "value": "semanal",
+          "line": 257,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "mensual",
+          "line": 257,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "trimestral",
+          "line": 257,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        },
+        {
+          "value": "anual",
+          "line": 257,
+          "zodAccepted": true,
+          "firestoreEnumAccepted": true
+        }
+      ],
+      "rejectedUiValues": [],
+      "schemaValuesNotOfferedByUi": []
+    }
+  ]
+}

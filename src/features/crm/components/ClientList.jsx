@@ -1,3 +1,4 @@
+import { DOMAIN_FORM_OPTIONS } from '@/shared/constants/domainEnums';
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,10 +27,9 @@ const statusConfig = {
   activo:    { label: 'Activo',    color: 'bg-emerald-500/15 text-emerald-400' },
   inactivo:  { label: 'Inactivo',  color: 'bg-secondary text-muted-foreground' },
   prospecto: { label: 'Prospecto', color: 'bg-violet-500/15 text-violet-400' },
-  perdido:   { label: 'Perdido',   color: 'bg-red-500/15 text-red-400' },
 };
 
-const interactionTypeLabel = { llamada: '📞', email: '✉️', reunion: '🤝', cotizacion: '💰', pedido: '📦', soporte: '🔧', otro: '📝' };
+const interactionTypeLabel = { llamada: '📞', email: '✉️', reunion: '🤝', mensaje: '💬', nota: '📝' };
 
 const EMPTY_CLIENT = { name: '', email: '', phone: '', segment: 'prospecto', status: 'prospecto', industry: '', total_revenue: '', notes: '' };
 const EMPTY_INT = { type: 'llamada', subject: '', notes: '', date: '', outcome: '', nextAction: '', nextActionDate: '' };
@@ -67,6 +67,7 @@ export default function ClientList({ company }) {
 
   const saveInt = useMutation({
     mutationFn: (data) => firebase.entities.CRMInteraction.create({ ...data, companyId: company.id, clientId: activeClientId }),
+    onError: () => toast.error('No se pudo guardar la interacción. Revisa los datos e inténtalo de nuevo.'),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmInteractions', company) }); setOpenInt(false); setIntForm(EMPTY_INT); toast.success('Interacción registrada'); },
   });
 
@@ -137,7 +138,7 @@ export default function ClientList({ company }) {
             const clientInts = interactions.filter(i => i.clientId === client.id).sort((a, b) => new Date(b.date) - new Date(a.date));
             const isExpanded = expanded[client.id];
             const seg = segmentConfig[client.segment];
-            const sta = statusConfig[client.status];
+            const sta = statusConfig[client.status] || { label: client.status || 'Sin estado', color: 'bg-secondary text-muted-foreground' };
             return (
               <div key={client.id} className="bg-card border border-border rounded-2xl overflow-hidden">
                 <div className="p-4 flex items-start gap-3">
@@ -232,7 +233,7 @@ export default function ClientList({ company }) {
                 <Label className="text-xs text-muted-foreground">Estado</Label>
                 <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
                   <SelectTrigger className="mt-1 bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(statusConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
+                  <SelectContent>{DOMAIN_FORM_OPTIONS.crmClientStatus.map(k => <SelectItem key={k} value={k}>{statusConfig[k].label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -271,7 +272,7 @@ export default function ClientList({ company }) {
                 <Label className="text-xs text-muted-foreground">Tipo</Label>
                 <Select value={intForm.type} onValueChange={v => setIntForm(p => ({ ...p, type: v }))}>
                   <SelectTrigger className="mt-1 bg-secondary border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(interactionTypeLabel).map(([k, ico]) => <SelectItem key={k} value={k}>{ico} {k}</SelectItem>)}</SelectContent>
+                  <SelectContent>{DOMAIN_FORM_OPTIONS.interactionType.map(k => <SelectItem key={k} value={k}>{interactionTypeLabel[k]} {k}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>

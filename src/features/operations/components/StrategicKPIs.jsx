@@ -1,3 +1,4 @@
+import { DOMAIN_FORM_OPTIONS } from '@/shared/constants/domainEnums';
 import React, { useState } from 'react';
 import { firebase } from '@/api/firebaseClient';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -46,6 +47,7 @@ export default function StrategicKPIs({ company }) {
       if (editing) return firebase.entities.KPI.update(editing.id, data);
       return firebase.entities.KPI.create({ ...data, companyId: company.id });
     },
+    onError: () => toast.error('No se pudo guardar el KPI. Revisa los datos e inténtalo de nuevo.'),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('kpis', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('KPI guardado'); },
   });
 
@@ -252,7 +254,7 @@ Responde en español, formato estructurado, tono de consultor senior.`,
                 <Select value={form.frequency} onValueChange={v => setForm(p => ({ ...p, frequency: v }))}>
                   <SelectTrigger className="mt-1 bg-secondary border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {['diario','semanal','mensual','trimestral','anual'].map(f => <SelectItem key={f} value={f} className="capitalize">{f}</SelectItem>)}
+                    {DOMAIN_FORM_OPTIONS.kpiFrequency.map(f => <SelectItem key={f} value={f} className="capitalize">{f}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
