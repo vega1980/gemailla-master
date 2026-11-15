@@ -1,0 +1,7 @@
+
+> gemailla-master@1.0.0 typecheck
+> tsc -p ./jsconfig.json && npm run typecheck:critical
+
+
+> gemailla-master@1.0.0 typecheck:critical
+> tsc -p ./tsconfig.critical.json

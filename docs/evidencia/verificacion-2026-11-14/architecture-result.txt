@@ -1,0 +1,5 @@
+
+> gemailla-master@1.0.0 validate:architecture
+> node scripts/validate-architecture.js
+
+✅ Arquitectura validada: duplicados legacy, imports Firebase, guards company.id, VITE sensibles e índices Firestore (índices remotos omitidos; usa --project=<id> en CI con credenciales).

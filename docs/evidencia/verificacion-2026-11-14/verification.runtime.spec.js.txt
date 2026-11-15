@@ -1,0 +1,35 @@
+import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import { clearFirebaseEmulators } from './support/emulatorCleanup.js';
+import { createAndLoginUser, createCompany, setActiveCompanyClaims, uniqueId } from './support/firebaseHarness.js';
+const out='/workspace/work/verification';
+test('runtime inventory of all 15 primary business module routes', async ({page})=>{
+ test.setTimeout(180000);
+ await clearFirebaseEmulators();
+ await page.goto('/');
+ const id=uniqueId('runtime'), email=`${id}@gemailla-e2e.test`;
+ const user=await createAndLoginUser(page,{email});
+ await createCompany(page,{companyId:id,ownerUid:user.uid,ownerEmail:email,name:'Empresa de verificación'});
+ await setActiveCompanyClaims(page,{userUid:user.uid,companyId:id,role:'owner'});
+ const results=[];
+ for(const route of ['/dashboard','/companies','/documents','/regulatory','/erp','/audit','/ai','/activity','/subscriptions','/predictive','/finance','/client','/operations','/crm','/hr']){
+  const errors=[],responses=[];
+  const onerror=e=>errors.push(e.message);
+  const onresponse=r=>{if(r.status()>=400) responses.push({status:r.status(),url:new URL(r.url()).pathname});};
+  page.on('pageerror',onerror);page.on('response',onresponse);
+  const start=Date.now();let result={route};
+  try{
+   await page.goto(route);
+   await expect(page.getByRole('button',{name:/Empresa activa: Empresa de verificación/})).toBeVisible({timeout:20000});
+   await expect(page.locator('main')).toBeVisible();
+   await expect.poll(()=>page.locator('main').innerText()).not.toMatch(/^\s*$/);
+   await page.waitForLoadState('networkidle',{timeout:10000}).catch(()=>{});
+   result={...result,status:'rendered',elapsedMs:Date.now()-start,headings:await page.locator('main h1,main h2').allTextContents(),mainText:(await page.locator('main').innerText()).slice(0,3000),navigation:await page.evaluate(()=>{const n=performance.getEntriesByType('navigation')[0];return {domContentLoadedMs:n.domContentLoadedEventEnd,loadMs:n.loadEventEnd,transferBytes:n.transferSize};})};
+   if(['/dashboard','/documents','/operations'].includes(route))await page.screenshot({path:`${out}/${route.slice(1)}.png`,fullPage:true});
+  }catch(e){result={...result,status:'failed',error:e.message,elapsedMs:Date.now()-start};}
+  result.pageErrors=errors;result.httpErrors=responses;results.push(result);
+  page.off('pageerror',onerror);page.off('response',onresponse);
+ }
+ fs.writeFileSync(`${out}/modules.json`,JSON.stringify(results,null,2));
+ expect(results.filter(r=>r.status==='failed'||r.pageErrors.length)).toEqual([]);
+});

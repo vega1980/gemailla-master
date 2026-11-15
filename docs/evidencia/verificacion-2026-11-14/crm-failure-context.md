@@ -1,0 +1,189 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - paragraph: La evolución de la asesoría empresarial
+              - paragraph: GEMAILLA IA
+        - generic:
+          - button:
+            - img
+            - generic: Empresa de persistencia
+            - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - img
+            - generic: Dashboard
+          - link:
+            - /url: /companies
+            - img
+            - generic: Empresas
+          - link:
+            - /url: /regulatory
+            - img
+            - generic: Avisos oficiales
+          - link:
+            - /url: /documents
+            - img
+            - generic: Documentos
+          - link:
+            - /url: /erp
+            - img
+            - generic: ERP
+          - link:
+            - /url: /audit
+            - img
+            - generic: Auditoría
+          - link:
+            - /url: /ai
+            - img
+            - generic: IA Asistente
+          - link:
+            - /url: /finance
+            - img
+            - generic: Finanzas
+          - link:
+            - /url: /predictive
+            - img
+            - generic: Análisis Predictivo
+          - link:
+            - /url: /client
+            - img
+            - generic: Panel Cliente
+          - link:
+            - /url: /operations
+            - img
+            - generic: Estrategia & Ops
+          - link:
+            - /url: /crm
+            - img
+            - generic: CRM
+          - link:
+            - /url: /hr
+            - img
+            - generic: Recursos Humanos
+          - link:
+            - /url: /activity
+            - img
+            - generic: Log
+          - link:
+            - /url: /subscriptions
+            - img
+            - generic: Suscripciones
+        - button:
+          - img
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - generic: Seguridad empresarial
+              - button:
+                - img
+      - main:
+        - generic:
+          - generic:
+            - heading [level=1]: CRM
+            - paragraph: Relaciones y oportunidades comerciales
+          - generic:
+            - img
+          - generic:
+            - link:
+              - /url: /activity
+              - img
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - tablist:
+                  - tab [selected]:
+                    - img
+                    - text: Clientes
+                  - tab:
+                    - img
+                    - text: Pipeline Comercial
+                  - tab:
+                    - img
+                    - text: Segmentación
+                - tabpanel:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                          - text: Importar Clientes
+                        - generic: Sube un archivo Excel o CSV con tu lista de clientes
+                      - generic:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                              - text: Seleccionar Archivo
+                          - button: Descargar Plantilla
+                        - generic:
+                          - paragraph:
+                            - strong: "Columnas soportadas:"
+                            - text: name*, email, phone, rfc, segment, industry, address, assignedTo, total_revenue, notes
+                          - paragraph: "*name es requerido"
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                            - textbox:
+                              - /placeholder: Buscar cliente...
+                          - combobox:
+                            - generic: Todos
+                            - img
+                        - button:
+                          - img
+                          - text: Nuevo Cliente
+                      - generic:
+                        - img
+                        - paragraph: No hay clientes. Agrega el primero.
+  - dialog "Nuevo Cliente" [ref=e2]:
+    - heading "Nuevo Cliente" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - text: Nombre completo / Empresa
+        - textbox "Ej. Empresa ABC" [ref=e7]: Cliente de prueba persistente
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - text: Email
+          - textbox "email@empresa.com" [ref=e10]
+        - generic [ref=e11]:
+          - text: Teléfono
+          - textbox "+52 55..." [ref=e12]
+        - generic [ref=e13]:
+          - text: Segmento
+          - combobox [ref=e14] [cursor=pointer]:
+            - generic: Prospecto
+            - img [ref=e15]
+        - generic [ref=e17]:
+          - text: Estado
+          - combobox [ref=e18] [cursor=pointer]:
+            - generic: Prospecto
+            - img [ref=e19]
+        - generic [ref=e21]:
+          - text: Industria
+          - textbox "Ej. Manufactura" [ref=e22]
+        - generic [ref=e23]:
+          - text: Revenue (MXN)
+          - spinbutton [ref=e24]
+        - generic [ref=e25]:
+          - text: Último contacto
+          - textbox [ref=e26]
+      - generic [ref=e27]:
+        - text: Notas
+        - textbox [ref=e28]
+      - button "Crear Cliente" [active] [ref=e29] [cursor=pointer]
+    - button "Close" [ref=e30] [cursor=pointer]:
+      - img [ref=e31]
+      - generic [ref=e34]: Close
+```

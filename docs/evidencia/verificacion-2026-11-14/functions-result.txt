@@ -1,0 +1,161 @@
+ok 1 - AI entitlement date parser accepts Firestore Timestamp-like values, Date, epoch number and ISO string
+ok 2 - active company entitlement requires active status and current or grace period
+ok 3 - shared entitlement policy normalizes plan and fails closed across tenants
+ok 4 - shared entitlement policy covers canonical plan and validity matrix
+ok 5 - prediction entitlement capability is independent from AI access
+ok 6 - AI entitlement validation blocks expired entitlement and allows grace period
+ok 7 - AI entitlement validation is scoped to the requested company id
+ok 8 - aiHandler usa exclusivamente vertex-gemini y no consulta OPENAI_API_KEY
+ok 9 - aiHandler normaliza integration=openai a gemailla-ai
+ok 10 - aiHandler falla de forma controlada para proveedor desconocido y no hace fallback
+ok 11 - aiHandler autentica y autoriza antes de Vertex, conserva aislamiento multiempresa y rechazo de documentos cruzados
+ok 12 - aiHandler procesa JSON estructurado en aiHandler y rechaza JSON inválido o texto adicional
+ok 13 - aiHandler conserva la reserva cuando falta usageMetadata de vertex-gemini y no inventa costos
+ok 14 - aiHandler estima la reserva de Vertex Gemini con pricing propio del provider/model configurado
+ok 15 - aiHandler falla antes de llamar a Vertex cuando falta pricing aprobado para el modelo
+ok 16 - aiHandler falla antes de llamar a Vertex cuando falta configuración obligatoria del modelo
+ok 17 - aiHandler usa el modelo válido del proveedor cuando runtimeConfig.model está vacío
+ok 18 - appendAuditLog exige App Check y autenticación
+ok 19 - acepta token de App Check de prueba sólo dentro del Functions Emulator demo
+ok 20 - token de emulador no omite App Check fuera de un proyecto demo
+ok 21 - rechaza acciones críticas/inventadas y limita detalles
+ok 22 - actividad cliente permitida queda marcada no autoritativa y con id determinista
+ok 23 - error interno de Firestore responde 500, no 401
+ok 24 - inviteCompanyMember requires valid App Check
+ok 25 - acceptCompanyInvitation requires valid App Check
+ok 26 - inviteCompanyMember always creates a pending invitation, emails it and does not expose token or link
+ok 27 - inviteCompanyMember rejects invalid roles
+ok 28 - owner can invite director
+ok 29 - owner can invite admin
+ok 30 - owner can invite editor
+ok 31 - owner can invite viewer
+ok 32 - owner can invite invitado
+ok 33 - director cannot invite director
+ok 34 - director can invite admin
+ok 35 - director can invite editor
+ok 36 - director can invite viewer
+ok 37 - director can invite invitado
+ok 38 - admin cannot invite director
+ok 39 - admin cannot invite admin
+ok 40 - admin can invite editor
+ok 41 - admin can invite viewer
+ok 42 - admin can invite invitado
+ok 43 - editor cannot invite viewer
+ok 44 - viewer cannot invite viewer
+ok 45 - invitado cannot invite viewer
+ok 46 - owner membership cannot override the real company owner
+ok 47 - ownerUid takes precedence over incompatible createdBy legacy data
+ok 48 - createdBy remains a temporary owner fallback when ownerUid is missing
+ok 49 - acceptCompanyInvitation creates canonical membership transactionally
+ok 50 - acceptCompanyInvitation rejects expired tokens and unverified email
+ok 51 - acceptCompanyInvitation makes an existing active matching membership active
+ok 52 - acceptCompanyInvitation makes an existing activo matching membership active
+ok 53 - acceptCompanyInvitation makes an existing pending matching membership active
+ok 54 - acceptCompanyInvitation rejects existing membership with archived status atomically
+ok 55 - acceptCompanyInvitation rejects existing membership with inactive status atomically
+ok 56 - acceptCompanyInvitation rejects existing membership with unknown status atomically
+ok 57 - acceptCompanyInvitation rejects existing membership with different role atomically
+ok 58 - acceptCompanyInvitation rejects an existing membership with mismatched companyId
+ok 59 - acceptCompanyInvitation rejects an existing membership with mismatched userUid
+ok 60 - acceptCompanyInvitation rolls back membership changes when invitation update fails
+ok 61 - membership creation does not revoke the new active session
+ok 62 - membership status change revokes the existing session
+ok 63 - membership deletion revokes the previous user session
+ok 64 - isMembershipCreation uses Firestore snapshot existence
+ok 65 - getChangedCompanyIds returns before and after companies for cross-company edits
+ok 66 - buildMetricDeltas handles company and month changes without full recompute
+ok 67 - only confirmed transaction creation contributes to global and monthly metrics
+ok 68 - pending to confirmed applies the correct confirmed contribution delta
+ok 69 - confirmed to pending applies the correct confirmed contribution delta
+ok 70 - confirmed to archived applies the correct confirmed contribution delta
+ok 71 - archived to confirmed applies the correct confirmed contribution delta
+ok 72 - physical deletion applies the correct confirmed contribution delta
+ok 73 - confirmed amount and type changes subtract before and add after
+ok 74 - confirmed company and month changes update both sides
+ok 75 - aggregateCompanyMetricsOnWrite applies atomic deltas and ignores duplicate event ids
+ok 76 - DCB-3 rejects a document storagePath from another company before Admin SDK download
+ok 77 - DCB-3 allows same-company storagePath and proceeds to Storage download
+ok 78 - trigger crea evento autoritativo determinista
+ok 79 - duplicado se ignora y error interno se propaga
+ok 80 - document_analyze solo se registra en transición a analyzed
+ok 81 - geminiVertexAdapter inicializa Vertex AI sin apiKey y usa project, location y apiVersion
+ok 82 - geminiVertexAdapter devuelve usageAvailable=false cuando falta usageMetadata y no inventa tokens
+ok 83 - geminiVertexAdapter devuelve error seguro especifico cuando Vertex bloquea la respuesta
+ok 84 - geminiVertexAdapter devuelve error seguro especifico cuando Vertex no devuelve texto utilizable
+ok 85 - geminiVertexAdapter devuelve error seguro especifico cuando Vertex excede el timeout
+ok 86 - geminiVertexAdapter maneja ADC ausente, project/location ausentes, modelo no disponible y errores internos seguros
+ok 87 - CORS agrega loopback únicamente en Functions Emulator con proyecto demo
+ok 88 - CORS de producción conserva exclusivamente la lista estricta
+ok 89 - asigna expiresAt backend a todas las colecciones TTL
+ok 90 - legalHold deja expiresAt null y un expiresAt existente no se sustituye
+ok 91 - parseDocumentStoragePath accepts only canonical document object paths
+ok 92 - document metadata validity depends only on existence and matching companyId
+ok 93 - archived and other statuses with valid metadata are preserved
+ok 94 - missing metadata and mismatched companyId are classified as orphaned
+ok 95 - a Firestore error aborts safely without quarantining or moving the file
+ok 96 - dry-run counts an orphan without moving it
+ok 97 - grace period skips recent files before querying Firestore
+ok 98 - non-canonical paths are skipped without Firestore lookup or quarantine
+ok 99 - exige correlationId único y diferencia 401/403
+ok 100 - duplicado es idempotente y dos correlaciones crean predicciones distintas
+ok 101 - Basic activo con aiAccess=false registra por debajo de 5
+ok 102 - Basic activo aplica el límite de 5
+ok 103 - Pro activo registra por debajo de 50
+ok 104 - Pro activo aplica el límite de 50
+ok 105 - Enterprise registra sin lectura mensual innecesaria
+ok 106 - entitlement ausente conserva el fallback Basic y su límite
+ok 107 - entitlement ausente no supera el límite Basic
+ok 108 - recordPrediction rechaza entitlement expirado
+ok 109 - recordPrediction rechaza entitlement de otra empresa
+ok 110 - recordPrediction rechaza entitlement con status inválido
+ok 111 - recordPrediction rechaza entitlement con plan desconocido
+ok 112 - cleanup rejected elimina origen y evidencia del scanner con generación
+ok 113 - cleanup conserva fecha de reintento si Storage falla
+ok 114 - cleanup rejected rechaza ruta de otra empresa o documento
+ok 115 - cleanup rejected rechaza bucket de evidencia no autorizado
+ok 116 - cleanup de promoción reintenta borrados con precondiciones
+ok 117 - valida EICAR, MIME, tamaño y XML inseguro
+ok 118 - envío a unscanned es idempotente ante evento duplicado
+ok 119 - reintento del mismo claim repone unscanned si la copia anterior no ocurrió
+ok 120 - las copias fijan la generación exacta de cada objeto fuente
+ok 121 - otra generación no reemplaza un procesamiento activo
+ok 122 - metadatos de entrada alterados no se despachan
+ok 123 - EICAR nunca se envía ni se promociona y queda rejected
+ok 124 - fallo de copia conserva el origen y marca scan_error
+ok 125 - clean promueve exactamente una vez y usa precondiciones
+ok 126 - resultado retrasado de una generación anterior se ignora
+ok 127 - aislamiento entre empresas impide promoción
+ok 128 - metadatos ausentes o alterados y hash distinto producen scan_error
+ok 129 - infected finaliza rejected y nunca promociona
+ok 130 - infected no confirma éxito si el estado cambia después del claim
+ok 131 - un claim infected impide que clean copie el mismo resultado concurrente
+ok 132 - carrera intercalada clean contra infected concede un solo claim
+ok 133 - fallo de borrado posterior conserva clean y registra reintento
+ok 134 - transición inválida se rechaza y estados terminales no vuelven a processing
+ok 135 - accepts a traceable bounded page
+ok 136 - rejects altered metadata
+ok 137 - rejects altered capture
+ok 138 - rejects wrong evidence
+ok 139 - rejects wrong cursor
+ok 140 - rejects unsafe URL
+ok 141 - rejects duplicate publication
+ok 142 - rejects unsupported schema
+ok 143 - rejects unlinked observation
+ok 144 - resumes relocated history without storing a host path
+ok 145 - migrates a legacy path binding only with a matching cursor anchor
+ok 146 - rejects another history and a concurrently changed anchor
+ok 147 - rejects an oversized aggregate before uploads or database access
+ok 148 - publishes a bounded page and binds its portable identity
+ok 149 - history identity requires a validated first publication
+ok 150 - syncCompanyClaims rejects missing App Check
+ok 151 - syncCompanyClaims rejects invalid App Check
+ok 152 - syncCompanyClaims accepts valid App Check and valid Auth
+1..152
+# tests 152
+# suites 0
+# pass 152
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16594.795637

@@ -1,0 +1,17 @@
+[
+  {
+    "name": "crmClients",
+    "code": "invalid-argument",
+    "message": "Function addDoc() called with invalid data. Unsupported field value: undefined (found in field email in document crmClients/nZC1vWVrBu54P6M0Iq0N)"
+  },
+  {
+    "name": "employees",
+    "code": "invalid-argument",
+    "message": "Function addDoc() called with invalid data. Unsupported field value: undefined (found in field email in document employees/V9zfqn6fayjynUIsYUEB)"
+  },
+  {
+    "name": "projects",
+    "code": "invalid-argument",
+    "message": "Function addDoc() called with invalid data. Unsupported field value: undefined (found in field startDate in document projects/1KIe1Hw6ymOW2sb9oots)"
+  }
+]

@@ -1,0 +1,187 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - paragraph: La evolución de la asesoría empresarial
+              - paragraph: GEMAILLA IA
+        - generic:
+          - button:
+            - img
+            - generic: Empresa de persistencia
+            - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - img
+            - generic: Dashboard
+          - link:
+            - /url: /companies
+            - img
+            - generic: Empresas
+          - link:
+            - /url: /regulatory
+            - img
+            - generic: Avisos oficiales
+          - link:
+            - /url: /documents
+            - img
+            - generic: Documentos
+          - link:
+            - /url: /erp
+            - img
+            - generic: ERP
+          - link:
+            - /url: /audit
+            - img
+            - generic: Auditoría
+          - link:
+            - /url: /ai
+            - img
+            - generic: IA Asistente
+          - link:
+            - /url: /finance
+            - img
+            - generic: Finanzas
+          - link:
+            - /url: /predictive
+            - img
+            - generic: Análisis Predictivo
+          - link:
+            - /url: /client
+            - img
+            - generic: Panel Cliente
+          - link:
+            - /url: /operations
+            - img
+            - generic: Estrategia & Ops
+          - link:
+            - /url: /crm
+            - img
+            - generic: CRM
+          - link:
+            - /url: /hr
+            - img
+            - generic: Recursos Humanos
+          - link:
+            - /url: /activity
+            - img
+            - generic: Log
+          - link:
+            - /url: /subscriptions
+            - img
+            - generic: Suscripciones
+        - button:
+          - img
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - generic: Seguridad empresarial
+              - button:
+                - img
+      - main:
+        - generic:
+          - generic:
+            - heading [level=1]: Estrategia y Operaciones
+            - paragraph: Eficiencia empresarial
+          - generic:
+            - img
+          - generic:
+            - link:
+              - /url: /activity
+              - img
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=1]: Estrategia y Operaciones
+                    - paragraph: Empresa de persistencia
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                    - text: Planeación Estratégica
+                  - button:
+                    - img
+                    - text: Optimización de Procesos
+                  - button:
+                    - img
+                    - text: Gestión de Proyectos
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - img
+                        - text: Importar Proyectos
+                      - generic: Sube un archivo Excel o CSV con tu lista de proyectos
+                    - generic:
+                      - generic:
+                        - generic:
+                          - generic:
+                            - img
+                            - text: Seleccionar Archivo
+                        - button: Descargar Plantilla
+                      - generic:
+                        - paragraph:
+                          - strong: "Columnas soportadas:"
+                          - text: name*, description, status, priority, owner, startDate, endDate, budget, team, tags
+                        - paragraph: "*name es requerido. team y tags deben ser arrays JSON"
+                  - generic:
+                    - generic:
+                      - paragraph: 0 proyectos
+                      - button:
+                        - img
+                        - text: Nuevo Proyecto
+                    - generic:
+                      - img
+                      - paragraph: No hay proyectos. Crea el primero.
+  - dialog "Nuevo Proyecto" [ref=e2]:
+    - heading "Nuevo Proyecto" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - text: Nombre del proyecto
+        - textbox "Ej. Expansión a CDMX" [ref=e7]: Proyecto de prueba persistente
+      - generic [ref=e8]:
+        - text: Descripción
+        - textbox [ref=e9]
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - text: Estado
+          - combobox [ref=e12] [cursor=pointer]:
+            - generic: Planificado
+            - img [ref=e13]
+        - generic [ref=e15]:
+          - text: Prioridad
+          - combobox [ref=e16] [cursor=pointer]:
+            - generic: Media
+            - img [ref=e17]
+        - generic [ref=e19]:
+          - text: Fecha inicio
+          - textbox [ref=e20]
+        - generic [ref=e21]:
+          - text: Fecha fin
+          - textbox [ref=e22]
+        - generic [ref=e23]:
+          - text: Presupuesto (MXN)
+          - spinbutton [ref=e24]
+        - generic [ref=e25]:
+          - text: Avance (%)
+          - spinbutton [ref=e26]: "0"
+        - generic [ref=e27]:
+          - text: Responsable
+          - textbox "Nombre del responsable" [ref=e28]
+      - button "Crear Proyecto" [active] [ref=e29] [cursor=pointer]
+    - button "Close" [ref=e30] [cursor=pointer]:
+      - img [ref=e31]
+      - generic [ref=e34]: Close
+```

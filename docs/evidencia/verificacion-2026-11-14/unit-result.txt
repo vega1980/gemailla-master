@@ -1,0 +1,100 @@
+ok 1 - agentClient proactive accounting
+ok 2 - endpoint IA
+ok 3 - bundle budget configuration
+ok 4 - check-no-hardcoded-secrets
+ok 5 - company entitlement backfill sanitizer
+ok 6 - correlation scopes
+ok 7 - las gráficas usan colores CSS válidos sin perder sus degradados
+ok 8 - los ejes evitan mediciones CSS inválidas en Firefox
+ok 9 - calcula tendencias únicamente contra el mes calendario anterior
+ok 10 - no inventa tendencias cuando falta el mes anterior
+ok 11 - evita porcentajes infinitos cuando el valor anterior es cero
+ok 12 - reconoce los tipos reales de gasto y conserva compatibilidad
+ok 13 - la distribución no cuenta el balance como una tercera categoría
+ok 14 - analyzeDocumentFlow fail-fast validation
+ok 15 - validación endurecida PDF/XML
+ok 16 - document Object URL lifecycle
+ok 17 - document viewer request lifecycle
+ok 18 - document scan polling
+ok 19 - domain coverage map
+ok 20 - crmClients: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 21 - crmDeals: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 22 - crmInteractions: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 23 - employees: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 24 - payroll: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 25 - performanceReviews: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 26 - kpis: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 27 - projects: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 28 - projectTasks: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 29 - supportTickets: acepta contrato, rechaza campos desconocidos y enum inválido
+ok 30 - los contratos numéricos no convierten strings silenciosamente
+ok 31 - CRM acepta etapas usadas por la interfaz y valores existentes
+ok 32 - proyectos acepta team y tags del importador con límites estrictos
+ok 33 - crmClients: mínimos, máximos, fecha y actualización de negocio
+ok 34 - crmDeals: mínimos, máximos, fecha y actualización de negocio
+ok 35 - crmInteractions: mínimos, máximos, fecha y actualización de negocio
+ok 36 - employees: mínimos, máximos, fecha y actualización de negocio
+ok 37 - payroll: mínimos, máximos, fecha y actualización de negocio
+ok 38 - performanceReviews: mínimos, máximos, fecha y actualización de negocio
+ok 39 - kpis: mínimos, máximos, fecha y actualización de negocio
+ok 40 - projects: mínimos, máximos, fecha y actualización de negocio
+ok 41 - projectTasks: mínimos, máximos, fecha y actualización de negocio
+ok 42 - supportTickets: mínimos, máximos, fecha y actualización de negocio
+ok 43 - repository object filter validation
+ok 44 - Firebase Admin 14 usa únicamente sus entradas modulares
+ok 45 - Firebase project and deploy configuration invariants
+ok 46 - uniqueId conserva el prefijo y usa identificadores criptograficos distintos
+ok 47 - Firebase rules production deployment requires explicit confirmation and production approval
+ok 48 - CI installs ripgrep and propagates Security Scan execution errors
+ok 49 - firestore.rules static security invariants
+ok 50 - form validation schemas
+ok 51 - fachada pública firebaseClient
+ok 52 - producción no impone CSP y permite popups de autenticación
+ok 53 - staging genera CSP report-only compatible con Auth y App Check
+ok 54 - concurrent loads allow only the latest asynchronous request to commit state
+ok 55 - changing users invalidates the previous session request
+ok 56 - a late tenant A response cannot replace the committed tenant B response
+ok 57 - monitoring configuration
+ok 58 - multi-tenant rules authorization source
+ok 59 - observability policy
+ok 60 - blocks prediction content when quota usage is not available
+ok 61 - allows prediction content only with plan and verified remaining quota
+ok 62 - convierte timestamps de Firestore al formato esperado por la interfaz
+ok 63 - retira id del payload sin modificar el objeto original
+ok 64 - static guard for bounded repository reads
+ok 65 - runtime config seguro
+ok 66 - controles de seguridad en firebaseClient
+ok 67 - arquitectura de imports Firebase
+ok 68 - importador de hojas de cálculo
+ok 69 - Cloud Storage CORS configuration
+ok 70 - Cloud Storage rules static invariants
+ok 71 - company entitlement loading fails closed without a valid companyId
+ok 72 - company entitlement loading invokes getById exactly once with the active companyId
+ok 73 - company entitlement loading returns null when the entitlement does not exist
+ok 74 - company entitlement loading rejects an entitlement belonging to another company
+ok 75 - company entitlement activity accepts only normalized active statuses
+ok 76 - company entitlement activity requires a future current period or grace period
+ok 77 - company entitlement activity supports only backend-compatible date representations
+ok 78 - company entitlement AI access requires an active eligible plan and explicit access flag
+ok 79 - a prediction-log failure is independent from valid subscription data
+ok 80 - monthly prediction usage is queried by company, user and month
+ok 81 - monthly prediction usage fails closed without every tenant key
+ok 82 - prediction execution requires a verified quota and no concurrent write
+ok 83 - SubscriptionProvider is nested inside CompanyProvider
+ok 84 - subscription authority is the active company entitlement and never a user subscription
+ok 85 - tenant and identity changes purge entitlement before paint and invalidate stale requests
+ok 86 - plan and AI decisions use the validated entitlement helpers
+ok 87 - prediction writes compare the same identity and tenant session key
+ok 88 - transaction import presenter
+ok 89 - transaction domain service
+ok 90 - validate-env
+ok 91 - rechaza placeholders literales y YOUR con guion
+1..91
+# tests 179
+# suites 34
+# pass 179
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9263.843779

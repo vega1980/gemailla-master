@@ -1,0 +1,85 @@
+{
+  "secrets": {
+    "name": "secrets",
+    "command": "npm run validate:secrets",
+    "exitCode": 0,
+    "seconds": 0.65
+  },
+  "audit": {
+    "name": "audit",
+    "command": "npm audit --omit=dev --json",
+    "exitCode": 1,
+    "seconds": 4.91
+  },
+  "architecture": {
+    "name": "architecture",
+    "command": "npm run validate:architecture",
+    "exitCode": 0,
+    "seconds": 0.54
+  },
+  "browser-install": {
+    "name": "browser-install",
+    "command": "npx playwright install chromium",
+    "exitCode": 0,
+    "seconds": 135.86
+  },
+  "emulators-install": {
+    "name": "emulators-install",
+    "command": "node scripts/ensure-firestore-emulator-cache.mjs",
+    "exitCode": 2,
+    "seconds": 2.51
+  },
+  "types": {
+    "name": "types",
+    "command": "npm run typecheck",
+    "exitCode": 0,
+    "seconds": 14.71
+  },
+  "unit": {
+    "name": "unit",
+    "command": "npm run test:unit",
+    "exitCode": 0,
+    "seconds": 9.5
+  },
+  "functions": {
+    "name": "functions",
+    "command": "npm run test:functions",
+    "exitCode": 0,
+    "seconds": 18.51
+  },
+  "lint": {
+    "name": "lint",
+    "command": "npm run lint",
+    "exitCode": 0,
+    "seconds": 6.96
+  },
+  "audit-functions": {
+    "name": "audit-functions",
+    "command": "npm --prefix functions audit --omit=dev --json",
+    "exitCode": 1,
+    "seconds": 2.99
+  },
+  "build": {
+    "name": "build",
+    "command": "source scripts/e2e-env.sh && npm run build && npm run budget:bundle",
+    "exitCode": 0,
+    "seconds": 21.61
+  },
+  "revision": {
+    "runtimeBase": "cb81c19d580f922b152b5447272bd31b50c7480b",
+    "checkout": "4d5533b",
+    "scope": "PR0 differs only in documentation/contract; runtime from origin/main"
+  },
+  "rulesBaseline": {
+    "tests": 112,
+    "pass": 106,
+    "fail": 6,
+    "cause": "CLI proxy cancels loopback Firestore reads from Storage emulator; reproduced with debug"
+  },
+  "rulesLoopbackWorkaround": {
+    "tests": 112,
+    "pass": 112,
+    "fail": 0,
+    "applicationSourceChanged": false
+  }
+}

@@ -1,0 +1,1 @@
+Tooling-only adaptation in untracked node_modules/firebase-tools/lib/apiv2.js: ProxyAgent excluded only for exact loopback hosts 127.0.0.1, localhost, [::1]. External destinations retain inherited proxy. Baseline rules.log and rules-repro.log preserved. No application source or security rules modified.

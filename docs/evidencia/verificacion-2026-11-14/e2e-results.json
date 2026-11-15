@@ -1,0 +1,155 @@
+{
+  "stats": {
+    "startTime": "2026-11-15T02:01:23.389Z",
+    "duration": 222594.676,
+    "expected": 13,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "tests": [
+    {
+      "file": "critical-flows.spec.js",
+      "title": "login y cambio de empresa activa",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 5306
+        }
+      ]
+    },
+    {
+      "file": "critical-flows.spec.js",
+      "title": "upload, cuarentena, escaneo y apertura de PDF/XML limpio",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 12521
+        }
+      ]
+    },
+    {
+      "file": "critical-flows.spec.js",
+      "title": "análisis IA actualiza el documento usando el contrato /api/ai",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 6543
+        }
+      ]
+    },
+    {
+      "file": "critical-flows.spec.js",
+      "title": "restricción por rol viewer bloquea escritura documental",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 4577
+        }
+      ]
+    },
+    {
+      "file": "critical-flows.spec.js",
+      "title": "expiración/cierre de sesión redirige fuera de módulos protegidos",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3982
+        }
+      ]
+    },
+    {
+      "file": "regulatory.spec.js",
+      "title": "Next publication opens in Master with evidence, verified capture and company isolation",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3611
+        }
+      ]
+    },
+    {
+      "file": "routing.security.spec.js",
+      "title": "usuario anónimo en /dashboard redirige a /",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 1068
+        }
+      ]
+    },
+    {
+      "file": "routing.security.spec.js",
+      "title": "usuario autenticado en / redirige a /dashboard",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 1453
+        }
+      ]
+    },
+    {
+      "file": "routing.security.spec.js",
+      "title": "usuario anónimo en / no dispara consultas empresariales",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2717
+        }
+      ]
+    },
+    {
+      "file": "routing.security.spec.js",
+      "title": "logout purga el contexto empresarial y protege la ruta activa",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2237
+        }
+      ]
+    },
+    {
+      "file": "routing.security.spec.js",
+      "title": "cambio de usuario no conserva empresas de la sesión anterior",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3675
+        }
+      ]
+    },
+    {
+      "file": "routing.security.spec.js",
+      "title": "una respuesta empresarial atrasada no repuebla la sesión siguiente",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 5492
+        }
+      ]
+    },
+    {
+      "file": "verification.runtime.spec.js",
+      "title": "runtime inventory of all 15 primary business module routes",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 167169
+        }
+      ]
+    }
+  ]
+}

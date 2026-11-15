@@ -1,0 +1,22 @@
+[
+  {
+    "collection": "crmClients",
+    "undefinedKeys": [
+      "email"
+    ]
+  },
+  {
+    "collection": "employees",
+    "undefinedKeys": [
+      "email",
+      "hireDate"
+    ]
+  },
+  {
+    "collection": "projects",
+    "undefinedKeys": [
+      "startDate",
+      "endDate"
+    ]
+  }
+]
