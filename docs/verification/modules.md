@@ -56,6 +56,8 @@ Se ejecutó safeParse con los esquemas reales, variando solo el campo de un payl
 | payroll | status | aprobado |
 | kpis | frequency | diario |
 
+La [auditoría T1 de causa raíz](t1-enum-root-cause.md) detalla origen, historial y paridad entre validadores.
+
 No son nueve flujos completos de navegador: son nueve pruebas del contrato real. El KPI diario sí se reprodujo además en navegador: se selecciona diario correctamente, se pulsa Crear KPI y el diálogo no se cierra. La solución requiere alinear catálogo de UI, esquemas y reglas con las decisiones de negocio, sin abrir enums indiscriminadamente.
 
 ### 4. La extracción PDF falla bajo el runtime configurado
