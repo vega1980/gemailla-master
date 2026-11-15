@@ -1,0 +1,499 @@
+{
+  "runtimeBase": "60eec38e7848501d36fd4626cc76716931be2db3",
+  "scope": "PR #244 branch, not merged main or production. Firebase emulators, Chromium, synthetic data.",
+  "context7": "Documentation used for SDK/test semantics; runtime results obtained separately.",
+  "initialRun": {
+    "startTime": "2026-11-15T02:43:17.367Z",
+    "duration": 276845.55,
+    "expected": 39,
+    "skipped": 0,
+    "unexpected": 4,
+    "flaky": 0
+  },
+  "correctedCheckerRun": {
+    "startTime": "2026-11-15T02:48:45.615Z",
+    "duration": 70998.888,
+    "expected": 1,
+    "skipped": 0,
+    "unexpected": 3,
+    "flaky": 0
+  },
+  "uniqueCases": 43,
+  "finalPassed": 40,
+  "finalFailed": 3,
+  "cases": [
+    {
+      "title": "anonymous AI rejection is persisted by real Functions and Firestore emulators",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2697,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "login y cambio de empresa activa",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 5939,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "upload, cuarentena, escaneo y apertura de PDF/XML limpio",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 12846,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "análisis IA actualiza el documento usando el contrato /api/ai",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 4756,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "restricción por rol viewer bloquea escritura documental",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 4100,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "expiración/cierre de sesión redirige fuera de módulos protegidos",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2552,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Empresas: create using the real UI with optional fields empty, then reload",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 4716,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "ERP: register income through the real form and verify storage and reload",
+      "status": "unexpected",
+      "results": [
+        {
+          "status": "failed",
+          "durationMs": 20653,
+          "error": "Error: expect(locator).not.toBeVisible() failed\n\nLocator:  getByRole('dialog')\nExpected: not visible\nReceived: visible\nTimeout:  15000ms\n\nCall log:\n  - Expect \"not toBeVisible\" with timeout 15000ms\n  - waiting for getByRole('dialog')\n    18 × locator resolved to <div role=\"dialog\" tabindex=\"-1\" id=\"radix-:r9:\" data-state=\"open\" aria-labelledby=\"radix-:ra:\" aria-describedby=\"radix-:rb:\" class=\"fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=clos…>…</div>\n       - unexpected value \"visible\"\n"
+        }
+      ]
+    },
+    {
+      "title": "Finanzas: known totals and actual PDF contents agree with fixtures",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 5999,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Dashboard: reflects known tenant income, expenses and balance",
+      "status": "unexpected",
+      "results": [
+        {
+          "status": "failed",
+          "durationMs": 18668,
+          "error": "Error: expect(locator).toContainText(expected) failed\n\nLocator: locator('main')\nExpected substring: \"1,000\"\nTimeout: 15000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toContainText\" with timeout 15000ms\n  - waiting for locator('main')\n    - locator resolved to <main class=\"min-h-screen flex-1 pt-16 transition-all duration-300 md:pt-0 md:ml-[272px]\">…</main>\n    - unexpected value \"DashboardVisión integral de tu empresa\"\n    - locator resolved to <main class=\"min-h-screen flex-1 pt-16 transition-all duration-300 md:pt-0 md:ml-[272px]\">…</main>\n    - unexpected value \"DashboardVisión integral de tu empresaEmpresas activas1Total actualIngresosUSD 0Sin datos del mes anteriorGastosUSD 0Sin datos del mes anteriorBalanceUSD 0Sin datos del mes anteriorIngresos y gastosBalanceGastosIngresosJunJulAgoSepOctNov01234Distribución financiera0TotalIngresos0Gastos0Actividad recienteVer todoDatos protegidosExpediente empresarial seguroPanel actualizadoListo para recibir informaciónResumen financieroMargen de ganancia0.0%Liquidez0.00Compromiso de ingresos0.0%\"\n    15 × locator resolved to <main class=\"min-h-screen flex-1 pt-16 transition-all duration-300 md:pt-0 md:ml-[272px]\">…</main>\n       - unexpected value \"DashboardVisión integral de tu empresaEmpresas activas1Total actualIngresosUSD 0Sin datos del mes anteriorGastosUSD 0Sin datos del mes anteriorBalanceUSD 0Sin datos del mes anter"
+        }
+      ]
+    },
+    {
+      "title": "Panel cliente: deterministic negative balance alert uses real tenant data",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 4415,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Actividad: server-generated transaction audit events are visible and filterable",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2230,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Operaciones: daily KPI offered by the UI can be saved and reloaded",
+      "status": "unexpected",
+      "results": [
+        {
+          "status": "failed",
+          "durationMs": 19930,
+          "error": "Error: expect(locator).not.toBeVisible() failed\n\nLocator:  getByRole('dialog')\nExpected: not visible\nReceived: visible\nTimeout:  15000ms\n\nCall log:\n  - Expect \"not toBeVisible\" with timeout 15000ms\n  - waiting for getByRole('dialog')\n    19 × locator resolved to <div role=\"dialog\" tabindex=\"-1\" id=\"radix-:r6:\" data-state=\"open\" aria-labelledby=\"radix-:r7:\" aria-describedby=\"radix-:r8:\" class=\"fixed left-[50%] top-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 border p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide…>…</div>\n       - unexpected value \"visible\"\n"
+        }
+      ]
+    },
+    {
+      "title": "Auditoria: empty books cannot launch a financial AI audit",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2501,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "IA: basic plan cannot submit a paid AI query",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2834,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Predicciones: basic plan is gated before any forecast runs",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2088,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Suscripciones: current basic plan is displayed without self-service entitlement writes",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3178,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "RRHH: automatic payroll persists its computed net amount for the fixture employee",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 5419,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /dashboard",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2831,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /companies",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2401,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /documents",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3003,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /regulatory",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2668,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /erp",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2599,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /audit",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2593,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /ai",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2753,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /activity",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2084,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /subscriptions",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 1950,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /predictive",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 1929,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /finance",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2925,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /client",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2728,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /operations",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2039,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /crm",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2768,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /hr",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2617,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "CRM client: UI creation persists after reload",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 4392,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "HR employee: UI creation persists after reload",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3967,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Operations project: UI creation persists after reload",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 4996,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "Next publication opens in Master with evidence, verified capture and company isolation",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3089,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "usuario anónimo en /dashboard redirige a /",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 943,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "usuario autenticado en / redirige a /dashboard",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 1287,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "usuario anónimo en / no dispara consultas empresariales",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2576,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "logout purga el contexto empresarial y protege la ruta activa",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 2037,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "cambio de usuario no conserva empresas de la sesión anterior",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 3498,
+          "error": ""
+        }
+      ]
+    },
+    {
+      "title": "una respuesta empresarial atrasada no repuebla la sesión siguiente",
+      "status": "expected",
+      "results": [
+        {
+          "status": "passed",
+          "durationMs": 5368,
+          "error": ""
+        }
+      ]
+    }
+  ]
+}

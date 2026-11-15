@@ -1,0 +1,192 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - complementary [ref=e4]:
+      - generic [ref=e6]:
+        - img "GEMAILLA IA" [ref=e7]
+        - generic [ref=e8]:
+          - paragraph [ref=e9]: La evolución de la asesoría empresarial
+          - paragraph [ref=e10]: GEMAILLA IA
+      - 'button "Empresa activa: Empresa funcional" [ref=e12] [cursor=pointer]':
+        - img [ref=e13]
+        - generic [ref=e17]: Empresa funcional
+        - img [ref=e18]
+      - navigation [ref=e20]:
+        - link "Dashboard" [ref=e21] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e23]
+          - generic [ref=e28]: Dashboard
+        - link "Empresas" [ref=e29] [cursor=pointer]:
+          - /url: /companies
+          - img [ref=e30]
+          - generic [ref=e34]: Empresas
+        - link "Avisos oficiales" [ref=e35] [cursor=pointer]:
+          - /url: /regulatory
+          - img [ref=e36]
+          - generic [ref=e38]: Avisos oficiales
+        - link "Documentos" [ref=e39] [cursor=pointer]:
+          - /url: /documents
+          - img [ref=e40]
+          - generic [ref=e43]: Documentos
+        - link "ERP" [ref=e44] [cursor=pointer]:
+          - /url: /erp
+          - img [ref=e45]
+          - generic [ref=e48]: ERP
+        - link "Auditoría" [ref=e49] [cursor=pointer]:
+          - /url: /audit
+          - img [ref=e50]
+          - generic [ref=e52]: Auditoría
+        - link "IA Asistente" [ref=e53] [cursor=pointer]:
+          - /url: /ai
+          - img [ref=e54]
+          - generic [ref=e64]: IA Asistente
+        - link "Finanzas" [ref=e65] [cursor=pointer]:
+          - /url: /finance
+          - img [ref=e66]
+          - generic [ref=e68]: Finanzas
+        - link "Análisis Predictivo" [ref=e69] [cursor=pointer]:
+          - /url: /predictive
+          - img [ref=e70]
+          - generic [ref=e72]: Análisis Predictivo
+        - link "Panel Cliente" [ref=e73] [cursor=pointer]:
+          - /url: /client
+          - img [ref=e74]
+          - generic [ref=e79]: Panel Cliente
+        - link "Estrategia & Ops" [ref=e80] [cursor=pointer]:
+          - /url: /operations
+          - img [ref=e81]
+          - generic [ref=e86]: Estrategia & Ops
+        - link "CRM" [ref=e87] [cursor=pointer]:
+          - /url: /crm
+          - img [ref=e88]
+          - generic [ref=e93]: CRM
+        - link "Recursos Humanos" [ref=e94] [cursor=pointer]:
+          - /url: /hr
+          - img [ref=e95]
+          - generic [ref=e107]: Recursos Humanos
+        - link "Log" [ref=e108] [cursor=pointer]:
+          - /url: /activity
+          - img [ref=e109]
+          - generic [ref=e111]: Log
+        - link "Suscripciones" [ref=e112] [cursor=pointer]:
+          - /url: /subscriptions
+          - img [ref=e113]
+          - generic [ref=e115]: Suscripciones
+      - button "Contraer menú" [ref=e116] [cursor=pointer]:
+        - img [ref=e117]
+      - generic [ref=e120]:
+        - img [ref=e121]
+        - generic [ref=e123]:
+          - generic [ref=e124]: Seguridad empresarial
+          - button "Cerrar sesión" [ref=e125] [cursor=pointer]:
+            - img [ref=e126]
+    - main [ref=e129]:
+      - generic [ref=e130]:
+        - generic [ref=e131]:
+          - heading "Dashboard" [level=1] [ref=e132]
+          - paragraph [ref=e133]: Visión integral de tu empresa
+        - generic:
+          - img "Emblema GEMAILLA IA"
+        - link "Ver actividad" [ref=e135] [cursor=pointer]:
+          - /url: /activity
+          - img [ref=e136]
+      - generic [ref=e140]:
+        - region "Indicadores principales" [ref=e141]:
+          - article [ref=e142]:
+            - img [ref=e144]
+            - generic [ref=e148]:
+              - paragraph [ref=e149]: Empresas activas
+              - paragraph [ref=e150]: "1"
+              - paragraph [ref=e151]: Total actual
+          - article [ref=e152]:
+            - img [ref=e154]
+            - generic [ref=e156]:
+              - paragraph [ref=e157]: Ingresos
+              - paragraph [ref=e158]: USD 0
+              - paragraph [ref=e159]: Sin datos del mes anterior
+          - article [ref=e160]:
+            - img [ref=e162]
+            - generic [ref=e166]:
+              - paragraph [ref=e167]: Gastos
+              - paragraph [ref=e168]: USD 0
+              - paragraph [ref=e169]: Sin datos del mes anterior
+          - article [ref=e170]:
+            - img [ref=e172]
+            - generic [ref=e176]:
+              - paragraph [ref=e177]: Balance
+              - paragraph [ref=e178]: USD 0
+              - paragraph [ref=e179]: Sin datos del mes anterior
+        - generic [ref=e180]:
+          - generic [ref=e181]:
+            - heading "Ingresos y gastos" [level=2] [ref=e183]
+            - generic [ref=e186]:
+              - list [ref=e188]:
+                - listitem [ref=e189]:
+                  - img "Balance legend icon" [ref=e190]
+                  - text: Balance
+                - listitem [ref=e192]:
+                  - img "Gastos legend icon" [ref=e193]
+                  - text: Gastos
+                - listitem [ref=e195]:
+                  - img "Ingresos legend icon" [ref=e196]
+                  - text: Ingresos
+              - application [ref=e198]:
+                - generic [ref=e221]:
+                  - generic [ref=e222]:
+                    - generic [ref=e224]: Jun
+                    - generic [ref=e226]: Jul
+                    - generic [ref=e228]: Ago
+                    - generic [ref=e230]: Sep
+                    - generic [ref=e232]: Oct
+                    - generic [ref=e234]: Nov
+                  - generic [ref=e235]:
+                    - generic [ref=e237]: "0"
+                    - generic [ref=e239]: "200"
+                    - generic [ref=e241]: "400"
+                    - generic [ref=e243]: "600"
+                    - generic [ref=e245]: "800"
+          - generic [ref=e246]:
+            - heading "Distribución financiera" [level=2] [ref=e248]
+            - generic [ref=e250]:
+              - generic [ref=e251]:
+                - application [ref=e254]
+                - generic:
+                  - paragraph: "0"
+                  - paragraph: Total
+              - generic [ref=e261]:
+                - generic [ref=e262]:
+                  - generic [ref=e264]: Ingresos
+                  - generic [ref=e265]: "0"
+                - generic [ref=e266]:
+                  - generic [ref=e268]: Gastos
+                  - generic [ref=e269]: "0"
+        - generic [ref=e270]:
+          - generic [ref=e271]:
+            - generic [ref=e272]:
+              - heading "Actividad reciente" [level=2] [ref=e274]
+              - link "Ver todo" [ref=e276] [cursor=pointer]:
+                - /url: /activity
+            - generic [ref=e278]:
+              - img [ref=e280]
+              - generic [ref=e283]:
+                - paragraph [ref=e284]: Fixture income
+                - paragraph [ref=e285]: Ingreso registrado
+          - generic [ref=e286]:
+            - heading "Resumen financiero" [level=2] [ref=e288]
+            - generic [ref=e290]:
+              - generic [ref=e291]:
+                - img [ref=e292]
+                - paragraph [ref=e295]: Margen de ganancia
+                - paragraph [ref=e296]: 0.0%
+              - generic [ref=e297]:
+                - img [ref=e298]
+                - paragraph [ref=e302]: Liquidez
+                - paragraph [ref=e303]: "0.00"
+              - generic [ref=e304]:
+                - img [ref=e305]
+                - paragraph [ref=e307]: Compromiso de ingresos
+                - paragraph [ref=e308]: 0.0%
+  - generic [ref=e309]: "800"
+```

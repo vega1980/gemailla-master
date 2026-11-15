@@ -1,0 +1,5 @@
+Real extractPdfText invocation with the attached valid PDF. Node 22.21.1; process exit 1. No provider or Storage mock involved.
+TypeError: Promise.try is not a function
+    at #t (file:///workspace/work/gemailla-master/functions/node_modules/unpdf/dist/pdfjs.mjs:54:112364)
+    at file:///workspace/work/gemailla-master/functions/node_modules/unpdf/dist/pdfjs.mjs:54:110186
+Node.js v22.21.1
