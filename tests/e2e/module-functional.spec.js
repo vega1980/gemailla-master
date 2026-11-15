@@ -79,13 +79,13 @@ test('Actividad: server-generated transaction audit events are visible and filte
  await expect(page.getByText('Transacción creada',{exact:true})).toHaveCount(0);
 });
 
-test('Operaciones: daily KPI offered by the UI can be saved and reloaded',async({page})=>{
+test('Operaciones: supported KPI frequencies only and weekly persistence',async({page})=>{
  await setup(page);await page.goto('/operations');await page.getByRole('button',{name:'Nuevo KPI',exact:true}).click();
- const dialog=page.getByRole('dialog');await dialog.getByPlaceholder('Ej. Tasa de conversión').fill('KPI diario de prueba');
+ const dialog=page.getByRole('dialog');await dialog.getByPlaceholder('Ej. Tasa de conversión').fill('KPI semanal de prueba');
  await dialog.getByPlaceholder('100',{exact:true}).fill('10');await dialog.getByPlaceholder('0',{exact:true}).fill('2');
- await dialog.locator('button[role=combobox]').nth(2).click();await page.getByRole('option',{name:'diario',exact:true}).click();
+ await dialog.locator('button[role=combobox]').nth(2).click();await expect(page.getByRole('option',{name:'diario',exact:true})).toHaveCount(0);await page.getByRole('option',{name:'semanal',exact:true}).click();
  await dialog.getByRole('button',{name:'Crear KPI',exact:true}).click();await expect(dialog).not.toBeVisible();
- await page.reload();await expect(page.getByText('KPI diario de prueba',{exact:true})).toBeVisible();
+ await page.reload();await expect(page.getByText('KPI semanal de prueba',{exact:true})).toBeVisible();
 });
 
 test('Auditoria: empty books cannot launch a financial AI audit',async({page})=>{

@@ -1,15 +1,16 @@
 import ts from 'typescript';
 import { readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
+import { DOMAIN_FORM_OPTIONS } from '../src/shared/constants/domainEnums.js';
 import { mutableCollectionSchemas } from '../src/shared/validation/domainSchemas.js';
 
 // Audit current source, not a second hardcoded copy of the option values.
 const definitions = [
-  { collection: 'crmClients', field: 'status', file: 'src/features/crm/components/ClientList.jsx', object: 'statusConfig', rule: 'validCrmClient', fixture: { companyId: 'audit', name: 'Cliente', status: 'activo' } },
-  { collection: 'crmInteractions', field: 'type', file: 'src/features/crm/components/ClientList.jsx', object: 'interactionTypeLabel', rule: 'validCrmInteraction', fixture: { companyId: 'audit', clientId: 'client', type: 'llamada', date: '2026-11-14', subject: 'Seguimiento' } },
-  { collection: 'employees', field: 'employmentType', file: 'src/features/hr/components/EmployeeDirectory.jsx', select: 'form.employmentType', rule: 'validEmployee', fixture: { companyId: 'audit', fullName: 'Empleado', employmentType: 'tiempo_completo', status: 'activo' } },
-  { collection: 'payroll', field: 'status', file: 'src/features/hr/components/PayrollManager.jsx', object: 'statusConfig', rule: 'validPayroll', fixture: { companyId: 'audit', employeeId: 'employee', period: '2026-11', period_type: 'mensual', baseSalary: 1000, bonuses: 0, overtime: 0, deductions_imss: 0, deductions_isr: 0, other_deductions: 0, netPay: 1000, status: 'pendiente' } },
-  { collection: 'kpis', field: 'frequency', file: 'src/features/operations/components/StrategicKPIs.jsx', select: 'form.frequency', rule: 'validKpi', fixture: { companyId: 'audit', name: 'KPI', target: 10, current: 2, frequency: 'mensual', status: 'en_curso' } },
+  { collection: 'crmClients', field: 'status', file: 'src/features/crm/components/ClientList.jsx', select: 'form.status', catalog: 'crmClientStatus', rule: 'validCrmClient', fixture: { companyId: 'audit', name: 'Cliente', status: 'activo' } },
+  { collection: 'crmInteractions', field: 'type', file: 'src/features/crm/components/ClientList.jsx', select: 'intForm.type', catalog: 'interactionType', rule: 'validCrmInteraction', fixture: { companyId: 'audit', clientId: 'client', type: 'llamada', date: '2026-11-14', subject: 'Seguimiento' } },
+  { collection: 'employees', field: 'employmentType', file: 'src/features/hr/components/EmployeeDirectory.jsx', select: 'form.employmentType', catalog: 'employmentType', rule: 'validEmployee', fixture: { companyId: 'audit', fullName: 'Empleado', employmentType: 'tiempo_completo', status: 'activo' } },
+  { collection: 'payroll', field: 'status', file: 'src/features/hr/components/PayrollManager.jsx', select: 'form.status', catalog: 'payrollStatus', rule: 'validPayroll', fixture: { companyId: 'audit', employeeId: 'employee', period: '2026-11', period_type: 'mensual', baseSalary: 1000, bonuses: 0, overtime: 0, deductions_imss: 0, deductions_isr: 0, other_deductions: 0, netPay: 1000, status: 'pendiente' } },
+  { collection: 'kpis', field: 'frequency', file: 'src/features/operations/components/StrategicKPIs.jsx', select: 'form.frequency', catalog: 'kpiFrequency', rule: 'validKpi', fixture: { companyId: 'audit', name: 'KPI', target: 10, current: 2, frequency: 'mensual', status: 'en_curso' } },
 ];
 function nodes(root, predicate) {
   const found = [];
@@ -27,25 +28,20 @@ for (const definition of definitions) {
   const { collection, field, file } = definition;
   const text = await readFile(file, 'utf8');
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
-  let options;
-  if (definition.object) {
-    const declaration = one(nodes(source, node => ts.isVariableDeclaration(node) && node.name.getText(source) === definition.object), definition.object);
-    if (!ts.isObjectLiteralExpression(declaration.initializer)) throw new Error('UI option map is no longer a literal');
-    options = declaration.initializer.properties.map(property => {
-      const name = property.name;
-      if (!name || !(ts.isIdentifier(name) || ts.isStringLiteral(name))) throw new Error('Unsupported UI option key');
-      return { value: name.text, line: source.getLineAndCharacterOfPosition(name.getStart(source)).line + 1 };
-    });
-  } else {
-    const select = one(nodes(source, node => ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === 'Select' && node.openingElement.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'value' && attribute.initializer && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression?.getText(source) === definition.select)), definition.select);
-    const literals = definition.collection === 'kpis'
-      ? one(nodes(select, ts.isArrayLiteralExpression), 'frequency array').elements
-      : nodes(select, node => ts.isJsxAttribute(node) && node.name.getText(source) === 'value' && node.initializer && ts.isStringLiteral(node.initializer)).map(node => node.initializer);
-    options = literals.map(node => {
-      if (!ts.isStringLiteral(node)) throw new Error('Unsupported dynamic UI option');
-      return { value: node.text, line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1 };
-    });
-  }
+  const binding = one(nodes(source, node => ts.isImportDeclaration(node) && node.moduleSpecifier.text === '@/shared/constants/domainEnums'), 'shared catalog import');
+  if (!binding.importClause?.namedBindings || !ts.isNamedImports(binding.importClause.namedBindings) || !binding.importClause.namedBindings.elements.some(element => element.name.text === 'DOMAIN_FORM_OPTIONS' && !element.propertyName)) throw new Error('Expected the unaliased shared catalog binding');
+  const select = one(nodes(source, node => ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === 'Select' && node.openingElement.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'value' && attribute.initializer && ts.isJsxExpression(attribute.initializer) && attribute.initializer.expression?.getText(source) === definition.select)), definition.select);
+  const mapping = one(nodes(select, node => ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && node.expression.name.text === 'map' && ts.isPropertyAccessExpression(node.expression.expression) && node.expression.expression.expression.getText(source) === 'DOMAIN_FORM_OPTIONS'), 'shared options map');
+  const callback = mapping.arguments[0];
+  if (!callback || !ts.isArrowFunction(callback) || callback.parameters.length !== 1 || !ts.isIdentifier(callback.parameters[0].name)) throw new Error('Expected a direct catalog map');
+  const item = one(nodes(select, node => ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === 'SelectItem'), 'SelectItem template');
+  if (item.pos < callback.pos || item.end > callback.end) throw new Error('Options must be generated by the catalog map');
+  const value = one(item.openingElement.attributes.properties.filter(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'value'), 'option value');
+  if (!value.initializer || !ts.isJsxExpression(value.initializer) || !value.initializer.expression || !ts.isIdentifier(value.initializer.expression) || value.initializer.expression.text !== callback.parameters[0].name.text) throw new Error('Do not transform or add values outside the shared catalog');
+  const reference = mapping.expression.expression;
+  if (reference.name.text !== definition.catalog) throw new Error(`Wrong option catalog for ${collection}.${field}`);
+  const line = source.getLineAndCharacterOfPosition(reference.getStart(source)).line + 1;
+  const options = DOMAIN_FORM_OPTIONS[definition.catalog].map(value => ({ value, line }));
   if (!options.length || new Set(options.map(option => option.value)).size !== options.length) throw new Error('Missing or duplicate UI options');
   const schema = mutableCollectionSchemas[collection];
   const zodAllowed = schema.shape[field].options;

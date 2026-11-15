@@ -52,7 +52,8 @@
     "audit:production": "npm audit --omit=dev --audit-level=moderate && npm --prefix functions audit --omit=dev --audit-level=moderate",
     "test:gemini:live": "node --test functions/tests/integration/gemini.live.test.js",
     "test:load:ai": "node scripts/load-ai.mjs",
-    "verify:production-readiness": "node scripts/verify-production-readiness.mjs"
+    "verify:production-readiness": "node scripts/verify-production-readiness.mjs",
+    "audit:ui-enums": "node scripts/audit-ui-enums.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.14",

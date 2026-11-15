@@ -1,0 +1,373 @@
+{
+  "baseCommit": "0eb4510f24e70643d3528fb2c3b011180db94543",
+  "decision": "Keep existing server enums; align UI using shared constants. No automatic legacy mapping or permission changes.",
+  "runtime": {
+    "node": "22.21.1",
+    "npm": "11.4.2"
+  },
+  "checks": {
+    "lint": "pass",
+    "typecheck": "pass",
+    "unit": {
+      "passed": 185,
+      "failed": 0
+    },
+    "functions": {
+      "passed": 153,
+      "failed": 0
+    },
+    "architecture": "pass",
+    "bundle": "pass",
+    "enumAudit": {
+      "catalogs": 5,
+      "options": 20,
+      "rejected": 0,
+      "zodFirestoreParity": true
+    },
+    "e2e": {
+      "startTime": "2026-11-15T03:19:33.434Z",
+      "duration": 224217.573,
+      "expected": 44,
+      "skipped": 0,
+      "unexpected": 2,
+      "flaky": 0
+    },
+    "rules": {
+      "passed": 112,
+      "failed": 0
+    }
+  },
+  "permissionFilesChanged": false,
+  "e2eCases": [
+    {
+      "title": "anonymous AI rejection is persisted by real Functions and Firestore emulators",
+      "status": "expected",
+      "durationsMs": [
+        3505
+      ]
+    },
+    {
+      "title": "login y cambio de empresa activa",
+      "status": "expected",
+      "durationsMs": [
+        8035
+      ]
+    },
+    {
+      "title": "upload, cuarentena, escaneo y apertura de PDF/XML limpio",
+      "status": "expected",
+      "durationsMs": [
+        19576
+      ]
+    },
+    {
+      "title": "análisis IA actualiza el documento usando el contrato /api/ai",
+      "status": "expected",
+      "durationsMs": [
+        4993
+      ]
+    },
+    {
+      "title": "restricción por rol viewer bloquea escritura documental",
+      "status": "expected",
+      "durationsMs": [
+        4899
+      ]
+    },
+    {
+      "title": "expiración/cierre de sesión redirige fuera de módulos protegidos",
+      "status": "expected",
+      "durationsMs": [
+        2861
+      ]
+    },
+    {
+      "title": "CRM: canonical client statuses and all interaction types save and persist",
+      "status": "expected",
+      "durationsMs": [
+        13090
+      ]
+    },
+    {
+      "title": "HR: all supported employment types save without obsolete options or implicit mapping",
+      "status": "expected",
+      "durationsMs": [
+        8814
+      ]
+    },
+    {
+      "title": "Payroll: pending to processing to paid persists through the real UI",
+      "status": "expected",
+      "durationsMs": [
+        6282
+      ]
+    },
+    {
+      "title": "Empresas: create using the real UI with optional fields empty, then reload",
+      "status": "expected",
+      "durationsMs": [
+        4199
+      ]
+    },
+    {
+      "title": "ERP: register income through the real form and verify storage and reload",
+      "status": "unexpected",
+      "durationsMs": [
+        18443
+      ]
+    },
+    {
+      "title": "Finanzas: known totals and actual PDF contents agree with fixtures",
+      "status": "expected",
+      "durationsMs": [
+        6097
+      ]
+    },
+    {
+      "title": "Dashboard: reflects known tenant income, expenses and balance",
+      "status": "unexpected",
+      "durationsMs": [
+        18755
+      ]
+    },
+    {
+      "title": "Panel cliente: deterministic negative balance alert uses real tenant data",
+      "status": "expected",
+      "durationsMs": [
+        4284
+      ]
+    },
+    {
+      "title": "Actividad: server-generated transaction audit events are visible and filterable",
+      "status": "expected",
+      "durationsMs": [
+        2462
+      ]
+    },
+    {
+      "title": "Operaciones: supported KPI frequencies only and weekly persistence",
+      "status": "expected",
+      "durationsMs": [
+        4726
+      ]
+    },
+    {
+      "title": "Auditoria: empty books cannot launch a financial AI audit",
+      "status": "expected",
+      "durationsMs": [
+        2490
+      ]
+    },
+    {
+      "title": "IA: basic plan cannot submit a paid AI query",
+      "status": "expected",
+      "durationsMs": [
+        2533
+      ]
+    },
+    {
+      "title": "Predicciones: basic plan is gated before any forecast runs",
+      "status": "expected",
+      "durationsMs": [
+        2016
+      ]
+    },
+    {
+      "title": "Suscripciones: current basic plan is displayed without self-service entitlement writes",
+      "status": "expected",
+      "durationsMs": [
+        1902
+      ]
+    },
+    {
+      "title": "RRHH: automatic payroll persists its computed net amount for the fixture employee",
+      "status": "expected",
+      "durationsMs": [
+        5272
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /dashboard",
+      "status": "expected",
+      "durationsMs": [
+        2124
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /companies",
+      "status": "expected",
+      "durationsMs": [
+        2222
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /documents",
+      "status": "expected",
+      "durationsMs": [
+        2750
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /regulatory",
+      "status": "expected",
+      "durationsMs": [
+        2263
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /erp",
+      "status": "expected",
+      "durationsMs": [
+        2220
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /audit",
+      "status": "expected",
+      "durationsMs": [
+        2310
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /ai",
+      "status": "expected",
+      "durationsMs": [
+        2266
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /activity",
+      "status": "expected",
+      "durationsMs": [
+        2090
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /subscriptions",
+      "status": "expected",
+      "durationsMs": [
+        2182
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /predictive",
+      "status": "expected",
+      "durationsMs": [
+        2055
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /finance",
+      "status": "expected",
+      "durationsMs": [
+        2810
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /client",
+      "status": "expected",
+      "durationsMs": [
+        3366
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /operations",
+      "status": "expected",
+      "durationsMs": [
+        2665
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /crm",
+      "status": "expected",
+      "durationsMs": [
+        3516
+      ]
+    },
+    {
+      "title": "Module route and available tabs: /hr",
+      "status": "expected",
+      "durationsMs": [
+        3172
+      ]
+    },
+    {
+      "title": "CRM client: UI creation persists after reload",
+      "status": "expected",
+      "durationsMs": [
+        5597
+      ]
+    },
+    {
+      "title": "HR employee: UI creation persists after reload",
+      "status": "expected",
+      "durationsMs": [
+        4115
+      ]
+    },
+    {
+      "title": "Operations project: UI creation persists after reload",
+      "status": "expected",
+      "durationsMs": [
+        4689
+      ]
+    },
+    {
+      "title": "Next publication opens in Master with evidence, verified capture and company isolation",
+      "status": "expected",
+      "durationsMs": [
+        3666
+      ]
+    },
+    {
+      "title": "usuario anónimo en /dashboard redirige a /",
+      "status": "expected",
+      "durationsMs": [
+        777
+      ]
+    },
+    {
+      "title": "usuario autenticado en / redirige a /dashboard",
+      "status": "expected",
+      "durationsMs": [
+        1416
+      ]
+    },
+    {
+      "title": "usuario anónimo en / no dispara consultas empresariales",
+      "status": "expected",
+      "durationsMs": [
+        2499
+      ]
+    },
+    {
+      "title": "logout purga el contexto empresarial y protege la ruta activa",
+      "status": "expected",
+      "durationsMs": [
+        2404
+      ]
+    },
+    {
+      "title": "cambio de usuario no conserva empresas de la sesión anterior",
+      "status": "expected",
+      "durationsMs": [
+        3626
+      ]
+    },
+    {
+      "title": "una respuesta empresarial atrasada no repuebla la sesión siguiente",
+      "status": "expected",
+      "durationsMs": [
+        5647
+      ]
+    }
+  ],
+  "productionReady": false,
+  "remainingBlockers": [
+    "ERP transaction create",
+    "Dashboard aggregation/query",
+    "PDF extraction under Node 22",
+    "Live Gemini and authenticated staging load pending",
+    "Pre-existing six moderate Functions dependency advisories"
+  ]
+}

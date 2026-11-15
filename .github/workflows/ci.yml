@@ -114,6 +114,9 @@ jobs:
       - name: Firebase rules emulator tests
         run: npm run test:rules:emulators
 
+      - name: Audit UI enum contracts
+        run: npm run audit:ui-enums
+
       - name: Unit tests
         run: npm run test:unit
 
