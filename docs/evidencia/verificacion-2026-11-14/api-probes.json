@@ -1,0 +1,107 @@
+[
+  {
+    "probe": "anonymous",
+    "status": 401,
+    "elapsedMs": 2204.71,
+    "body": "{\"error\":\"Autenticaci\u00f3n requerida para usar IA.\",\"correlationId\":\"ai_0cae7f46-f737-448a-9ef0-f5440a172f88\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_0cae7f46-f737-448a-9ef0-f5440a172f88"
+  },
+  {
+    "probe": "anonymous",
+    "status": 401,
+    "elapsedMs": 23.6,
+    "body": "{\"error\":\"Autenticaci\u00f3n requerida para usar IA.\",\"correlationId\":\"ai_e1519987-4f91-4ae4-8b1c-f0b0c0e17299\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_e1519987-4f91-4ae4-8b1c-f0b0c0e17299"
+  },
+  {
+    "probe": "anonymous",
+    "status": 401,
+    "elapsedMs": 13.91,
+    "body": "{\"error\":\"Autenticaci\u00f3n requerida para usar IA.\",\"correlationId\":\"ai_c5e8b9d5-a711-47c3-88e4-0eadc865848b\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_c5e8b9d5-a711-47c3-88e4-0eadc865848b"
+  },
+  {
+    "probe": "anonymous",
+    "status": 401,
+    "elapsedMs": 24.39,
+    "body": "{\"error\":\"Autenticaci\u00f3n requerida para usar IA.\",\"correlationId\":\"ai_e6203341-b7c4-4925-9860-6d7b3742fba2\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_e6203341-b7c4-4925-9860-6d7b3742fba2"
+  },
+  {
+    "probe": "anonymous",
+    "status": 401,
+    "elapsedMs": 41.05,
+    "body": "{\"error\":\"Autenticaci\u00f3n requerida para usar IA.\",\"correlationId\":\"ai_60f678b6-c347-4b15-887b-795a182fb25f\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_60f678b6-c347-4b15-887b-795a182fb25f"
+  },
+  {
+    "probe": "forbidden-origin",
+    "status": 403,
+    "elapsedMs": 20.04,
+    "body": "{\"error\":\"CORS no permitido para este origen.\",\"correlationId\":\"ai_5320102b-5175-4f40-83a0-86a066fd348c\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_5320102b-5175-4f40-83a0-86a066fd348c"
+  },
+  {
+    "probe": "forbidden-origin",
+    "status": 403,
+    "elapsedMs": 12.44,
+    "body": "{\"error\":\"CORS no permitido para este origen.\",\"correlationId\":\"ai_99ffb16c-66fa-4208-9a84-37832d488438\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_99ffb16c-66fa-4208-9a84-37832d488438"
+  },
+  {
+    "probe": "forbidden-origin",
+    "status": 403,
+    "elapsedMs": 70.98,
+    "body": "{\"error\":\"CORS no permitido para este origen.\",\"correlationId\":\"ai_690e7457-09e5-4edb-b213-8c512499ec83\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_690e7457-09e5-4edb-b213-8c512499ec83"
+  },
+  {
+    "probe": "forbidden-origin",
+    "status": 403,
+    "elapsedMs": 35.41,
+    "body": "{\"error\":\"CORS no permitido para este origen.\",\"correlationId\":\"ai_a7583491-3fcd-435f-8ed2-23297e6a54b1\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_a7583491-3fcd-435f-8ed2-23297e6a54b1"
+  },
+  {
+    "probe": "forbidden-origin",
+    "status": 403,
+    "elapsedMs": 53.34,
+    "body": "{\"error\":\"CORS no permitido para este origen.\",\"correlationId\":\"ai_bb9a682c-0100-409d-bbe7-c68a999259da\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_bb9a682c-0100-409d-bbe7-c68a999259da"
+  },
+  {
+    "probe": "unsupported-method",
+    "status": 405,
+    "elapsedMs": 16.34,
+    "body": "{\"error\":\"M\u00e9todo no permitido. Usa POST.\",\"correlationId\":\"ai_619379c3-cb04-4295-b43c-824940d4b8c7\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_619379c3-cb04-4295-b43c-824940d4b8c7"
+  },
+  {
+    "probe": "unsupported-method",
+    "status": 405,
+    "elapsedMs": 8.39,
+    "body": "{\"error\":\"M\u00e9todo no permitido. Usa POST.\",\"correlationId\":\"ai_b17e64bc-c5cc-40af-bb8b-05b627205da9\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_b17e64bc-c5cc-40af-bb8b-05b627205da9"
+  },
+  {
+    "probe": "unsupported-method",
+    "status": 405,
+    "elapsedMs": 15.59,
+    "body": "{\"error\":\"M\u00e9todo no permitido. Usa POST.\",\"correlationId\":\"ai_ae51d6c7-1ceb-4688-a2d8-eb218e7530cf\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_ae51d6c7-1ceb-4688-a2d8-eb218e7530cf"
+  },
+  {
+    "probe": "unsupported-method",
+    "status": 405,
+    "elapsedMs": 55.16,
+    "body": "{\"error\":\"M\u00e9todo no permitido. Usa POST.\",\"correlationId\":\"ai_7201a3a4-42cc-4d5c-8ed4-68c01789e707\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_7201a3a4-42cc-4d5c-8ed4-68c01789e707"
+  },
+  {
+    "probe": "unsupported-method",
+    "status": 405,
+    "elapsedMs": 24.48,
+    "body": "{\"error\":\"M\u00e9todo no permitido. Usa POST.\",\"correlationId\":\"ai_dac0a7f3-5a51-4033-a989-7ce7f863a2a1\",\"release\":{\"appVersion\":\"1.0.0\",\"buildId\":\"1\",\"gitSha\":\"unknown\",\"deployEnv\":\"production\"}}",
+    "correlationId": "ai_dac0a7f3-5a51-4033-a989-7ce7f863a2a1"
+  }
+]

@@ -1,0 +1,13 @@
+dist/assets/vendor-firebase-DkMtzztm.js         853.67 kB │ gzip: 210.40 kB
+✓ built in 19.90s
+
+> gemailla-master@1.0.0 budget:bundle
+> node scripts/check-bundle-budgets.js
+
+Bundle budgets gzip:
+- vendors compartidos: 578.6 kB / 650.0 kB
+- /dashboard: 4.9 kB / 95.0 kB (src/modules/dashboard/pages/DashboardPage.jsx)
+- /documents: 7.2 kB / 120.0 kB (src/modules/documents/pages/DocumentsPage.jsx)
+- /finance: 16.7 kB / 180.0 kB (src/modules/finance/pages/FinancialHubPage.jsx)
+- /ai: 4.8 kB / 140.0 kB (src/modules/ai/pages/AIAssistantPage.jsx)
+✅ Presupuestos de bundle dentro del límite.

@@ -1,0 +1,20 @@
+ok 1 - frontera Firestore de cuarentena
+ok 2 - contratos reales de las diez colecciones
+ok 3 - logs backend-only
+ok 4 - observabilidad de frontend con contrato inmutable
+ok 5 - Firestore security rules
+ok 6 - C1 — cross-tenant injection
+ok 7 - hybrid owned/company records
+ok 8 - A1 — role escalation via companyMembers
+ok 9 - acceso mínimo a datos sensibles de personal
+ok 10 - published evidence is idempotent and readable only inside its company
+ok 11 - Cloud Storage security rules
+1..11
+# tests 112
+# suites 10
+# pass 112
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21071.620673

@@ -1,0 +1,196 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - paragraph: La evolución de la asesoría empresarial
+              - paragraph: GEMAILLA IA
+        - generic:
+          - button:
+            - img
+            - generic: Empresa de persistencia
+            - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - img
+            - generic: Dashboard
+          - link:
+            - /url: /companies
+            - img
+            - generic: Empresas
+          - link:
+            - /url: /regulatory
+            - img
+            - generic: Avisos oficiales
+          - link:
+            - /url: /documents
+            - img
+            - generic: Documentos
+          - link:
+            - /url: /erp
+            - img
+            - generic: ERP
+          - link:
+            - /url: /audit
+            - img
+            - generic: Auditoría
+          - link:
+            - /url: /ai
+            - img
+            - generic: IA Asistente
+          - link:
+            - /url: /finance
+            - img
+            - generic: Finanzas
+          - link:
+            - /url: /predictive
+            - img
+            - generic: Análisis Predictivo
+          - link:
+            - /url: /client
+            - img
+            - generic: Panel Cliente
+          - link:
+            - /url: /operations
+            - img
+            - generic: Estrategia & Ops
+          - link:
+            - /url: /crm
+            - img
+            - generic: CRM
+          - link:
+            - /url: /hr
+            - img
+            - generic: Recursos Humanos
+          - link:
+            - /url: /activity
+            - img
+            - generic: Log
+          - link:
+            - /url: /subscriptions
+            - img
+            - generic: Suscripciones
+        - button:
+          - img
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - generic: Seguridad empresarial
+              - button:
+                - img
+      - main:
+        - generic:
+          - generic:
+            - heading [level=1]: Recursos Humanos
+            - paragraph: Gestión del talento
+          - generic:
+            - img
+          - generic:
+            - link:
+              - /url: /activity
+              - img
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - tablist:
+                  - tab [selected]:
+                    - img
+                    - text: Directorio
+                  - tab:
+                    - img
+                    - text: Nóminas
+                  - tab:
+                    - img
+                    - text: Evaluaciones
+                - tabpanel:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic:
+                          - img
+                          - textbox:
+                            - /placeholder: Buscar empleado...
+                        - combobox:
+                          - generic: Todos
+                          - img
+                      - button:
+                        - img
+                        - text: Nuevo Empleado
+                    - generic:
+                      - img
+                      - paragraph: No hay empleados. Agrega el primero.
+  - dialog "Nuevo Empleado" [ref=e2]:
+    - heading "Nuevo Empleado" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - paragraph [ref=e7]: Información Personal
+        - generic [ref=e8]:
+          - generic [ref=e9]:
+            - text: Nombre completo
+            - textbox "Nombre completo" [ref=e10]: Persona de prueba persistente
+          - generic [ref=e11]:
+            - text: Email
+            - textbox "email@empresa.com" [ref=e12]
+          - generic [ref=e13]:
+            - text: Teléfono
+            - textbox "+52 55..." [ref=e14]
+          - generic [ref=e15]:
+            - text: RFC
+            - textbox [ref=e16]
+          - generic [ref=e17]:
+            - text: CURP
+            - textbox [ref=e18]
+      - generic [ref=e19]:
+        - paragraph [ref=e20]: Información Laboral
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - text: Departamento
+            - textbox "Ej. Ventas" [ref=e23]
+          - generic [ref=e24]:
+            - text: Cargo / Puesto
+            - textbox "Ej. Gerente de ventas" [ref=e25]
+          - generic [ref=e26]:
+            - text: Tipo de empleo
+            - combobox [ref=e27] [cursor=pointer]:
+              - generic: Tiempo completo
+              - img [ref=e28]
+          - generic [ref=e30]:
+            - text: Estado
+            - combobox [ref=e31] [cursor=pointer]:
+              - generic: Activo
+              - img [ref=e32]
+          - generic [ref=e34]:
+            - text: Fecha de ingreso
+            - textbox [ref=e35]
+          - generic [ref=e36]:
+            - text: Salario base (MXN/mes)
+            - spinbutton [ref=e37]
+          - generic [ref=e38]:
+            - text: N° IMSS
+            - textbox [ref=e39]
+      - generic [ref=e40]:
+        - paragraph [ref=e41]: Datos Bancarios
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - text: Banco
+            - textbox "BBVA, Santander..." [ref=e44]
+          - generic [ref=e45]:
+            - text: N° de Cuenta / CLABE
+            - textbox [ref=e46]
+      - generic [ref=e47]:
+        - text: Notas
+        - textbox [ref=e48]
+      - button "Crear Empleado" [active] [ref=e49] [cursor=pointer]
+    - button "Close" [ref=e50] [cursor=pointer]:
+      - img [ref=e51]
+      - generic [ref=e54]: Close
+```

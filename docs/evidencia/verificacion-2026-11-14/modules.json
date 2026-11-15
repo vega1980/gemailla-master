@@ -1,0 +1,262 @@
+[
+  {
+    "route": "/dashboard",
+    "status": "rendered",
+    "elapsedMs": 10619,
+    "headings": [
+      "Dashboard",
+      "Ingresos y gastos",
+      "Distribución financiera",
+      "Actividad reciente",
+      "Resumen financiero"
+    ],
+    "mainText": "Dashboard\n\nVISIÓN INTEGRAL DE TU EMPRESA\n\nEmpresas activas\n\n1\n\nTotal actual\n\nIngresos\n\nUSD 0\n\nSin datos del mes anterior\n\nGastos\n\nUSD 0\n\nSin datos del mes anterior\n\nBalance\n\nUSD 0\n\nSin datos del mes anterior\n\nIngresos y gastos\nBalanceGastosIngresos\nJun\nJul\nAgo\nSep\nOct\nNov\n0\n1\n2\n3\n4\nDistribución financiera\n\n0\n\nTotal\n\nIngresos\n0\nGastos\n0\nActividad reciente\nVer todo\n\nDatos protegidos\n\nExpediente empresarial seguro\n\nPanel actualizado\n\nListo para recibir información\n\nResumen financiero\n\nMargen de ganancia\n\n0.0%\n\nLiquidez\n\n0.00\n\nCompromiso de ingresos\n\n0.0%",
+    "navigation": {
+      "domContentLoadedMs": 55.8999999910593,
+      "loadMs": 57.099999994039536,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/companies",
+    "status": "rendered",
+    "elapsedMs": 10644,
+    "headings": [
+      "Empresas",
+      "Empresas"
+    ],
+    "mainText": "Empresas\n\nADMINISTRACIÓN EMPRESARIAL\n\nNueva Empresa\nactive\nEmpresa de verificación\n2 miembros",
+    "navigation": {
+      "domContentLoadedMs": 98.70000000298023,
+      "loadMs": 100.20000000298023,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/documents",
+    "status": "rendered",
+    "elapsedMs": 10685,
+    "headings": [
+      "Documentos",
+      "Documentos",
+      "Tus PDFs nunca se publican: solo viven como rutas internas seguras."
+    ],
+    "mainText": "Documentos\n\nCONTROL DOCUMENTAL SEGURO\n\nExportar Reporte\nSubir Documento\n\nPRIVACIDAD GRADO MILITAR\n\nTus PDFs nunca se publican: solo viven como rutas internas seguras.\n\nGEMAILLA bloquea URLs públicas persistidas, guarda únicamente storagePath y envía el análisis por el endpoint interno /api/ai para mantener facturas, contratos y finanzas bajo el control de la empresa activa.\n\nSin enlaces públicos\n\nLos documentos se abren con acceso temporal autorizado.\n\nIA same-origin\n\nEl navegador solo llama rutas internas del backend seguro.\n\nProcesamiento mínimo\n\nLa IA recibe contexto controlado y permisos validados.\n\nTodos los tipos\nSin documentos\n\nSube tu primer documento para comenzar el análisis.",
+    "navigation": {
+      "domContentLoadedMs": 58.6000000089407,
+      "loadMs": 58.6000000089407,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/regulatory",
+    "status": "rendered",
+    "elapsedMs": 10627,
+    "headings": [
+      "Avisos oficiales",
+      "Avisos oficiales"
+    ],
+    "mainText": "Avisos oficiales\n\nPUBLICACIONES CON FUENTE Y EVIDENCIA\n\nAvisos oficiales\n\nPublicaciones detectadas por GEMAILLA Next, con fuente y evidencia.\n\nActualizar\n\nEstos avisos requieren revisión. No determinan por sí solos vigencia, obligaciones ni aplicabilidad a tu empresa. Actualizar esta vista consulta lo sincronizado; no descarga nuevas fuentes.\n\nNo hay avisos sincronizados en esta página. Esto no significa que no existan cambios regulatorios.\n\nVolver al inicio\nSiguiente página",
+    "navigation": {
+      "domContentLoadedMs": 107.90000000596046,
+      "loadMs": 119.20000000298023,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/erp",
+    "status": "rendered",
+    "elapsedMs": 10809,
+    "headings": [
+      "ERP · Finanzas",
+      "ERP — Finanzas"
+    ],
+    "mainText": "ERP · Finanzas\n\nREGISTRO DE INGRESOS Y GASTOS\n\nImportar Excel/CSV\nNueva Transacción\n\nINGRESOS\n\n$0\n\nGASTOS\n\n$0\n\nBALANCE\n\n$0\n\nTodos\nIngresos\nGastos\nSin transacciones\n\nRegistra tu primera transacción.",
+    "navigation": {
+      "domContentLoadedMs": 62.70000000298023,
+      "loadMs": 62.80000001192093,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/audit",
+    "status": "rendered",
+    "elapsedMs": 10859,
+    "headings": [
+      "Auditoría",
+      "Auditoría Financiera"
+    ],
+    "mainText": "Auditoría\n\nCUMPLIMIENTO Y CONTROL\n\nExportar Reporte\nEjecutar Auditoría\n\nINGRESOS\n\n$0\n\nGASTOS\n\n$0\n\nTRANSACCIONES\n\n0\n\nEjecuta una auditoría\n\nAnaliza la salud financiera de tu empresa con IA. Necesitas al menos transacciones registradas.",
+    "navigation": {
+      "domContentLoadedMs": 95.3999999910593,
+      "loadMs": 95.5,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/ai",
+    "status": "rendered",
+    "elapsedMs": 10921,
+    "headings": [
+      "IA Asistente",
+      "IA Asistente"
+    ],
+    "mainText": "IA Asistente\n\nINTELIGENCIA APLICADA A TU EMPRESA\n\nREQUIERE PLAN ENTERPRISE\n\nAsistente de IA Personalizado\n\nEsta función está disponible a partir del plan Enterprise. Actualiza tu suscripción para acceder.\n\nVer planes",
+    "navigation": {
+      "domContentLoadedMs": 69.20000000298023,
+      "loadMs": 69.20000000298023,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/activity",
+    "status": "rendered",
+    "elapsedMs": 10762,
+    "headings": [
+      "Actividad",
+      "Registro de Actividad"
+    ],
+    "mainText": "Actividad\n\nHISTORIAL DE ACCIONES\n\nFiltros avanzados\nMiembro agregado\ncompanyMembers\n\n· 15 nov 2026, 02:02\n\nEmpresa creada\ncompanies\n\n· 15 nov 2026, 02:02",
+    "navigation": {
+      "domContentLoadedMs": 84.70000000298023,
+      "loadMs": 84.80000001192093,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/subscriptions",
+    "status": "rendered",
+    "elapsedMs": 10866,
+    "headings": [
+      "Suscripciones",
+      "Suscripciones"
+    ],
+    "mainText": "Suscripciones\n\nPLANES Y CAPACIDAD EMPRESARIAL\n\nMensual\nAnual−20%\nBasic\n\nTodo lo esencial para comenzar a gestionar tus finanzas.\n\nGratis\nDashboard financiero\nGestión de documentos\nERP básico\nRegistro de transacciones\nAuditoría de actividad\nHasta 3 empresas\nPlan actual\nMás popular\nPro\n\nInteligencia financiera avanzada para equipos que crecen.\n\n$499MXN / mes\nTodo lo de Basic\nPredicciones de flujo de caja\nAnálisis de escenarios What-If\nAlertas proactivas con IA\nReportes avanzados en PDF\nHasta 10 empresas\nSeleccionar Pro\nTodo incluido\nEnterprise\n\nEl poder total de GEMAILLA AI para grandes operaciones.\n\n$1,299MXN / mes\nTodo lo de Pro\nAsistente de IA personalizado\nConsultas ilimitadas a IA\nContexto financiero completo\nEmpresas ilimitadas\nSoporte prioritario\nSeleccionar Enterprise\n\n🔒 Pro: predicciones de ventas y flujo de caja con IA  |  👑 Enterprise: asistente de IA personalizado con contexto completo de tu empresa\n\nZona de peligro\n\nEsta acción requiere validación del equipo de soporte. No elimina datos automáticamente desde el frontend.\n\nSolicitar baja de cuenta",
+    "navigation": {
+      "domContentLoadedMs": 75.29999999701977,
+      "loadMs": 75.5,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/predictive",
+    "status": "rendered",
+    "elapsedMs": 10919,
+    "headings": [
+      "Análisis Predictivo",
+      "Análisis Predictivo"
+    ],
+    "mainText": "Análisis Predictivo\n\nPROYECCIONES PARA MEJORES DECISIONES\n\nAnálisis Predictivo con IA\n\nPásate a Pro para ver el futuro de tus ventas y acceder a predicciones ilimitadas con IA.\n\nVer planes y precios",
+    "navigation": {
+      "domContentLoadedMs": 65.29999999701977,
+      "loadMs": 66.79999999701977,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/finance",
+    "status": "rendered",
+    "elapsedMs": 11020,
+    "headings": [
+      "Hub Financiero",
+      "Hub Financiero",
+      "Estado de Resultados"
+    ],
+    "mainText": "Hub Financiero\n\nINDICADORES Y PLANEACIÓN FINANCIERA\n\nDescargar Reporte\n📊 Estados Financieros\n🛡️ Gestión de Riesgos\n💰 Presupuesto & Flujo\n📊 Estado de Resultados\nMes actual\nExportar PDF\n\nGEMAILLA AI\n\nEstado de Resultados\n\nEmpresa de verificación · noviembre 2026\n\n15/11/2026\nINGRESOS\nSin ingresos en el período\n$0.00\nTotal Ingresos\n$0.00\nGASTOS Y COSTOS\nSin gastos en el período\n$0.00\nTotal Gastos\n$0.00\nUTILIDAD NETA\nMargen: 0.0%\n$0.00",
+    "navigation": {
+      "domContentLoadedMs": 51.900000005960464,
+      "loadMs": 52.1000000089407,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/client",
+    "status": "rendered",
+    "elapsedMs": 11116,
+    "headings": [
+      "Panel Cliente",
+      "Panel de Cliente"
+    ],
+    "mainText": "Panel Cliente\n\nSEGUIMIENTO Y SERVICIO EMPRESARIAL\n\nTendencias\nAlertas\nFuga de Clientes\nMi Plan\n\nIngresos (3M)\n\n$0\n\n0% vs período anterior\n\nGastos (3M)\n\n$0\n\n0% vs período anterior\n\nMargen Neto\n\n0%\n\nBalance Neto\n\n$0\n\nTendencia de Ingresos vs. Gastos (12 meses)\n\nGastosIngresos\nDec 25\nJan 26\nFeb 26\nMar 26\nApr 26\nMay 26\nJun 26\nJul 26\nAug 26\nSep 26\nOct 26\nNov 26\n$0k\n$0k\n$0k\n$0k\n$0k\n\nAnálisis Estratégico IA\n\nObtener Estrategia\n\nHaz clic en \"Obtener Estrategia\" para recibir recomendaciones personalizadas basadas en tus datos reales.",
+    "navigation": {
+      "domContentLoadedMs": 63.79999999701977,
+      "loadMs": 64.29999999701977,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/operations",
+    "status": "rendered",
+    "elapsedMs": 10925,
+    "headings": [
+      "Estrategia y Operaciones",
+      "Estrategia y Operaciones"
+    ],
+    "mainText": "Estrategia y Operaciones\n\nEFICIENCIA EMPRESARIAL\n\nEstrategia y Operaciones\n\nEmpresa de verificación\n\nPlaneación Estratégica\nOptimización de Procesos\nGestión de Proyectos\n\n0 KPIs definidos\n\nAnálisis IA\nNuevo KPI\n\nNo hay KPIs definidos. Crea el primero para comenzar.",
+    "navigation": {
+      "domContentLoadedMs": 109.1000000089407,
+      "loadMs": 109.20000000298023,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/crm",
+    "status": "rendered",
+    "elapsedMs": 11009,
+    "headings": [
+      "CRM",
+      "CRM — Gestión de Clientes"
+    ],
+    "mainText": "CRM\n\nRELACIONES Y OPORTUNIDADES COMERCIALES\n\nClientes\nPipeline Comercial\nSegmentación\nImportar Clientes\nSube un archivo Excel o CSV con tu lista de clientes\nSeleccionar Archivo\nDescargar Plantilla\n\nColumnas soportadas: name*, email, phone, rfc, segment, industry, address, assignedTo, total_revenue, notes\n\n*name es requerido\n\nTodos\nNuevo Cliente\n\nNo hay clientes. Agrega el primero.",
+    "navigation": {
+      "domContentLoadedMs": 156.5,
+      "loadMs": 159.20000000298023,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  {
+    "route": "/hr",
+    "status": "rendered",
+    "elapsedMs": 11309,
+    "headings": [
+      "Recursos Humanos",
+      "Recursos Humanos y Talento"
+    ],
+    "mainText": "Recursos Humanos\n\nGESTIÓN DEL TALENTO\n\nDirectorio\nNóminas\nEvaluaciones\nTodos\nNuevo Empleado\n\nNo hay empleados. Agrega el primero.",
+    "navigation": {
+      "domContentLoadedMs": 79.79999999701977,
+      "loadMs": 79.8999999910593,
+      "transferBytes": 1060
+    },
+    "pageErrors": [],
+    "httpErrors": []
+  }
+]
