@@ -542,10 +542,10 @@ function sanitizeLogPayload(value, depth = 0, key = '') {
     return redactString(value);
   }
   if (typeof value === 'number' || typeof value === 'boolean') return value;
-  if (Array.isArray(value)) return value.slice(0, 20).map((item) => sanitizeLogPayload(item, depth + 1, key));
+  if (Array.isArray(value)) return value.slice(0, 20).map((item) => item === undefined ? null : sanitizeLogPayload(item, depth + 1, key));
   if (typeof value === 'object') {
     return Object.fromEntries(
-      Object.entries(value).map(([entryKey, entryValue]) => [
+      Object.entries(value).filter(([, entryValue]) => entryValue !== undefined).map(([entryKey, entryValue]) => [
         entryKey,
         SENSITIVE_KEY_PATTERN.test(entryKey) ? (entryValue ? '[REDACTED]' : entryValue) : sanitizeLogPayload(entryValue, depth + 1, entryKey),
       ]),

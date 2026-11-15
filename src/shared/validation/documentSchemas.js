@@ -64,7 +64,7 @@ const documentUploadMetadataBaseSchema = z.object({
   fileType: documentFileTypeSchema,
   status: documentStatusSchema,
   correlationId: optionalTrimmedString,
-  release: z.record(z.unknown()).optional(),
+  release: z.record(z.string(), z.unknown()).optional(),
 }).strict();
 
 export const documentUploadMetadataSchema = documentUploadMetadataBaseSchema.superRefine(validateFileTypeContentType);

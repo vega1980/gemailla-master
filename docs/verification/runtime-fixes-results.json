@@ -1,0 +1,195 @@
+{
+  "baseCommit": "cb81c19d580f922b152b5447272bd31b50c7480b",
+  "runtime": {
+    "node": "22.21.1",
+    "npm": "11.4.2"
+  },
+  "checks": {
+    "lint": "pass",
+    "typecheck": "pass",
+    "unit": {
+      "pass": 180,
+      "fail": 0
+    },
+    "functions": {
+      "pass": 153,
+      "fail": 0
+    },
+    "e2e": {
+      "pass": 16,
+      "fail": 0,
+      "skipped": 0
+    },
+    "bundle": "pass",
+    "architecture": "pass",
+    "rules": {
+      "pass": 112,
+      "fail": 0,
+      "runnerAdjustment": "Loopback proxy workaround in installed CLI only; restored after execution"
+    }
+  },
+  "dependencies": {
+    "rootProduction": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "functionsProduction": {
+      "info": 0,
+      "low": 0,
+      "moderate": 6,
+      "high": 0,
+      "critical": 0,
+      "total": 6
+    },
+    "productionAuditPolicy": "FAIL: six moderate transitive advisories; policy not reduced"
+  },
+  "loadLocal": {
+    "scenario": "rejection",
+    "scope": "local-emulators",
+    "requests": 50,
+    "concurrency": 5,
+    "failed": 0,
+    "passed": false,
+    "durationSeconds": 5.570651076,
+    "requestsPerSecond": 8.97561152508989,
+    "p50Ms": 102.81675199999972,
+    "p95Ms": 5059.186986,
+    "maxMs": 5452.180215,
+    "thresholds": {
+      "maxFailed": 0,
+      "maxP95Ms": 5000
+    },
+    "statuses": {
+      "401": 50
+    },
+    "productionApproval": false
+  },
+  "geminiLive": {
+    "status": "BLOCKED",
+    "commandExitCode": 1,
+    "reason": "No VERTEX_GEMINI_PROJECT / LOCATION / MODEL or configured GCP identity in environment; no mocked success"
+  },
+  "authenticatedStagingLoad": {
+    "status": "NOT_RUN",
+    "reason": "Missing staging URL, test company, Auth/AppCheck tokens and live provider configuration"
+  },
+  "productionReadiness": "NOT_APPROVED",
+  "browserCases": [
+    {
+      "title": "anonymous AI rejection is persisted by real Functions and Firestore emulators",
+      "status": "expected",
+      "durationsMs": [
+        3183
+      ]
+    },
+    {
+      "title": "login y cambio de empresa activa",
+      "status": "expected",
+      "durationsMs": [
+        6115
+      ]
+    },
+    {
+      "title": "upload, cuarentena, escaneo y apertura de PDF/XML limpio",
+      "status": "expected",
+      "durationsMs": [
+        12811
+      ]
+    },
+    {
+      "title": "análisis IA actualiza el documento usando el contrato /api/ai",
+      "status": "expected",
+      "durationsMs": [
+        5191
+      ]
+    },
+    {
+      "title": "restricción por rol viewer bloquea escritura documental",
+      "status": "expected",
+      "durationsMs": [
+        4304
+      ]
+    },
+    {
+      "title": "expiración/cierre de sesión redirige fuera de módulos protegidos",
+      "status": "expected",
+      "durationsMs": [
+        2826
+      ]
+    },
+    {
+      "title": "CRM client: UI creation persists after reload",
+      "status": "expected",
+      "durationsMs": [
+        4806
+      ]
+    },
+    {
+      "title": "HR employee: UI creation persists after reload",
+      "status": "expected",
+      "durationsMs": [
+        4777
+      ]
+    },
+    {
+      "title": "Operations project: UI creation persists after reload",
+      "status": "expected",
+      "durationsMs": [
+        4562
+      ]
+    },
+    {
+      "title": "Next publication opens in Master with evidence, verified capture and company isolation",
+      "status": "expected",
+      "durationsMs": [
+        3688
+      ]
+    },
+    {
+      "title": "usuario anónimo en /dashboard redirige a /",
+      "status": "expected",
+      "durationsMs": [
+        879
+      ]
+    },
+    {
+      "title": "usuario autenticado en / redirige a /dashboard",
+      "status": "expected",
+      "durationsMs": [
+        1551
+      ]
+    },
+    {
+      "title": "usuario anónimo en / no dispara consultas empresariales",
+      "status": "expected",
+      "durationsMs": [
+        2699
+      ]
+    },
+    {
+      "title": "logout purga el contexto empresarial y protege la ruta activa",
+      "status": "expected",
+      "durationsMs": [
+        2610
+      ]
+    },
+    {
+      "title": "cambio de usuario no conserva empresas de la sesión anterior",
+      "status": "expected",
+      "durationsMs": [
+        3678
+      ]
+    },
+    {
+      "title": "una respuesta empresarial atrasada no repuebla la sesión siguiente",
+      "status": "expected",
+      "durationsMs": [
+        6122
+      ]
+    }
+  ]
+}

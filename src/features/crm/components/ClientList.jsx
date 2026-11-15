@@ -56,6 +56,7 @@ export default function ClientList({ company }) {
     mutationFn: (data) => editingClient
       ? firebase.entities.CRMClient.update(editingClient.id, data)
       : firebase.entities.CRMClient.create({ ...data, companyId: company.id }),
+    onError: () => toast.error('No se pudo guardar. Revisa los datos e inténtalo de nuevo.'),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('crmClients', company) }); setOpenClient(false); setEditingClient(null); setForm(EMPTY_CLIENT); toast.success('Cliente guardado'); },
   });
 

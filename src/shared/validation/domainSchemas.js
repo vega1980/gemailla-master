@@ -35,4 +35,9 @@ export const projectTaskSchema = strict({ ...envelope, projectId: required(), ti
 export const supportTicketSchema = strict({ ...envelope, subject: required(), description: required(5000), category: optional(100), status: enumeration(DOMAIN_ENUMS.ticketStatus), priority: z.enum(['baja', 'media', 'alta', 'urgente']), resolved_date: optionalDate });
 
 export const mutableCollectionSchemas = Object.freeze({ crmClients: crmClientSchema, crmDeals: crmDealSchema, crmInteractions: crmInteractionSchema, employees: employeeSchema, payroll: payrollSchema, performanceReviews: performanceReviewSchema, kpis: kpiSchema, projects: projectSchema, projectTasks: projectTaskSchema, supportTickets: supportTicketSchema });
-export function validateDomainWrite(collectionName, value) { return mutableCollectionSchemas[collectionName]?.parse(value) ?? value; }
+export function validateDomainWrite(collectionName, value) {
+  const parsed = mutableCollectionSchemas[collectionName]?.parse(value) ?? value;
+  // Schemas normalize empty optional email/date inputs to absence. Firestore
+  // rejects undefined values; omit absent keys on creation, keeping null/'' intact.
+  return Object.fromEntries(Object.entries(parsed).filter(([, field]) => field !== undefined));
+}

@@ -64,6 +64,7 @@ export default function ProjectTracker({ company }) {
       if (!company) { toast.error('Selecciona una empresa para guardar'); return; }
       return editingProj ? firebase.entities.Project.update(editingProj.id, data) : firebase.entities.Project.create({ ...data, companyId: company.id });
     },
+    onError: () => toast.error('No se pudo guardar. Revisa los datos e inténtalo de nuevo.'),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('projects', company) }); setOpenProj(false); setEditingProj(null); setForm(PROJ_EMPTY); toast.success('Proyecto guardado'); },
   });
 

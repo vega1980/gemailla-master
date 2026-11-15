@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mutableCollectionSchemas } from '../../src/shared/validation/domainSchemas.js';
+import { mutableCollectionSchemas, validateDomainWrite } from '../../src/shared/validation/domainSchemas.js';
 
 const fixtures = {
   crmClients: { companyId: 'acme', name: 'Cliente', status: 'activo' },
@@ -58,3 +58,15 @@ for (const [collection, boundary] of Object.entries(boundaries)) {
     if (boundary.date) assert.throws(() => schema.parse({ ...fixture, [boundary.date]: '2026-99-99x' }));
   });
 }
+
+
+test('empty optional fields produce persistable create payloads for CRM, HR and projects', () => {
+  for (const [collection, empty] of Object.entries({
+    crmClients: { email: '' }, employees: { email: '', hireDate: '' }, projects: { startDate: '', endDate: '' },
+  })) {
+    const result = validateDomainWrite(collection, { ...fixtures[collection], ...empty });
+    assert.ok(Object.values(result).every(value => value !== undefined));
+    for (const key of Object.keys(empty)) assert.equal(Object.hasOwn(result, key), false);
+    assert.equal(result.companyId, 'acme');
+  }
+});
