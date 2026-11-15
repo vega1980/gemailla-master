@@ -48,6 +48,7 @@ export default function EmployeeDirectory({ company }) {
     mutationFn: (data) => editing
       ? firebase.entities.Employee.update(editing.id, data)
       : firebase.entities.Employee.create({ ...data, companyId: company.id }),
+    onError: () => toast.error('No se pudo guardar. Revisa los datos e inténtalo de nuevo.'),
     onSuccess: () => { qc.invalidateQueries({ queryKey: companyEntityQueryKey('employees', company) }); setOpen(false); setEditing(null); setForm(EMPTY); toast.success('Empleado guardado'); },
   });
 

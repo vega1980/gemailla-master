@@ -41,6 +41,13 @@ function createFirestore(store) {
         return new MockDocSnap(id, store.get(this.key));
       },
       async set(value, options = {}) {
+        if (collectionName === 'aiAuditLogs') {
+          const visit = (data) => {
+            assert.notEqual(data, undefined, 'Firestore audit writes cannot contain undefined');
+            if (data && typeof data === 'object') Object.values(data).forEach(visit);
+          };
+          visit(value);
+        }
         const previous = options.merge ? (store.get(this.key) || {}) : {};
         store.set(this.key, { ...previous, ...structuredClone(value) });
       },
@@ -596,4 +603,19 @@ test('aiHandler usa el modelo válido del proveedor cuando runtimeConfig.model e
 
   assert.equal(res.statusCode, 200);
   assert.equal(geminiCalls, 1);
+});
+
+
+test('anonymous IA rejection persists an audit event without optional reservation fields', async () => {
+  const store = seedStore();
+  const { aiHandler } = loadAiHandler({ store });
+  const res = createRes();
+  await aiHandler(createReq({ token: null, body: { prompt: 'verificación' } }), res);
+  assert.equal(res.statusCode, 401);
+  const events = collectDocs(store, 'aiAuditLogs');
+  assert.ok(events.length > 0, 'rejection must be persisted, not only logged');
+  for (const event of events) {
+    assert.equal(Object.hasOwn(event, 'estimatedTokens'), false);
+    assert.equal(Object.hasOwn(event, 'estimatedCostUsd'), false);
+  }
 });

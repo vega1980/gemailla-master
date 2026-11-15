@@ -49,7 +49,10 @@
     "backfill:log-expiry:apply": "node scripts/backfill-log-expiry.mjs --apply --confirm=BACKFILL_LOG_EXPIRY",
     "test:hosting-csp": "bash scripts/test-hosting-csp-report-only.sh",
     "sync:regulatory": "node scripts/sync-regulatory.mjs",
-    "audit:production": "npm audit --omit=dev --audit-level=moderate && npm --prefix functions audit --omit=dev --audit-level=moderate"
+    "audit:production": "npm audit --omit=dev --audit-level=moderate && npm --prefix functions audit --omit=dev --audit-level=moderate",
+    "test:gemini:live": "node --test functions/tests/integration/gemini.live.test.js",
+    "test:load:ai": "node scripts/load-ai.mjs",
+    "verify:production-readiness": "node scripts/verify-production-readiness.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.14",
@@ -102,7 +105,7 @@
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.2",
     "vaul": "^1.1.2",
-    "zod": "^3.24.2"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
@@ -121,10 +124,10 @@
     "globals": "^17.7.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.3",
     "vite": "^6.4.3",
-    "wait-on": "file:tools/wait-on",
-    "tailwindcss-animate": "^1.0.7"
+    "wait-on": "file:tools/wait-on"
   },
   "engines": {
     "node": ">=22 <23",

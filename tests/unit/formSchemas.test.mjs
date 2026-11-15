@@ -66,7 +66,7 @@ describe('form validation schemas', () => {
         email: undefined,
         fiscalRegime: undefined,
       });
-      assertIssueCode(parseError(companySchema, { name: 'Gemailla', email: 'no-es-email' }), 'invalid_string');
+      assertIssueCode(parseError(companySchema, { name: 'Gemailla', email: 'no-es-email' }), 'invalid_format');
       assertIssueCode(parseError(companySchema, { name: 'Gemailla', unexpected: true }), 'unrecognized_keys');
     });
   });
@@ -98,11 +98,11 @@ describe('form validation schemas', () => {
       );
       assertIssueCode(
         parseError(memberInviteSchema, { userEmail: 'user@example.com', role: 'owner' }),
-        'invalid_enum_value',
+        'invalid_value',
       );
       assertIssueCode(
         parseError(memberInviteSchema, { userEmail: 'user@example.com', role: 'miembro' }),
-        'invalid_enum_value',
+        'invalid_value',
       );
 
       assertIssueCode(
@@ -137,7 +137,7 @@ describe('form validation schemas', () => {
           userEmail: 'member@example.com',
           role: 'miembro',
         }),
-        'invalid_enum_value',
+        'invalid_value',
       );
     });
   });
@@ -163,7 +163,7 @@ describe('form validation schemas', () => {
       }
       assertIssueCode(
         parseError(documentFormSchema, { companyId: 'company-1', name: 'Factura', docType: 'invoice' }),
-        'invalid_enum_value',
+        'invalid_value',
       );
       assertIssueCode(
         parseError(documentFormSchema, { companyId: 'company-1', name: 'Factura', id: 'doc-1' }),
@@ -207,9 +207,9 @@ describe('form validation schemas', () => {
         status: 'uploading',
       };
 
-      assertIssueCode(parseError(documentUploadMetadataSchema, { ...validPayload, status: 'draft' }), 'invalid_enum_value');
-      assertIssueCode(parseError(documentUploadMetadataSchema, { ...validPayload, fileType: 'docx' }), 'invalid_enum_value');
-      assertIssueCode(parseError(documentUploadMetadataSchema, { ...validPayload, contentType: 'text/plain' }), 'invalid_enum_value');
+      assertIssueCode(parseError(documentUploadMetadataSchema, { ...validPayload, status: 'draft' }), 'invalid_value');
+      assertIssueCode(parseError(documentUploadMetadataSchema, { ...validPayload, fileType: 'docx' }), 'invalid_value');
+      assertIssueCode(parseError(documentUploadMetadataSchema, { ...validPayload, contentType: 'text/plain' }), 'invalid_value');
     });
 
     it('valida límites de fileSize sin duplicar el límite de 15 MB', () => {
