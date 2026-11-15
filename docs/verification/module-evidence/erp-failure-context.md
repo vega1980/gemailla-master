@@ -1,0 +1,181 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - paragraph: La evolución de la asesoría empresarial
+              - paragraph: GEMAILLA IA
+        - generic:
+          - button:
+            - img
+            - generic: Empresa funcional
+            - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - img
+            - generic: Dashboard
+          - link:
+            - /url: /companies
+            - img
+            - generic: Empresas
+          - link:
+            - /url: /regulatory
+            - img
+            - generic: Avisos oficiales
+          - link:
+            - /url: /documents
+            - img
+            - generic: Documentos
+          - link:
+            - /url: /erp
+            - img
+            - generic: ERP
+          - link:
+            - /url: /audit
+            - img
+            - generic: Auditoría
+          - link:
+            - /url: /ai
+            - img
+            - generic: IA Asistente
+          - link:
+            - /url: /finance
+            - img
+            - generic: Finanzas
+          - link:
+            - /url: /predictive
+            - img
+            - generic: Análisis Predictivo
+          - link:
+            - /url: /client
+            - img
+            - generic: Panel Cliente
+          - link:
+            - /url: /operations
+            - img
+            - generic: Estrategia & Ops
+          - link:
+            - /url: /crm
+            - img
+            - generic: CRM
+          - link:
+            - /url: /hr
+            - img
+            - generic: Recursos Humanos
+          - link:
+            - /url: /activity
+            - img
+            - generic: Log
+          - link:
+            - /url: /subscriptions
+            - img
+            - generic: Suscripciones
+        - button:
+          - img
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - generic: Seguridad empresarial
+              - button:
+                - img
+      - main:
+        - generic:
+          - generic:
+            - heading [level=1]: ERP · Finanzas
+            - paragraph: Registro de ingresos y gastos
+          - generic:
+            - img
+          - generic:
+            - link:
+              - /url: /activity
+              - img
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - button:
+                      - img
+                      - text: Importar Excel/CSV
+                    - button:
+                      - img
+                      - text: Nueva Transacción
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Ingresos
+                      - paragraph: $0
+                    - generic:
+                      - img
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Gastos
+                      - paragraph: $0
+                    - generic:
+                      - img
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Balance
+                      - paragraph: $0
+                    - generic:
+                      - img
+              - generic:
+                - button: Todos
+                - button: Ingresos
+                - button: Gastos
+              - generic:
+                - generic:
+                  - img
+                - heading [level=3]: Sin transacciones
+                - paragraph: Registra tu primera transacción.
+  - dialog "Nueva Transacción" [active] [ref=e2]:
+    - heading "Nueva Transacción" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - text: Tipo
+          - combobox [ref=e8] [cursor=pointer]:
+            - generic: Ingreso
+            - img [ref=e9]
+          - combobox [ref=e11]
+        - generic [ref=e12]:
+          - text: Categoría
+          - combobox [ref=e13] [cursor=pointer]:
+            - generic: Ventas
+            - img [ref=e14]
+          - combobox [ref=e16]
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - text: Monto
+          - spinbutton [ref=e19]: "123.45"
+        - generic [ref=e20]:
+          - text: Fecha
+          - textbox [ref=e21]: 2026-11-15
+      - generic [ref=e22]:
+        - text: Descripción
+        - textbox "Descripción..." [ref=e23]: Ingreso persistente de prueba
+      - generic [ref=e24]:
+        - text: Método de Pago
+        - combobox [ref=e25] [cursor=pointer]:
+          - generic: Transferencia
+          - img [ref=e26]
+        - combobox [ref=e28]
+      - generic [ref=e29]:
+        - button "Cancelar" [ref=e30] [cursor=pointer]
+        - button "Registrar" [ref=e31] [cursor=pointer]
+    - button "Close" [ref=e32] [cursor=pointer]:
+      - img [ref=e33]
+      - generic [ref=e36]: Close
+```

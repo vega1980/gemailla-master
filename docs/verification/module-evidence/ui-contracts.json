@@ -1,0 +1,196 @@
+[
+  {
+    "collection": "crmClients",
+    "field": "status",
+    "uiValue": "perdido",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "prospecto",
+          "activo",
+          "inactivo",
+          "archived"
+        ],
+        "path": [
+          "status"
+        ],
+        "message": "Invalid option: expected one of \"prospecto\"|\"activo\"|\"inactivo\"|\"archived\""
+      }
+    ]
+  },
+  {
+    "collection": "crmInteractions",
+    "field": "type",
+    "uiValue": "cotizacion",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "llamada",
+          "email",
+          "reunion",
+          "mensaje",
+          "nota"
+        ],
+        "path": [
+          "type"
+        ],
+        "message": "Invalid option: expected one of \"llamada\"|\"email\"|\"reunion\"|\"mensaje\"|\"nota\""
+      }
+    ]
+  },
+  {
+    "collection": "crmInteractions",
+    "field": "type",
+    "uiValue": "pedido",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "llamada",
+          "email",
+          "reunion",
+          "mensaje",
+          "nota"
+        ],
+        "path": [
+          "type"
+        ],
+        "message": "Invalid option: expected one of \"llamada\"|\"email\"|\"reunion\"|\"mensaje\"|\"nota\""
+      }
+    ]
+  },
+  {
+    "collection": "crmInteractions",
+    "field": "type",
+    "uiValue": "soporte",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "llamada",
+          "email",
+          "reunion",
+          "mensaje",
+          "nota"
+        ],
+        "path": [
+          "type"
+        ],
+        "message": "Invalid option: expected one of \"llamada\"|\"email\"|\"reunion\"|\"mensaje\"|\"nota\""
+      }
+    ]
+  },
+  {
+    "collection": "crmInteractions",
+    "field": "type",
+    "uiValue": "otro",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "llamada",
+          "email",
+          "reunion",
+          "mensaje",
+          "nota"
+        ],
+        "path": [
+          "type"
+        ],
+        "message": "Invalid option: expected one of \"llamada\"|\"email\"|\"reunion\"|\"mensaje\"|\"nota\""
+      }
+    ]
+  },
+  {
+    "collection": "employees",
+    "field": "employmentType",
+    "uiValue": "freelance",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "tiempo_completo",
+          "medio_tiempo",
+          "contrato",
+          "practicante"
+        ],
+        "path": [
+          "employmentType"
+        ],
+        "message": "Invalid option: expected one of \"tiempo_completo\"|\"medio_tiempo\"|\"contrato\"|\"practicante\""
+      }
+    ]
+  },
+  {
+    "collection": "employees",
+    "field": "employmentType",
+    "uiValue": "temporal",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "tiempo_completo",
+          "medio_tiempo",
+          "contrato",
+          "practicante"
+        ],
+        "path": [
+          "employmentType"
+        ],
+        "message": "Invalid option: expected one of \"tiempo_completo\"|\"medio_tiempo\"|\"contrato\"|\"practicante\""
+      }
+    ]
+  },
+  {
+    "collection": "payroll",
+    "field": "status",
+    "uiValue": "aprobado",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "pendiente",
+          "procesando",
+          "pagado",
+          "cancelado",
+          "archived"
+        ],
+        "path": [
+          "status"
+        ],
+        "message": "Invalid option: expected one of \"pendiente\"|\"procesando\"|\"pagado\"|\"cancelado\"|\"archived\""
+      }
+    ]
+  },
+  {
+    "collection": "kpis",
+    "field": "frequency",
+    "uiValue": "diario",
+    "accepted": false,
+    "issues": [
+      {
+        "code": "invalid_value",
+        "values": [
+          "semanal",
+          "mensual",
+          "trimestral",
+          "anual"
+        ],
+        "path": [
+          "frequency"
+        ],
+        "message": "Invalid option: expected one of \"semanal\"|\"mensual\"|\"trimestral\"|\"anual\""
+      }
+    ]
+  }
+]

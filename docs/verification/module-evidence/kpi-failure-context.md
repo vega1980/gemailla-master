@@ -1,0 +1,172 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - generic:
+      - complementary:
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - paragraph: La evolución de la asesoría empresarial
+              - paragraph: GEMAILLA IA
+        - generic:
+          - button:
+            - img
+            - generic: Empresa funcional
+            - img
+        - navigation:
+          - link:
+            - /url: /dashboard
+            - img
+            - generic: Dashboard
+          - link:
+            - /url: /companies
+            - img
+            - generic: Empresas
+          - link:
+            - /url: /regulatory
+            - img
+            - generic: Avisos oficiales
+          - link:
+            - /url: /documents
+            - img
+            - generic: Documentos
+          - link:
+            - /url: /erp
+            - img
+            - generic: ERP
+          - link:
+            - /url: /audit
+            - img
+            - generic: Auditoría
+          - link:
+            - /url: /ai
+            - img
+            - generic: IA Asistente
+          - link:
+            - /url: /finance
+            - img
+            - generic: Finanzas
+          - link:
+            - /url: /predictive
+            - img
+            - generic: Análisis Predictivo
+          - link:
+            - /url: /client
+            - img
+            - generic: Panel Cliente
+          - link:
+            - /url: /operations
+            - img
+            - generic: Estrategia & Ops
+          - link:
+            - /url: /crm
+            - img
+            - generic: CRM
+          - link:
+            - /url: /hr
+            - img
+            - generic: Recursos Humanos
+          - link:
+            - /url: /activity
+            - img
+            - generic: Log
+          - link:
+            - /url: /subscriptions
+            - img
+            - generic: Suscripciones
+        - button:
+          - img
+        - generic:
+          - generic:
+            - img
+            - generic:
+              - generic: Seguridad empresarial
+              - button:
+                - img
+      - main:
+        - generic:
+          - generic:
+            - heading [level=1]: Estrategia y Operaciones
+            - paragraph: Eficiencia empresarial
+          - generic:
+            - img
+          - generic:
+            - link:
+              - /url: /activity
+              - img
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - heading [level=1]: Estrategia y Operaciones
+                    - paragraph: Empresa funcional
+              - generic:
+                - generic:
+                  - button:
+                    - img
+                    - text: Planeación Estratégica
+                  - button:
+                    - img
+                    - text: Optimización de Procesos
+                  - button:
+                    - img
+                    - text: Gestión de Proyectos
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: 0 KPIs definidos
+                    - generic:
+                      - button [disabled]:
+                        - img
+                        - text: Análisis IA
+                      - button:
+                        - img
+                        - text: Nuevo KPI
+                  - generic:
+                    - img
+                    - paragraph: No hay KPIs definidos. Crea el primero para comenzar.
+  - dialog "Nuevo KPI" [ref=e2]:
+    - heading "Nuevo KPI" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]:
+          - text: Nombre del KPI
+          - textbox "Ej. Tasa de conversión" [ref=e8]: KPI diario de prueba
+        - generic [ref=e9]:
+          - text: Categoría
+          - combobox [ref=e10] [cursor=pointer]:
+            - generic: financiero
+            - img [ref=e11]
+        - generic [ref=e13]:
+          - text: Estado
+          - combobox [ref=e14] [cursor=pointer]:
+            - generic: En curso
+            - img [ref=e15]
+        - generic [ref=e17]:
+          - text: Meta
+          - spinbutton [ref=e18]: "10"
+        - generic [ref=e19]:
+          - text: Valor actual
+          - spinbutton [ref=e20]: "2"
+        - generic [ref=e21]:
+          - text: Unidad
+          - textbox "%, MXN, días..." [ref=e22]
+        - generic [ref=e23]:
+          - text: Frecuencia
+          - combobox [ref=e24] [cursor=pointer]:
+            - generic: diario
+            - img [ref=e25]
+        - generic [ref=e27]:
+          - text: Responsable
+          - textbox "Nombre del responsable" [ref=e28]
+      - button "Crear KPI" [active] [ref=e29] [cursor=pointer]
+    - button "Close" [ref=e30] [cursor=pointer]:
+      - img [ref=e31]
+      - generic [ref=e34]: Close
+```
