@@ -8,7 +8,7 @@ const require = createRequire(new URL('../../functions/package.json', import.met
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getStorage } = require('firebase-admin/storage');
-const { extractPdfText } = require('../../functions/handlers/documentContextBuilder.js');
+const { extractPdfText } = require('./handlers/documentContextBuilder.js');
 
 test('scanned PDF preserves bytes and AI text; foreign and quarantined context is denied by real API', async ({ page }, testInfo) => {
   await clearFirebaseEmulators();
