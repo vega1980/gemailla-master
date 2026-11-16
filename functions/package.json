@@ -17,9 +17,9 @@
   "dependencies": {
     "@google/genai": "2.15.0",
     "fast-xml-parser": "^5.3.4",
-    "firebase-admin": "14.5.0",
+    "firebase-admin": "14.5.1",
     "firebase-functions": "7.3.2",
-    "unpdf": "^1.5.1"
+    "unpdf": "^1.9.1"
   },
   "packageManager": "npm@11.4.2",
   "allowScripts": {
