@@ -65,6 +65,7 @@ export default function ERP() {
       setFormData(createEmptyTransactionForm());
       toast({ title: 'Transacción registrada' });
     },
+    onError: (error) => toast({ title: 'No se pudo registrar la transacción', description: error.message, variant: 'destructive' }),
   });
 
   const deleteMutation = useMutation({

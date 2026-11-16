@@ -223,6 +223,16 @@ export const createRepository = (collectionName) => {
     getTimestamp: () => isPhaseOneCollection ? serverTimestamp() : new Date().toISOString(),
   });
 
+  const prepareCreateData = (data) => {
+    const payload = validateDomainWrite(collectionName, data);
+    if (collectionName === 'transactions') {
+      const ownerUid = auth.currentUser?.uid;
+      if (!ownerUid) throw new Error('Autenticación requerida para registrar transacciones.');
+      payload.ownerUid = ownerUid;
+    }
+    return auditMiddleware.withCreateAuditFields(payload);
+  };
+
   const newId = () => doc(collectionRef).id;
 
   const getById = async (id) => {
@@ -408,8 +418,7 @@ export const createRepository = (collectionName) => {
   };
 
   const create = async (data, id = null) => {
-    const validatedData = validateDomainWrite(collectionName, data);
-    const dataWithAudit = auditMiddleware.withCreateAuditFields(validatedData);
+    const dataWithAudit = prepareCreateData(data);
 
     if (id) {
       const documentRef = doc(db, collectionName, id);
@@ -466,7 +475,7 @@ export const createRepository = (collectionName) => {
 
       for (const item of chunk) {
         const documentRef = doc(collectionRef);
-        const dataWithAudit = auditMiddleware.withCreateAuditFields(validateDomainWrite(collectionName, item));
+        const dataWithAudit = prepareCreateData(item);
         batch.set(documentRef, dataWithAudit);
         created.push({ id: documentRef.id, ...dataWithAudit });
       }
