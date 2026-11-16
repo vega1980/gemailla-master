@@ -20,6 +20,7 @@ test('scanned PDF preserves bytes and AI text; foreign and quarantined context i
   const bucketName = process.env.VITE_FIREBASE_STORAGE_BUCKET;
   const app = initializeApp({ projectId: getE2EProjectId(), storageBucket: bucketName }, companyId);
   const db = getFirestore(app), bucket = getStorage(app).bucket();
+  await db.collection('companyEntitlements').doc(companyId).set({ companyId, plan: 'pro', status: 'active', aiAccess: true, currentPeriodEnd: '2999-01-01T00:00:00.000Z' });
   const original = await readFile('tests/e2e/fixtures/sample.pdf');
   await page.goto('/documents');
   await page.locator('#file-upload').setInputFiles('tests/e2e/fixtures/sample.pdf');
@@ -44,13 +45,14 @@ test('scanned PDF preserves bytes and AI text; foreign and quarantined context i
   const login = await page.request.post('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-api-key', { data: { email, password: TEST_PASSWORD, returnSecureToken: true } });
   expect(login.ok()).toBe(true);
   const { idToken } = await login.json();
-  for (const payload of [
-    { companyId: foreignCompany },
-    { companyId, documentIds: [foreignDocument] },
-    { companyId, documentIds: [quarantineId] },
+  for (const [payload, expectedError] of [
+    [{ companyId: foreignCompany }, /membresía activa/],
+    [{ companyId, documentIds: [foreignDocument] }, /no pertenece a la empresa validada/],
+    [{ companyId, documentIds: [quarantineId] }, /storagePath fuera del prefijo autorizado/],
   ]) {
     const result = await page.request.post('/api/ai', { headers: { Authorization: `Bearer ${idToken}` }, data: { prompt: 'Describe el documento.', ...payload } });
     expect(result.status()).toBe(403);
+    expect((await result.json()).error).toMatch(expectedError);
   }
   await testInfo.attach('document-security-evidence', { contentType: 'application/json', body: JSON.stringify({ cleanDocumentId: clean.id, scanStatus: 'clean', sha256: createHash('sha256').update(bytes).digest('hex'), realPdfExtraction: true, infectedStatus: 'rejected', deniedAiRequests: 3, scanner: 'emulator simulator', geminiLive: false }) });
 });
