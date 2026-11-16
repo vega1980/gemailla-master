@@ -173,11 +173,11 @@ async function aggregateCompanyMetricsOnWrite(event = {}, dependencies = {}) {
     const companyIds = [...deltas.companyMetrics.keys()];
     transaction.set(eventRef, { eventId, collectionName, companyIds, processedAt }, { merge: false });
 
+    // increment(0) initializes absent counters without resetting existing totals.
     for (const [companyId, delta] of deltas.companyMetrics.entries()) {
       transaction.set(db.collection('companyMetrics').doc(companyId), {
-        ...ZERO_METRIC_FIELDS,
         companyId,
-        ...withIncrements(delta, FieldValue),
+        ...withIncrements({ ...ZERO_METRIC_FIELDS, ...delta }, FieldValue),
         updatedAt: processedAt,
         lastEventId: eventId,
       }, { merge: true });
@@ -185,10 +185,9 @@ async function aggregateCompanyMetricsOnWrite(event = {}, dependencies = {}) {
 
     for (const [metricId, { companyId, month, delta }] of deltas.monthlyMetrics.entries()) {
       transaction.set(db.collection('companyMonthlyMetrics').doc(metricId), {
-        ...ZERO_MONTHLY_FIELDS,
         companyId,
         month,
-        ...withIncrements(delta, FieldValue),
+        ...withIncrements({ ...ZERO_MONTHLY_FIELDS, ...delta }, FieldValue),
         updatedAt: processedAt,
         lastEventId: eventId,
       }, { merge: true });

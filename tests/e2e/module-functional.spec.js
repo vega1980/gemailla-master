@@ -32,7 +32,7 @@ test('Empresas: create using the real UI with optional fields empty, then reload
 });
 
 test('ERP: register income through the real form and verify storage and reload',async({page})=>{
- const {companyId}=await setup(page);await page.goto('/erp');
+ const {companyId,uid}=await setup(page);await page.goto('/erp');
  await page.getByRole('button',{name:'Nueva Transacción',exact:true}).click();
  const dialog=page.getByRole('dialog');await dialog.getByPlaceholder('0.00').fill('123.45');
  await dialog.getByPlaceholder('Descripción...').fill('Ingreso persistente de prueba');
@@ -40,7 +40,7 @@ test('ERP: register income through the real form and verify storage and reload',
  await expect(dialog).not.toBeVisible(); await page.reload();
  await expect(page.getByText('Ingreso persistente de prueba',{exact:true})).toBeVisible();
  const rows=await database().collection('transactions').where('companyId','==',companyId).get();
- expect(rows.docs.some(d=>d.data().amount===123.45)).toBe(true);
+ expect(rows.docs.some(d=>d.data().amount===123.45 && d.data().ownerUid===uid)).toBe(true);
 });
 
 test('Finanzas: known totals and actual PDF contents agree with fixtures',async({page},testInfo)=>{
@@ -61,9 +61,13 @@ test('Dashboard: reflects known tenant income, expenses and balance',async({page
  const {companyId}=await setup(page);await transactions(companyId);
  await expect.poll(async()=>(await database().collection('companyMetrics').doc(companyId).get()).data()?.transactionCount,{timeout:20000}).toBe(2);
  const metrics=(await database().collection('companyMetrics').doc(companyId).get()).data();
+ expect(metrics).toMatchObject({totalIncome:1000,totalExpenses:250,netCashFlow:750,transactionCount:2});
  await testInfo.attach('actual-company-metrics',{body:JSON.stringify({expected:{totalIncome:1000,totalExpenses:250,netCashFlow:750},actual:metrics}),contentType:'application/json'});
  await page.goto('/dashboard');
- await expect(page.locator('main')).toContainText('1,000');await expect(page.locator('main')).toContainText('250');await expect(page.locator('main')).toContainText('750');
+ const cards=page.getByRole('region',{name:'Indicadores principales'});
+ await expect(cards.getByRole('article').filter({has:page.getByText('Ingresos',{exact:true})})).toContainText('$1.0K');
+ await expect(cards.getByRole('article').filter({has:page.getByText('Gastos',{exact:true})})).toContainText(/USD\s*250/);
+ await expect(cards.getByRole('article').filter({has:page.getByText('Balance',{exact:true})})).toContainText(/USD\s*750/);
 });
 
 test('Panel cliente: deterministic negative balance alert uses real tenant data',async({page})=>{

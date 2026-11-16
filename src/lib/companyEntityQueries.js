@@ -40,6 +40,12 @@ export const fetchCompanyEntity = async (queryName, companyOrId, options = {}) =
 
   if (!companyId) return [];
 
+  // Global metrics are authorized by their document ID, not a collection query.
+  if (queryName === 'companyMetrics') {
+    const metric = await firebase.entities.CompanyMetric.getById(companyId);
+    return metric ? [metric] : [];
+  }
+
   const resultLimit = options.limit ?? config.limit ?? COMPANY_ENTITY_DEFAULT_LIMIT;
   const orderField = String(options.orderBy ?? config.orderBy ?? '-createdAt');
   const direction = orderField.startsWith('-') ? 'desc' : 'asc';

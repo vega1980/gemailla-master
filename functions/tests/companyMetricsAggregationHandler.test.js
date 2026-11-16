@@ -189,3 +189,27 @@ test('aggregateCompanyMetricsOnWrite applies atomic deltas and ignores duplicate
   assert.equal(store.get('companyMonthlyMetrics/company-a_2026-07').netCashFlow, 100);
   assert.equal(store.has('companyMetricAggregationEvents/event-1'), true);
 });
+
+test('mixed transaction and document events preserve unrelated global and monthly totals', async (t) => {
+  const { store, FieldValue } = mockAdmin(t);
+  for (const [id, collection, after] of [
+    ['income', 'transactions', transaction({ amount: 1000 })],
+    ['expense', 'transactions', transaction({ type: 'gasto', amount: 250 })],
+    ['document', 'documents', { companyId: 'company-a', status: 'pending' }],
+  ]) {
+    await aggregateCompanyMetricsOnWrite({
+      id, document: `projects/demo/databases/(default)/documents/${collection}/${id}`,
+      data: { before: { data: () => null }, after: { data: () => after } },
+    }, { FieldValue });
+  }
+  const global = store.get('companyMetrics/company-a');
+  const monthly = store.get('companyMonthlyMetrics/company-a_2026-06');
+  for (const metrics of [global, monthly]) {
+    assert.equal(metrics.totalIncome, 1000);
+    assert.equal(metrics.totalExpenses, 250);
+    assert.equal(metrics.netCashFlow, 750);
+    assert.equal(metrics.transactionCount, 2);
+  }
+  assert.equal(global.documentCount, 1);
+  assert.equal(global.pendingDocumentCount, 1);
+});
