@@ -65,3 +65,11 @@ test('DCB-3 allows same-company storagePath and proceeds to Storage download', a
   assert.equal(downloadCalls, 1);
   assert.match(context, /contexto permitido/);
 });
+
+test('real PDF parser extracts fixture text on the supported Node runtime', async () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const { extractPdfText } = require('../handlers/documentContextBuilder');
+  const bytes = fs.readFileSync(path.join(__dirname, '../..', 'tests/e2e/fixtures/sample.pdf'));
+  assert.match(await extractPdfText(bytes), /GEMAILLA validated PDF invoice total 116\.00/);
+});

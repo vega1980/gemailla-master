@@ -9,7 +9,7 @@ on:
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       # Public Firebase client configuration. Repository variables may override
@@ -56,6 +56,9 @@ jobs:
 
       - name: Install Functions dependencies
         run: npm --prefix functions ci
+
+      - name: Audit high severity dependencies including development tools
+        run: npm run audit:high
 
       - name: Audit production dependencies
         run: npm run audit:production
@@ -144,8 +147,7 @@ jobs:
           retention-days: 14
 
   e2e-emulators:
-    needs: validate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -197,6 +199,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ github.sha }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            test-results/
           if-no-files-found: warn
           retention-days: 14
