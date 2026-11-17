@@ -26,6 +26,9 @@ const SENSITIVE_VITE_PATTERN = /VITE_[A-Z0-9_]*(SECRET|PRIVATE|TOKEN|PASSWORD|PA
 
 const LEGACY_DUPLICATE_FILES = new Map([
   ['src/App.jsx', 'El bootstrap debe importar src/app/App.jsx directamente; no mantener un segundo App raíz.'],
+  ['src/features/dashboard/components/FinancialChart.jsx', 'Las gráficas activas viven en src/modules/dashboard/components/DashboardCharts.jsx; no restaurar la copia retirada.'],
+  ['src/features/dashboard/components/CategoryBreakdown.jsx', 'La distribución activa vive en src/modules/dashboard/components/DashboardCharts.jsx; no restaurar la copia retirada.'],
+  ['src/features/dashboard/components/RecentActivity.jsx', 'La actividad del dashboard se construye en src/modules/dashboard/pages/DashboardPage.jsx; no restaurar la copia retirada.'],
   ['src/pages/Dashboard.backup.jsx', 'No conservar snapshots legacy de Dashboard dentro de src/pages. Usa control de versiones.'],
   ['src/pages/Dashboard.original.jsx', 'No conservar snapshots legacy de Dashboard dentro de src/pages. Usa control de versiones.'],
 ]);

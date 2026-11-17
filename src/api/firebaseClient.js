@@ -96,19 +96,6 @@ export function getSafeAiEndpoint() {
   return getSafeInternalEndpoint(defaultEndpoint, '/api/ai', 'ia');
 }
 
-function aiDisabledPayload(reason = 'Las funciones de IA están desactivadas porque no hay backend seguro configurado.', correlationId = ensureCorrelationId('', 'ai')) {
-  return {
-    disabled: true,
-    status: 'disabled',
-    documentStatus: DOCUMENT_STATUSES.AI_DISABLED,
-    message: reason,
-    summary: reason,
-    response: reason,
-    correlationId,
-    release: getReleaseMetadata(),
-  };
-}
-
 function getParentCorrelationHeaders(parentCorrelationId) {
   if (!parentCorrelationId) return {};
   return { 'X-Parent-Correlation-Id': ensureCorrelationId(parentCorrelationId, 'parent') };
