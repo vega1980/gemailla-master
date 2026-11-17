@@ -22,7 +22,7 @@ test('Next publication opens in Master with evidence, verified capture and compa
  try{
   await publishPage({db:getFirestore(app),bucket:getStorage(app).bucket(),companyId,streamId:'next-test',page:bundle,databaseId:historyIdentity(bundle)});
   await page.goto('/regulatory');
-  await expect(page.getByRole('heading',{name:'Avisos oficiales',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Actualizar',exact:true})).toBeVisible();
   const article=page.locator('article').filter({has:page.getByRole('heading',{name:bundle.records[0].notice.title,exact:true})});
   await expect(article).toBeVisible();
   await expect(article.getByRole('link',{name:'Publicación oficial'})).toHaveAttribute('href',bundle.records[0].notice.url);
