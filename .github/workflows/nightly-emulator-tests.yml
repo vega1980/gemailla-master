@@ -42,8 +42,8 @@ jobs:
         run: npm run test:rules:emulators
 
   e2e:
-    name: E2E emulator tests
-    runs-on: ubuntu-latest
+    name: E2E emulator test
+    runs-on: buntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
